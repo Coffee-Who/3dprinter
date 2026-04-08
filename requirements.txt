@@ -9,3 +9,4 @@ pandas
 numpy-stl
 trimesh[all]
 plotly
+scipy

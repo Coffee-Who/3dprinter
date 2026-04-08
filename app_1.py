@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from stl import mesh
+import trimesh
 import tempfile
 import os
 import plotly.graph_objects as go
@@ -11,14 +12,13 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 
 # 2. 登入狀態檢測與全域 CSS
 if "password_correct" not in st.session_state:
-    # --- 登入頁面：強化按鈕可見度 ---
+    # --- 登入頁面樣式：黑底白字 ---
     st.markdown("""
         <style>
-        /* 1. 登入背景 */
         .stApp { background-color: #0F172A !important; }
         h2, p, label { color: #FFFFFF !important; }
         
-        /* 2. 輸入框 */
+        /* 密碼輸入框 */
         div[data-testid="stTextInput"] input {
             background-color: #1E293B !important;
             color: #FFFFFF !important;
@@ -27,9 +27,9 @@ if "password_correct" not in st.session_state:
             border-radius: 8px !important;
         }
 
-        /* 3. 強制渲染按鈕樣式 (不依賴 kind 參數) */
+        /* 登入按鈕強制著色 (修復 TypeError 版本) */
         div.stButton > button {
-            background-color: #1E40AF !important; /* 實威藍 */
+            background-color: #1E40AF !important; 
             color: #FFFFFF !important;
             border: 1px solid #3B82F6 !important;
             width: 100% !important;
@@ -37,10 +37,6 @@ if "password_correct" not in st.session_state:
             font-size: 18px !important;
             font-weight: bold !important;
             border-radius: 8px !important;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
-        }
-        div.stButton > button:active {
-            background-color: #3B82F6 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -49,16 +45,15 @@ if "password_correct" not in st.session_state:
     st.markdown("<h2 style='text-align:center;'>SOLIDWIZARD</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;'>3D列印線上估價系統</p>", unsafe_allow_html=True)
     
-    col_l, col_m, col_r = st.columns([1, 6, 1]) # 手機版給予更多寬度
+    col_l, col_m, col_r = st.columns([1, 6, 1])
     with col_m:
         pwd = st.text_input("管理員密碼", type="password")
-        # 移除 kind="primary" 以避免 TypeError
         if st.button("確認登入"):
             if pwd == "1234": 
                 st.session_state["password_correct"] = True
                 st.rerun()
             else: 
-                st.error("密碼錯誤，請重新輸入")
+                st.error("密碼錯誤")
     st.stop()
 
 # --- 進入系統後的 CSS (白底 + 精簡介面) ---
@@ -82,7 +77,7 @@ st.markdown("""
     }
     div[data-testid="stFileUploader"] section * { color: #FFFFFF !important; fill: #FFFFFF !important; }
 
-    /* 單選按鈕文字：黑色 */
+    /* 單選按鈕文字顏色：黑色 */
     div[data-testid="stMarkdownContainer"] p { color: #000000 !important; font-weight: 500 !important; }
 
     /* 手機懸浮選單按鈕 */
@@ -135,23 +130,36 @@ with st.sidebar:
 # 5. 主程式
 if choice == "💰 自動估價系統":
     st.title("💰 3D列印報價")
-    input_method = st.radio("體積來源", ["📤 上傳 STL", "⌨️ 手動輸入"], horizontal=True)
+    input_method = st.radio("體積來源", ["📤 上傳 STL/STEP", "⌨️ 手動輸入"], horizontal=True)
     
     vol_mm3 = 0
-    if input_method == "📤 上傳 STL":
-        up_file = st.file_uploader("Upload", type=["stl"], label_visibility="collapsed")
+    if input_method == "📤 上傳 STL/STEP":
+        up_file = st.file_uploader("Upload", type=["stl", "step", "stp"], label_visibility="collapsed")
         if up_file:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
-                tmp.write(up_file.getvalue()); t_path = tmp.name
+            ext = os.path.splitext(up_file.name)[-1].lower()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(up_file.getvalue())
+                t_path = tmp.name
+            
             try:
-                your_mesh = mesh.Mesh.from_file(t_path)
-                vol_mm3 = int(abs(your_mesh.get_mass_properties()[0]))
-                
-                st.write("📦 **模型預覽**")
-                points = your_mesh.points.reshape(-1, 3)
-                v1, v2, v3 = points[::3], points[1::3], points[2::3]
+                # 判斷檔案格式並計算體積
+                if ext == ".stl":
+                    your_mesh = mesh.Mesh.from_file(t_path)
+                    vol_mm3 = int(abs(your_mesh.get_mass_properties()[0]))
+                    vertices_raw = your_mesh.points.reshape(-1, 3)
+                else:
+                    # STEP 格式處理
+                    scene_or_mesh = trimesh.load(t_path)
+                    full_mesh = scene_or_mesh.dump(concatenate=True) if isinstance(scene_or_mesh, trimesh.Scene) else scene_or_mesh
+                    vol_mm3 = int(full_mesh.volume)
+                    vertices_raw = full_mesh.vertices[full_mesh.faces].reshape(-1, 3)
+
+                # --- 3D 專業預覽 ---
+                st.write(f"📦 **模型預覽 ({ext.upper()})**")
+                v1, v2, v3 = vertices_raw[::3], vertices_raw[1::3], vertices_raw[2::3]
                 vertices = np.vstack([v1, v2, v3])
-                n = len(v1); i, j, k = np.arange(n), np.arange(n) + n, np.arange(n) + 2*n
+                n = len(v1)
+                i, j, k = np.arange(n), np.arange(n) + n, np.arange(n) + 2*n
                 mid_point = (vertices.max(axis=0) + vertices.min(axis=0)) / 2
                 max_dim = np.max(vertices.max(axis=0) - vertices.min(axis=0))
 
@@ -171,7 +179,8 @@ if choice == "💰 自動估價系統":
                     margin=dict(l=0, r=0, b=0, t=0), height=350
                 )
                 st.plotly_chart(fig, use_container_width=True)
-            except: st.error("STL 解析失敗")
+            except Exception as e:
+                st.error(f"檔案解析失敗: {e}")
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:

@@ -4,3 +4,8 @@ numpy-stl
 numpy
 pandas
 plotly
+numpy
+pandas
+numpy-stl
+trimesh[all]
+plotly

@@ -1,38 +1,65 @@
 import streamlit as st
-from stl import mesh
 import tempfile
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from stl import mesh
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="3D列印快速估價工具", layout="centered")
+st.set_page_config(page_title="3D列印估價工具", layout="wide")
 
-st.title("🧠 3D列印快速估價工具（業務版）")
+st.title("🧠 3D列印快速估價工具")
 
-# 客戶資訊
-st.subheader("👤 客戶資訊")
-customer_name = st.text_input("客戶名稱")
-project_name = st.text_input("專案名稱")
-
-# 上傳 STL
-st.subheader("📦 上傳模型")
-uploaded_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
+# =========================
+# 上傳檔案
+# =========================
+uploaded_file = st.file_uploader("上傳 STL / STEP 檔案", type=["stl", "step", "stp"])
 
 volume = None
 
+# =========================
+# STL 處理 + 預覽
+# =========================
 if uploaded_file:
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(uploaded_file.read())
-        tmp_path = tmp_file.name
+    file_type = uploaded_file.name.split(".")[-1].lower()
 
-    your_mesh = mesh.Mesh.from_file(tmp_path)
+    if file_type == "stl":
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
 
-    volume_mm3, _, _ = your_mesh.get_mass_properties()
-    volume = volume_mm3 / 1000  # 轉 cm³
+        your_mesh = mesh.Mesh.from_file(tmp_path)
 
-    st.success(f"✅ 模型體積：約 {volume:.2f} cm³")
+        # 計算體積
+        volume_mm3, _, _ = your_mesh.get_mass_properties()
+        volume = volume_mm3 / 1000  # cm³
 
-# 參數
-st.subheader("⚙️ 列印需求")
+        st.success(f"✅ 體積：約 {volume:.2f} cm³")
+
+        # 3D 預覽（Plotly）
+        x, y, z = your_mesh.x.flatten(), your_mesh.y.flatten(), your_mesh.z.flatten()
+
+        fig = go.Figure(data=[
+            go.Mesh3d(
+                x=x,
+                y=y,
+                z=z,
+                opacity=0.5
+            )
+        ])
+
+        fig.update_layout(
+            title="模型預覽",
+            scene=dict(aspectmode='data')
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        st.warning("⚠️ STEP 檔案目前無法直接預覽，請轉為 STL")
+        st.info("👉 建議使用 Fusion360 / SolidWorks 轉 STL")
+
+# =========================
+# 估價區
+# =========================
+st.subheader("⚙️ 估價設定")
 
 material = st.selectbox("材料", [
     "標準樹脂",
@@ -54,25 +81,9 @@ material_cost = {
 
 machine_rate = 300
 
-# PDF 產生
-def generate_pdf(customer, project, price, lead_time):
-    file_path = "quotation.pdf"
-    doc = SimpleDocTemplate(file_path)
-    styles = getSampleStyleSheet()
-
-    content = []
-    content.append(Paragraph("3D列印報價單", styles["Title"]))
-    content.append(Spacer(1, 10))
-    content.append(Paragraph(f"客戶：{customer}", styles["Normal"]))
-    content.append(Paragraph(f"專案：{project}", styles["Normal"]))
-    content.append(Spacer(1, 10))
-    content.append(Paragraph(f"報價：NTD {price}", styles["Normal"]))
-    content.append(Paragraph(f"交期：{lead_time}", styles["Normal"]))
-
-    doc.build(content)
-    return file_path
-
-# 估價
+# =========================
+# 計算
+# =========================
 if st.button("💰 立即估價"):
 
     if volume is None:
@@ -91,24 +102,13 @@ if st.button("💰 立即估價"):
 
         st.success("✅ 估價完成")
 
-        st.subheader("📊 報價結果")
-
         st.markdown(f"""
-        ### 💰 預估價格：**NTD {final_price}**
-        ### ⏱ 交期：**{lead_time}**
+        ## 💰 預估價格：NTD {final_price}
+        ## ⏱ 交期：{lead_time}
 
         ---
-        ### 🔍 成本分析
-        - 材料：NTD {int(material_price)}
-        - 機台：NTD {int(machine_price)}
-        - 後處理：NTD {post_process}
-
-        ---
-        ### 🧠 建議製程
-        SLA 光固化列印（高精度）
+        ### 🔍 成本拆解
+        - 材料：{int(material_price)}
+        - 機台：{int(machine_price)}
+        - 後處理：{post_process}
         """)
-
-        pdf_path = generate_pdf(customer_name, project_name, final_price, lead_time)
-
-        with open(pdf_path, "rb") as f:
-            st.download_button("📄 下載報價單", f, file_name="報價單.pdf")

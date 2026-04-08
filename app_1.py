@@ -14,72 +14,51 @@ st.markdown("""
     <style>
     /* 手機版懸浮選單按鈕 */
     [data-testid="stSidebarCollapseButton"] {
-        position: fixed !important;
-        top: 15px !important;
-        left: 15px !important;
-        z-index: 999999 !important;
-        background-color: #1E40AF !important;
-        color: white !important;
-        border-radius: 50% !important;
-        width: 45px !important;
-        height: 45px !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+        position: fixed !important; top: 15px !important; left: 15px !important;
+        z-index: 999999 !important; background-color: #1E40AF !important;
+        color: white !important; border-radius: 50% !important;
+        width: 45px !important; height: 45px !important;
+        display: flex !important; justify-content: center !important; align-items: center !important;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
     }
     [data-testid="stSidebarCollapseButton"] svg { fill: white !important; }
 
+    /* 背景與基礎文字 */
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
 
     /* Upload 區塊：白底黑字 */
     div[data-testid="stFileUploader"] section {
-        background-color: #FFFFFF !important; 
-        color: #000000 !important;
-        border: 2px dashed #CBD5E1 !important;
-        border-radius: 8px !important;
+        background-color: #FFFFFF !important; color: #000000 !important;
+        border: 2px dashed #CBD5E1 !important; border-radius: 8px !important;
         max-width: 250px !important; 
     }
 
     /* 其餘輸入框 (數字、選單)：藍底白字且縮小 */
-    div[data-testid="stNumberInput"], div[data-baseweb="select"] {
-        max-width: 200px !important; 
-    }
+    div[data-testid="stNumberInput"], div[data-baseweb="select"] { max-width: 200px !important; }
     div[data-testid="stNumberInput"] input, div[data-baseweb="select"] > div {
-        background-color: #1E40AF !important; 
-        color: #FFFFFF !important;
-        border-radius: 8px !important;
+        background-color: #1E40AF !important; color: #FFFFFF !important; border-radius: 8px !important;
     }
     div[data-testid="stNumberInput"] input, div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
-        -webkit-text-fill-color: #FFFFFF !important;
-        font-weight: bold !important;
+        -webkit-text-fill-color: #FFFFFF !important; font-weight: bold !important;
     }
 
     /* 建議報價結果：黃底紅字 */
     .price-result {
-        display: inline-block;
-        background-color: #FFFF00 !important;
-        color: #E11D48 !important;
-        padding: 5px 15px;
-        border-radius: 8px;
-        font-size: 42px !important;
-        font-weight: 900 !important;
+        display: inline-block; background-color: #FFFF00 !important; color: #E11D48 !important;
+        padding: 5px 15px; border-radius: 8px; font-size: 42px !important; font-weight: 900 !important;
         border: 3px solid #E11D48;
     }
 
     /* 分析內容區塊 */
     .analysis-box {
-        background-color: #F8FAFC;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid #1E40AF;
-        margin-top: 20px;
+        background-color: #F8FAFC; padding: 15px; border-radius: 10px;
+        border-left: 5px solid #1E40AF; margin-top: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. 登入介面邏輯
+# 3. 登入介面邏輯 (密碼預設 1234)
 if "password_correct" not in st.session_state:
     st.markdown("<style>.stApp { background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important; }</style>", unsafe_allow_html=True)
     st.markdown("<div style='height: 15vh;'></div>", unsafe_allow_html=True)
@@ -125,7 +104,6 @@ if choice == "💰 自動估價系統":
     st.divider()
     
     vol_mm3 = 0
-    m_mesh = None
 
     if input_method == "📤 上傳 STL":
         st.write("### 第一步：請上傳 STL 檔案")
@@ -141,19 +119,45 @@ if choice == "💰 自動估價系統":
                 v_val, _, _ = m_mesh.get_mass_properties()
                 vol_mm3 = int(v_val)
                 
-                # --- 新增：STL 3D 預覽畫面 ---
-                st.write("📦 **模型預覽 (可拖動旋轉)**")
-                verts = m_mesh.vectors.reshape(-1, 3)
-                # 抽樣以維持效能 (最多顯示 20000 個點)
-                if len(verts) > 20000:
-                    verts = verts[::max(1, len(verts)//20000)]
+                # --- 進階詳細 3D 預覽畫面 ---
+                st.write("📦 **模型詳細預覽 (可縮放/旋轉/平移)**")
                 
-                x, y, z = verts[:,0], verts[:,1], verts[:,2]
-                fig = go.Figure(data=[go.Mesh3d(x=x, y=y, z=z, color='lightblue', opacity=0.8)])
+                # 取得頂點與三角形面
+                p = m_mesh.vectors.reshape(-1, 3)
+                # 抽樣邏輯：若面數過多則進行抽樣以維持手機版流暢度
+                sample_rate = 1 if len(p) < 30000 else len(p) // 30000
+                p = p[::sample_rate]
+                
+                x, y, z = p[:, 0], p[:, 1], p[:, 2]
+                
+                fig = go.Figure(data=[
+                    go.Mesh3d(
+                        x=x, y=y, z=z,
+                        color='#1E40AF', # 實威藍
+                        opacity=0.9,
+                        flatshading=True, # 顯示三角面感
+                        lighting=dict(
+                            ambient=0.5,
+                            diffuse=0.8,
+                            fresnel=0.2,
+                            specular=0.5,
+                            roughness=0.3
+                        ),
+                        lightposition=dict(x=100, y=100, z=100)
+                    )
+                ])
+                
+                # 設定場景外觀
                 fig.update_layout(
-                    scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'),
+                    scene=dict(
+                        xaxis=dict(visible=False),
+                        yaxis=dict(visible=False),
+                        zaxis=dict(visible=False),
+                        aspectmode='data', # 保持 1:1:1 比例
+                        bgcolor='rgba(240,242,246,0.5)' # 淺灰背景
+                    ),
                     margin=dict(l=0, r=0, b=0, t=0),
-                    height=300
+                    height=450 # 增加高度
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
@@ -211,3 +215,4 @@ elif choice == "📏 尺寸校正計算":
         st.write("### 補償結果")
         st.metric("補償因子 (Factor)", f"{factor:.4f}")
         st.markdown(f'建議比例：<span class="price-result">{suggested_scale:.1f}%</span>', unsafe_allow_html=True)
+        

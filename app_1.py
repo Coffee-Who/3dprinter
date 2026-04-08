@@ -45,7 +45,7 @@ st.markdown("""
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
 
     /* --- 輸入框樣式 --- */
-    /* Upload 區塊：白底黑字 */
+    /* Upload 區塊：白底黑字且縮小 */
     div[data-testid="stFileUploader"] section {
         background-color: #FFFFFF !important; 
         color: #000000 !important;
@@ -93,18 +93,14 @@ st.markdown("""
 
 # 3. 登入介面邏輯
 if "password_correct" not in st.session_state:
-    # 登入背景設定
     st.markdown("""
         <style>
         .stApp { background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important; }
         h2 { color: white !important; }
         </style>
     """, unsafe_allow_html=True)
-    
     st.markdown("<div style='height: 10vh;'></div>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;'>實威國際 3D列印報價系統</h2>", unsafe_allow_html=True)
-    
-    # 置中登入框
     col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
         pwd = st.text_input("請輸入登入密碼", type="password")
@@ -113,7 +109,7 @@ if "password_correct" not in st.session_state:
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
-                st.error("密碼錯誤，請重新輸入")
+                st.error("密碼錯誤")
     st.stop()
 
 # 4. 資料庫 (材料單價)
@@ -168,11 +164,12 @@ if choice == "💰 自動估價系統":
         with col1:
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
-            raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
             st.info(f"💡 材料成本：NT$ {u_cost:.6f}/mm³")
         
         with col2:
-            markup = st.slider("2. 利潤倍率", 0.5, 10.0, 3.0, 0.5)
+            # 2. 利潤倍率預設為 1
+            markup = st.slider("2. 利潤倍率", 0.5, 10.0, 1.0, 0.5)
+            # 基本報價費預設為 0
             base_fee = st.number_input("3. 基本報價費 (NT$)", min_value=0, value=0, step=10, format="%d")
 
         # 計算
@@ -183,7 +180,8 @@ if choice == "💰 自動估價系統":
 
         st.divider()
         st.write("### 建議報價總計")
-        st.markdown(f'NT$ <span class="price-result">{int(total_price):,}</span>', unsafe_allow_html=True)
+        # 1. 結果顯示到小數點一位
+        st.markdown(f'NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)
 
         # 分析區塊
         st.markdown(f"""
@@ -209,4 +207,5 @@ elif choice == "📏 尺寸校正計算":
         suggested_scale = (1 / factor) * 100 if factor != 0 else 0
         st.write("### 補償結果")
         st.metric("補償因子 (Factor)", f"{factor:.4f}")
-        st.markdown(f'建議比例：<span class="price-result">{suggested_scale:.2f}%</span>', unsafe_allow_html=True)
+        # 同樣顯示到小數點一位
+        st.markdown(f'建議比例：<span class="price-result">{suggested_scale:.1f}%</span>', unsafe_allow_html=True)

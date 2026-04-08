@@ -23,9 +23,17 @@ st.divider()
 if selection == "https://cdn-icons-png.flaticon.com/512/2953/2953536.png":
     st.subheader("💰 線上估價系統")
     # ... 這裡放你原本的估價程式碼 ...
-    material = st.selectbox("材料", ["PLA", "PETG", "ABS"])
-    weight = st.number_input("預估重量 (g)", value=10.0)
-    st.success(f"試算結果已生成...")
+    material = st.selectbox("材料", ["PLA", "PETG", "ABS", "TPU", "Resin"])
+    weight = st.number_input("重量 (g)", value=10.0)
+    hours = st.number_input("時間 (hr)", value=1.0)
+    
+    # 邏輯判斷
+    if material == "PLA": unit = 0.8
+    elif material == "PETG": unit = 1.0
+    else: unit = 2.0
+    
+    total = (weight * unit) + (hours * 20)
+    st.success(f"建議報價：NT$ {int(total * 2)}")
 
 else:
     st.subheader("📏 尺寸校正助手")

@@ -10,3 +10,4 @@ numpy-stl
 trimesh[all]
 plotly
 scipy
+cascadio

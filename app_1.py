@@ -9,7 +9,7 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 全域樣式優化 (修正側邊欄不見的問題)
+# 2. 全域樣式優化 (確保側邊欄顯示 + 輸入框樣式)
 st.markdown("""
     <style>
     /* 確保側邊欄與標頭顯示 */
@@ -19,14 +19,14 @@ st.markdown("""
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
     
-    /* 1. 所有輸入框 (STL、數字、下拉選單) 藍底白字 + 縮小寬度 */
+    /* 輸入框 (STL、數字、下拉選單) 藍底白字 + 寬度限制 */
     div[data-testid="stFileUploader"], 
     div[data-testid="stNumberInput"], 
     div[data-baseweb="select"] {
         max-width: 300px !important; 
     }
 
-    /* 強制覆蓋輸入區顏色 */
+    /* 藍底白字設定 */
     div[data-testid="stFileUploader"] section,
     div[data-testid="stNumberInput"] input,
     div[data-baseweb="select"] > div {
@@ -35,29 +35,26 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* 修正輸入框文字在手機版變色的問題 */
+    /* 針對 iOS 手機與一般瀏覽器的文字顏色修正 */
     div[data-testid="stNumberInput"] input, 
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         -webkit-text-fill-color: #FFFFFF !important;
         font-weight: bold !important;
     }
 
-    /* 2. 建議報價結果：黃底紅字，限制寬度符合手機 */
+    /* 建議報價結果：黃底紅字 */
     .price-result {
         display: inline-block;
         background-color: #FFFF00 !important;
         color: #E11D48 !important;
-        padding: 5px 15px;
+        padding: 8px 18px;
         border-radius: 8px;
-        font-size: 36px !important;
+        font-size: 42px !important;
         font-weight: 900 !important;
         border: 3px solid #E11D48;
         max-width: 100%;
         word-break: break-all;
     }
-
-    /* 滑桿樣式修正 */
-    .stSlider label p { color: #000000 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -83,7 +80,7 @@ def load_materials():
     df['每mm3成本'] = df['單價'] / 1000000 
     return df
 
-# 5. 側邊欄 (左側選項)
+# 5. 側邊欄導覽
 with st.sidebar:
     try:
         st.image("solidwizard_logo.png", use_container_width=True)
@@ -92,24 +89,23 @@ with st.sidebar:
     st.subheader("🛠️ 功能選單")
     choice = st.radio("請選擇作業項目：", ["💰 自動估價系統", "📏 尺寸校正計算"])
     st.divider()
-    if st.button("登出"):
+    if st.button("登出系統"):
         del st.session_state["password_correct"]
         st.rerun()
 
 # 6. 主程式邏輯
 df_m = load_materials()
 
+# --- 分支 1：自動估價系統 ---
 if choice == "💰 自動估價系統":
     st.title("💰 專業 3D 列印自動報價")
     input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
     st.divider()
     
     vol_mm3 = 0
-    show_preview = False
-
     if input_method == "📤 上傳 STL 檔案":
         st.write("### 第一步：請上傳 STL 檔案")
-        up_file = st.file_uploader("Upload", type=["stl"], label_visibility="collapsed")
+        up_file = st.file_uploader("Upload STL", type=["stl"], label_visibility="collapsed")
         if up_file:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
                 tmp.write(up_file.getvalue()); t_path = tmp.name
@@ -117,35 +113,64 @@ if choice == "💰 自動估價系統":
                 m_mesh = mesh.Mesh.from_file(t_path)
                 v_val, _, _ = m_mesh.get_mass_properties()
                 vol_mm3 = int(v_val)
-                show_preview = True
             except: st.error("STL 解析失敗")
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:
         st.write("### 第一步：請手動輸入模型體積 (mm³)")
-        vol_mm3 = st.number_input("體積輸入", min_value=0, value=0, step=1, format="%d", label_visibility="collapsed")
+        vol_mm3 = st.number_input("體積 (mm³)", min_value=0, value=0, step=1, format="%d", label_visibility="collapsed")
 
     if vol_mm3 > 0:
         st.subheader("📊 報價參數設定")
         col1, col2 = st.columns(2)
-        
         with col1:
             st.write(f"**📐 當前體積:** {vol_mm3:,} mm³")
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
-            raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
-            st.write(f"材料單價: NT$ {int(raw_p):,}/L")
-
+            st.write(f"單價: NT$ {int(df_m.loc[df_m['Formlabs']==m_choice, '單價'].values[0]):,}/L")
         with col2:
             markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 3.0, 0.5)
             base_fee = st.number_input("3. 報價基本費 (NT$)", value=150, step=10, format="%d")
 
         total = (vol_mm3 * u_cost * markup) + base_fee
-        
         st.divider()
         st.write("### 建議報價總計")
         st.markdown(f'NT$ <span class="price-result">{int(total):,}</span>', unsafe_allow_html=True)
 
+# --- 分支 2：尺寸校正計算 (完整恢復) ---
 elif choice == "📏 尺寸校正計算":
     st.title("📏 尺寸校正補償計算")
-    # ... 保持原有的校正邏輯 ...
+    st.write("請輸入設計尺寸與成品實測尺寸，系統將自動計算補償因子與建議縮放比例。")
+    st.divider()
+    
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.write("### 1. 輸入尺寸數據")
+        d_size = st.number_input("CAD 設計尺寸 (mm)", min_value=0.01, value=20.00, step=0.01, format="%.2f")
+        a_size = st.number_input("實測成品尺寸 (mm)", min_value=0.01, value=19.80, step=0.01, format="%.2f")
+    
+    with col_b:
+        if os.path.exists("尺寸調整.jpg"):
+            st.image("尺寸調整.jpg", caption="尺寸校正示意圖", use_container_width=True)
+        else:
+            st.info("💡 提示：請確保輸入的單位一致 (mm)。")
+
+    if d_size > 0:
+        # 計算公式：補償因子 = 實測尺寸 / 設計尺寸
+        factor = a_size / d_size
+        # 建議縮放比例 = (1 / 補償因子) * 100%
+        suggested_scale = (1 / factor) * 100 if factor != 0 else 0
+        
+        st.divider()
+        st.write("### 💡 計算結果")
+        
+        res1, res2 = st.columns(2)
+        with res1:
+            st.metric("補償因子 (Factor)", f"{factor:.4f}")
+            st.write("此數值可用於軟體內部的收縮率補償設定。")
+            
+        with res2:
+            st.write("建議縮放比例 (Scale)")
+            st.markdown(f'<span class="price-result">{suggested_scale:.2f}%</span>', unsafe_allow_html=True)
+            st.write("請在 PreForm 或 CAD 軟體中以此比例縮放模型。")

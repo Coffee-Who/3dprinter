@@ -90,8 +90,8 @@ if check_password():
             st.info(f"材料單價：NT$ {cost_unit:.2f} / cm³")
             
             # 設定參數
-            markup = st.slider("報價倍率 (含支撐與利潤)", 1.0, 10.0, 3.0)
-            base_fee = st.number_input("基本起鍋費", value=150)
+            markup = st.slider("報價倍率 (含支撐與利潤)", 1.0, 5.0, 1.0)
+            base_fee = st.number_input("基本列印費", value=150)
             
             # 計算總價
             total_price = (v_cm3 * cost_unit * markup) + base_fee

@@ -1,2 +1,4 @@
 streamlit
 streamlit-image-select
+numpy-stl
+numpy

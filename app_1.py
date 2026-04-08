@@ -32,7 +32,7 @@ def check_password():
 def load_materials():
     try:
         # 讀取你上傳的 CSV 檔案 (檔名必須完全正確)
-        csv_file = "Formlabs材料.xlsx - 工作表1.csv"
+        csv_file = "Formlabs材料.csv"
         df = pd.read_csv(csv_file)
         # 自動計算每 cm3 的成本 (單價 / 1000)
         df['每cm3成本'] = df['單價'] / 1000

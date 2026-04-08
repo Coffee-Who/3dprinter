@@ -66,32 +66,37 @@ if "password_correct" not in st.session_state:
         else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 主介面樣式
+# 4. 主介面樣式 (文字顏色改為純黑 #000000)
 st.markdown("""
     <style>
     [data-testid="stHeader"], [data-testid="stSidebar"] { display: block !important; }
-    .stApp { background-color: #F8FAFC !important; }
+    .stApp { background-color: #FFFFFF !important; }
     
-    /* 數據顯示樣式 */
-    [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; }
+    /* 所有標籤文字改黑色 */
+    [data-testid="stWidgetLabel"] p, label { color: #000000 !important; font-weight: bold !important; }
+    
+    /* 數據顯示樣式 - 數字黑色 */
+    [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #000000 !important; }
 
-    /* 輸入框大字體優化 */
+    /* 材料選擇框字體 - 黑色 */
     div[data-baseweb="select"] > div {
-        font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important; height: 75px !important;
+        font-size: 32px !important; font-weight: 800 !important; color: #000000 !important; height: 75px !important;
         display: flex !important; align-items: center !important;
     }
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
-        font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important;
+        font-size: 32px !important; font-weight: 800 !important; color: #000000 !important;
     }
+
+    /* 基本費輸入框 - 數字黑色 */
     div[data-testid="stNumberInput"] input {
-        font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; height: 75px !important;
+        font-size: 42px !important; font-weight: 800 !important; color: #000000 !important; height: 75px !important;
     }
 
     /* 容器樣式 */
-    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .big-font { font-size: 24px !important; font-weight: bold !important; color: #1E40AF !important; }
+    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .big-font { font-size: 24px !important; font-weight: bold !important; color: #000000 !important; }
     
-    /* 黃底紅字報價區樣式 (滿版寬度) */
+    /* 黃底紅字報價區樣式 */
     .total-price-box {
         text-align: center; 
         background-color: #FFFF00; 
@@ -145,7 +150,6 @@ if choice == "💰 自動估價系統":
         with col_ic: st.image("估價01.jpg", width=50) if os.path.exists("估價01.jpg") else None
 
     if vol_cm3 > 0:
-        # 上層：視覺展示 (3D 預覽)
         if show_preview:
             vecs = m_mesh.vectors
             if len(vecs) > 30000: vecs = vecs[::(len(vecs)//30000)]
@@ -154,7 +158,6 @@ if choice == "💰 自動估價系統":
             fig.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'), height=400, margin=dict(l=0,r=0,b=0,t=0))
             st.plotly_chart(fig, use_container_width=True)
         
-        # 中層：設定區
         st.markdown('<div class="result-container">', unsafe_allow_html=True)
         set_col1, set_col2 = st.columns([1, 1.2])
         
@@ -169,16 +172,16 @@ if choice == "💰 自動估價系統":
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
             raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
-            st.markdown(f'<p style="color:#64748B; font-weight:bold;">材料單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
+            st.markdown(f'<p style="color:#000000; font-weight:bold;">材料單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
             
             markup = st.slider("2. 利潤倍率調整", 1.0, 10.0, 3.0, 0.1)
             base_fee = st.number_input("3. 報價基本費 (NT$)", value=150)
 
-        # 下層：最醒目的建議報價 (排在最下面)
+        # 最底部：建議報價總計 (黃底紅字)
         total = (vol_cm3 * u_cost * markup) + base_fee
         st.markdown(f"""
             <div class="total-price-box">
-                <h3 style="color:#0F172A; margin-bottom:10px; font-weight: bold;">建議報價總計</h3>
+                <h3 style="color:#000000; margin-bottom:10px; font-weight: bold;">建議報價總計</h3>
                 <h1 style="color:#E11D48; font-size:86px; margin:0; font-weight: 900;">NT$ {int(total):,}</h1>
             </div>
         """, unsafe_allow_html=True)

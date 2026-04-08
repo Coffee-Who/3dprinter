@@ -36,13 +36,16 @@ st.markdown("""
 
 # 3. 登入邏輯
 if "password_correct" not in st.session_state:
+    st.markdown("<h2 style='text-align:center;'>實威國際 3D列印報價系統</h2>", unsafe_allow_html=True)
     pwd = st.text_input("請輸入密碼", type="password")
     if st.button("登入"):
-        if pwd == "1234": st.session_state["password_correct"] = True; st.rerun()
-        else: st.error("錯誤")
+        if pwd == "1234": 
+            st.session_state["password_correct"] = True
+            st.rerun()
+        else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 資料庫
+# 4. 資料庫 (修正欄位名稱定義)
 @st.cache_data
 def load_materials():
     data = {
@@ -50,6 +53,7 @@ def load_materials():
         "單價": [9975, 8500, 7500, 12000]
     }
     df = pd.DataFrame(data)
+    # 這裡統一使用 "每mm3成本"
     df['每mm3成本'] = df['單價'] / 1000000 
     return df
 
@@ -58,6 +62,9 @@ df_m = load_materials()
 with st.sidebar:
     st.write("### SOLIDWIZARD")
     choice = st.radio("選單", ["💰 自動估價系統", "📏 尺寸校正計算"])
+    if st.button("登出"):
+        del st.session_state["password_correct"]
+        st.rerun()
 
 if choice == "💰 自動估價系統":
     st.title("💰 專業 3D 列印自動報價")
@@ -73,17 +80,13 @@ if choice == "💰 自動估價系統":
                 your_mesh = mesh.Mesh.from_file(t_path)
                 vol_mm3 = int(abs(your_mesh.get_mass_properties()[0]))
 
-                # --- 🎯 專業雙光源打光策略 (強化陰影與結構) ---
+                # --- 🎯 專業雙光源打光預覽 ---
                 st.write("📦 **高解析度實體著色預覽**")
-                
-                # 取得頂點並重新排列以符合高精度 Mesh3d 格式
                 points = your_mesh.points.reshape(-1, 3)
                 v1, v2, v3 = points[::3], points[1::3], points[2::3]
                 vertices = np.vstack([v1, v2, v3])
                 n = len(v1)
                 i, j, k = np.arange(n), np.arange(n) + n, np.arange(n) + 2*n
-
-                # 計算模型大小以動態調整打光中心
                 mid_point = (vertices.max(axis=0) + vertices.min(axis=0)) / 2
                 max_dim = np.max(vertices.max(axis=0) - vertices.min(axis=0))
 
@@ -91,75 +94,52 @@ if choice == "💰 自動估價系統":
                     go.Mesh3d(
                         x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                         i=i, j=j, k=k,
-                        color='#D1D5DB', # 質感淺灰
-                        opacity=1.0,
-                        
-                        # 重要：Gouraud 著色可平滑三角面結構，不亂線且呈現光滑實體感
-                        # 如果需要專業面感，可將此改為True
+                        color='#D1D5DB', 
                         flatshading=False, 
-                        
-                        # 進階打光參數
-                        lighting=dict(
-                            ambient=0.1,    # 極低環境光，強迫產生陰影
-                            diffuse=0.9,    # 高漫反射，亮部清晰
-                            specular=1.5,   # 極高高光，轉折處會產生銳利光亮
-                            roughness=0.1,  # 低粗糙度，讓光影轉折銳利
-                            fresnel=0.5
-                        ),
-                        
-                        # 光源策略：使用自動跟隨攝影機的頭燈＋側向棚燈
-                        lightposition=dict(
-                            # 棚燈位置：設定斜上方45度，且隨模型大小動態調整距離
-                            x=mid_point[0]+max_dim, 
-                            y=mid_point[1]+max_dim, 
-                            z=mid_point[2]+max_dim
-                        ),
+                        lighting=dict(ambient=0.1, diffuse=0.9, specular=1.5, roughness=0.1, fresnel=0.5),
+                        lightposition=dict(x=mid_point[0]+max_dim, y=mid_point[1]+max_dim, z=mid_point[2]+max_dim),
                         showscale=False
                     )
                 ])
-
                 fig.update_layout(
-                    scene=dict(
-                        xaxis=dict(visible=False, showgrid=False, zeroline=False),
-                        yaxis=dict(visible=False, showgrid=False, zeroline=False),
-                        zaxis=dict(visible=False, showgrid=False, zeroline=False),
-                        aspectmode='data', 
-                        bgcolor='#0F172A', # 深藍黑背景，衬托陰影
-                        
-                        # 攝影機初始視角
-                        camera=dict(
-                            eye=dict(x=1.3, y=1.3, z=1.3),
-                            up=dict(x=0, y=0, z=1)
-                        )
-                    ),
+                    scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
+                               aspectmode='data', bgcolor='#0F172A',
+                               camera=dict(eye=dict(x=1.3, y=1.3, z=1.3))),
                     margin=dict(l=0, r=0, b=0, t=0), height=550
                 )
                 st.plotly_chart(fig, use_container_width=True)
-
-            except Exception as e:
-                st.error(f"STL 解析失敗，請確認檔案。")
+            except: st.error("解析失敗")
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:
-        vol_mm3 = st.number_input("輸入體積 (mm³)", value=0, step=1, format="%d")
+        vol_mm3 = st.number_input("輸入體積 (mm³)", value=0, step=1)
 
     if vol_mm3 > 0:
         st.write(f"**📐 當前模型體積:** {vol_mm3:,} mm³")
         col1, col2 = st.columns(2)
         with col1:
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
-            u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "per_mm3_cost"].values[0]
+            # 修正處：將 per_mm3_cost 改回 每mm3成本
+            u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
             raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
-            st.info(f"💡 材料成本：NT$ {u_cost:.6f}/mm³ (L單價: {int(raw_p):,})")
+            st.info(f"💡 材料成本：NT$ {u_cost:.6f}/mm³")
         
         with col2:
             markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 1.0, 0.5)
-            base_fee = st.number_input("3. 報價基本費 (NT$)", min_value=0, value=0, step=10, format="%d")
+            base_fee = st.number_input("3. 報價基本費 (NT$)", min_value=0, value=0, step=10)
 
-        # 計算結果顯示到小數點一位
         mat_cost_total = vol_mm3 * u_cost
         total_price = (mat_cost_total * markup) + base_fee
         
         st.divider()
         st.write("### 建議報價總計")
         st.markdown(f'NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)
+
+elif choice == "📏 尺寸校正計算":
+    st.title("📏 尺寸補償計算")
+    d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0)
+    a_size = st.number_input("實測成品尺寸 (mm)", value=19.8)
+    if d_size > 0:
+        res = (d_size / a_size) * 100
+        st.write("### 建議縮放比例")
+        st.markdown(f'<span class="price-result">{res:.2f}%</span>', unsafe_allow_html=True)

@@ -7,17 +7,25 @@ import plotly.graph_objects as go
 import numpy as np
 from streamlit_image_select import image_select
 
-# 1. 頁面配置 (一定要在最前面)
-st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
+# ==========================================
+# 1. 頁面基本配置
+# ==========================================
+st.set_page_config(
+    page_title="實威國際 3D列印線上估價", 
+    layout="wide", 
+    page_icon="🖨️"
+)
 
-# --- 2. 深度穿透 CSS (解決 Streamlit Cloud 偏左問題) ---
-def apply_ultra_center_css():
+# ==========================================
+# 2. 深度穿透 CSS (專門處理置中與輸入框顏色)
+# ==========================================
+def apply_login_style():
     st.markdown("""
         <style>
         /* 隱藏預設 Header & 側邊欄 */
         [data-testid="stHeader"], [data-testid="stSidebar"] { display: none !important; }
 
-        /* A. 強制全螢幕背景 */
+        /* A. 全站背景：深藍色漸層 */
         .stApp {
             background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important;
             height: 100vh !important;
@@ -27,7 +35,7 @@ def apply_ultra_center_css():
             align-items: center !important;
         }
 
-        /* B. 強制破除 Streamlit 的隱形窄容器 (最重要的一段) */
+        /* B. 強制破除 Streamlit 容器限制，達成絕對置中 */
         [data-testid="stAppViewContainer"], 
         [data-testid="stMain"], 
         [data-testid="stMainBlockContainer"],
@@ -35,26 +43,23 @@ def apply_ultra_center_css():
         .stVerticalBlock {
             display: flex !important;
             flex-direction: column !important;
-            align-items: center !important; /* 水平軸置中 */
-            justify-content: center !important; /* 垂直軸置中 */
+            align-items: center !important; 
+            justify-content: center !important;
             width: 100% !important;
             max-width: 100% !important;
             padding: 0 !important;
             margin: 0 !important;
         }
 
-        /* C. Logo 置中修正 */
+        /* C. Logo 置中 */
         [data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
             width: 100% !important;
             margin-bottom: 20px !important;
         }
-        [data-testid="stImage"] img {
-            margin: 0 auto !important;
-        }
 
-        /* D. 標題文字 */
+        /* D. 標題文字樣式 */
         .user-name {
             color: white !important;
             font-size: 32px !important;
@@ -62,24 +67,24 @@ def apply_ultra_center_css():
             margin-bottom: 40px !important;
             text-align: center !important;
             width: 100% !important;
-            font-family: "Segoe UI", sans-serif;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
         }
 
-        /* E. 密碼框：精準置中 */
+        /* E. 密碼輸入框：背景調亮，文字設定為黑色 */
         div[data-baseweb="input"] {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border: 2px solid rgba(255, 255, 255, 0.3) !important;
-            border-radius: 4px !important;
+            background-color: rgba(255, 255, 255, 0.95) !important; /* 近乎純白，方便看黑字 */
+            border: 2px solid #3B82F6 !important;
+            border-radius: 6px !important;
             width: 280px !important;
             margin: 0 auto !important;
         }
         input { 
-            color: white !important; 
+            color: #000000 !important; /* 密碼文字黑色 */
             text-align: center !important; 
             font-size: 18px !important;
         }
         
-        /* F. 按鈕置中：強制覆寫 stButton 的容器 */
+        /* F. 登入按鈕置中 */
         div.stButton {
             display: flex !important;
             justify-content: center !important;
@@ -92,64 +97,58 @@ def apply_ultra_center_css():
             background-color: rgba(255, 255, 255, 0.2) !important;
             color: white !important;
             border: 1px solid rgba(255, 255, 255, 0.5) !important;
-            border-radius: 4px !important;
-            font-size: 16px !important;
-            transition: 0.3s !important;
+            transition: 0.3s;
         }
         .stButton button:hover {
-            background-color: rgba(255, 255, 255, 0.3) !important;
+            background-color: rgba(255, 255, 255, 0.4) !important;
             border-color: white !important;
         }
 
-        /* 錯誤提示置中 */
+        /* 錯誤提示 */
         .stAlert {
             background: transparent !important;
             border: none !important;
             color: #FDA4AF !important;
             text-align: center !important;
-            width: 100% !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-# --- 3. 登入邏輯 (使用 st.stop 確保畫面乾淨) ---
-if "password_correct" not in st.session_state:
-    apply_ultra_center_css()
-    
-    # 直接垂直擺放，不使用 columns 以免產生側邊位移
+# ==========================================
+# 3. 材料資料載入
+# ==========================================
+@st.cache_data
+def load_materials():
     try:
-        # 注意：請確認 solidwizard_logo.png 在你的 GitHub 根目錄
+        # 嘗試讀取 CSV
+        df = pd.read_csv("Formlabs材料.csv")
+        # 假設 CSV 欄位有 'Formlabs' (名稱) 與 '單價' (每升價格)
+        df['每cm3成本'] = df['單價'] / 1000
+        return df
+    except:
+        # 若讀取失敗的備份資料
+        return pd.DataFrame({
+            "Formlabs": ["一般樹脂 (Clear/Grey/White)", "Tough 2000", "Flexible 80A"],
+            "每cm3成本": [6.5, 8.5, 9.5]
+        })
+
+# ==========================================
+# 4. 登入系統邏輯
+# ==========================================
+if "password_correct" not in st.session_state:
+    apply_login_style()
+    
+    # 顯示 Logo
+    try:
         st.image("solidwizard_logo.png", width=250)
     except:
-        st.error("Logo 檔案讀取失敗，請確認檔案路徑。")
+        st.write("🔧 **SolidWizard 3D Printing**")
 
+    # 標題
     st.markdown('<div class="user-name">實威國際 3D列印線上估價</div>', unsafe_allow_html=True)
     
-    # 這裡的 label 要隱藏
-    pwd = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="請輸入登入密碼")
+    # 輸入框
+    pwd = st.text_input("PW", type="password", label_visibility="collapsed", placeholder="請輸入登入密碼")
     
-    if st.button("登入系統"):
-        if pwd == "1234":
-            st.session_state["password_correct"] = True
-            st.rerun()
-        else:
-            st.error("密碼驗證失敗，請重新輸入。")
-    
-    st.stop() # 這行很關鍵，沒登入就不跑後面的 Code
-
-# --- 4. 登入成功後的內容 (恢復正常報價介面) ---
-st.markdown("""
-    <style>
-    .stApp { background: white !important; align-items: flex-start !important; justify-content: flex-start !important; height: auto !important; }
-    [data-testid="stAppViewContainer"], .main .block-container { 
-        display: block !important; max-width: 1200px !important; margin: 0 auto !important; padding: 2rem !important; 
-    }
-    [data-testid="stSidebar"] { display: block !important; }
-    [data-testid="stHeader"] { display: block !important; }
-    </style>
-""", unsafe_allow_html=True)
-
-# 這裡放入你原本的 3D 報價程式碼...
-st.title("💰 專業 3D 列印自動報價系統")
-st.success("成功登入，歡迎使用！")
-# (後面接原本的物料讀取與 3D 渲染邏輯)
+    # 按鈕
+    if st.button("進入系統"):

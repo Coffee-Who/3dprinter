@@ -12,7 +12,7 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 # 2. 全域樣式優化
 st.markdown("""
     <style>
-    /* 確保手機版側邊欄切換按鈕在白底上清晰可見 */
+    /* 確保手機版側邊欄切換按鈕清晰可見 */
     [data-testid="stSidebarCollapseButton"] {
         background-color: #E2E8F0 !important;
         color: #1E40AF !important;
@@ -23,13 +23,13 @@ st.markdown("""
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
 
-    /* --- 1. 僅上傳區塊改成 白底黑字 --- */
+    /* --- 1. Upload 區塊：白底黑字 --- */
     div[data-testid="stFileUploader"] section {
         background-color: #FFFFFF !important; 
         color: #000000 !important;
         border: 2px dashed #CBD5E1 !important;
         border-radius: 8px !important;
-        max-width: 250px !important; /* 縮小寬度 */
+        max-width: 250px !important; 
     }
     div[data-testid="stFileUploader"] label, 
     div[data-testid="stFileUploader"] p, 
@@ -37,10 +37,10 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* --- 2. 其餘輸入框 (數字、下拉選單) 維持藍底白字 --- */
+    /* --- 2. 輸入框 (數字、選單) 寬度縮小且藍底白字 --- */
     div[data-testid="stNumberInput"], 
     div[data-baseweb="select"] {
-        max-width: 250px !important; /* 縮小所有欄位寬度 */
+        max-width: 250px !important; 
     }
 
     div[data-testid="stNumberInput"] input,
@@ -50,7 +50,7 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* 強制設定輸入框內文字為白色 (防止手機版跑色) */
+    /* 強制輸入框內文字為白色 */
     div[data-testid="stNumberInput"] input, 
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         -webkit-text-fill-color: #FFFFFF !important;
@@ -92,6 +92,7 @@ def load_materials():
         "單價": [9975, 8500, 7500, 12000]
     }
     df = pd.DataFrame(data)
+    # 換算每 mm3 的純材料成本
     df['每mm3成本'] = df['單價'] / 1000000 
     return df
 
@@ -139,12 +140,19 @@ if choice == "💰 自動估價系統":
         col1, col2 = st.columns(2)
         with col1:
             st.write(f"**📐 當前體積:** {vol_mm3:,} mm³")
+            # --- 材料選擇與成本顯示 ---
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
+            raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
+            
+            # 新增：顯示材料成本
+            st.info(f"💡 **材料成本詳細：**\n* 材料單價：NT$ {int(raw_p):,}/L\n* 換算成本：NT$ {u_cost:.6f}/mm³")
+
         with col2:
             markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 3.0, 0.5)
             base_fee = st.number_input("3. 報價基本費 (NT$)", value=150, step=10, format="%d")
 
+        # 計算結果
         total = (vol_mm3 * u_cost * markup) + base_fee
         st.divider()
         st.write("### 建議報價總計")

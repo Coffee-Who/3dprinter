@@ -11,3 +11,6 @@ trimesh[all]
 plotly
 scipy
 cascadio
+streamlit
+numpy-stl
+reportlab

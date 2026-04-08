@@ -127,8 +127,8 @@ if check_password():
                 m_choice = st.selectbox("樹脂型號 (來自 Excel)", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
                 
-                markup = st.slider("報價利潤倍率", 1.0, 10.0, 3.0, step=0.1)
-                base = st.number_input("上機固定費 (起鍋費)", value=150)
+                markup = st.slider("報價利潤倍率", 1.0, 5.0, 1.0, step=0.5)
+                base = st.number_input("上機固定費 (基本費)", value=150)
                 
                 total = (vol_cm3 * u_cost * markup) + base
                 st.divider()

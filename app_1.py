@@ -10,42 +10,48 @@ from streamlit_image_select import image_select
 # 1. 頁面配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# --- 2. 暴力置中 CSS (專為 Streamlit Cloud 框架設計) ---
+# --- 2. 深度穿透置中 CSS ---
 def apply_ultra_center_css():
     st.markdown("""
         <style>
-        /* 隱藏預設介面 */
+        /* 隱藏預設元件 */
         [data-testid="stHeader"], [data-testid="stSidebar"] { display: none; }
 
-        /* A. 全站背景 */
+        /* A. 全站背景與強制高度 */
         .stApp {
             background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important;
+            height: 100vh !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
         }
 
-        /* B. 強制所有容器解除限制，並使其內容居中 */
-        [data-testid="stAppViewContainer"], [data-testid="stMain"], .main .block-container {
+        /* B. 核心：強制所有容器層級解除寬度限制並置中 */
+        [data-testid="stAppViewContainer"], 
+        [data-testid="stMain"], 
+        [data-testid="stMainBlockContainer"],
+        .main .block-container {
             display: flex !important;
             flex-direction: column !important;
-            align-items: center !important; /* 水平居中 */
-            justify-content: center !important; /* 垂直居中 */
+            align-items: center !important; 
+            justify-content: center !important;
             width: 100vw !important;
-            height: 100vh !important;
             max-width: 100% !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
         }
 
-        /* C. Logo 置中修正 */
+        /* C. Logo 置中：穿透 stImage 的多層封裝 */
         [data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
             width: 100% !important;
         }
-        [data-testid="stImage"] > div {
+        [data-testid="stImage"] img {
             margin: 0 auto !important;
         }
 
-        /* D. 標題文字置中 */
+        /* D. 標題文字 */
         .user-name {
             color: white !important;
             font-size: 28px !important;
@@ -56,74 +62,72 @@ def apply_ultra_center_css():
             width: 100% !important;
         }
 
-        /* E. 密碼框：精準控制寬度並強制居中 */
+        /* E. 密碼框：精準寬度與置中 */
         div[data-baseweb="input"] {
             background-color: rgba(255, 255, 255, 0.1) !important;
             border: 2px solid rgba(255, 255, 255, 0.3) !important;
             border-radius: 4px !important;
             width: 260px !important;
-            margin: 0 auto !important; /* 核心居中語法 */
+            margin: 0 auto !important;
         }
         input { color: white !important; text-align: center !important; }
         
-        /* F. 按鈕：移除所有 Streamlit 預設位移，強制居中 */
+        /* F. 按鈕置中：強制覆寫 Streamlit 的按鈕容器位移 */
         div.stButton {
             display: flex !important;
             justify-content: center !important;
             width: 100% !important;
-            margin-top: 15px !important;
+            margin: 15px 0 0 0 !important;
         }
         .stButton button {
             width: 120px !important;
             background-color: rgba(255, 255, 255, 0.2) !important;
             color: white !important;
             border: 1px solid rgba(255, 255, 255, 0.4) !important;
+            margin: 0 auto !important; /* 強制水平置中 */
             display: block !important;
-            margin: 0 auto !important;
         }
 
-        /* 錯誤訊息樣式 */
+        /* 錯誤訊息 */
         .stAlert {
             background: transparent !important;
             color: #FF7070 !important;
             text-align: center !important;
             width: 260px !important;
             margin: 10px auto !important;
-            border: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-# --- 3. 密碼驗證邏輯 ---
+# --- 3. 密碼驗證 ---
 def check_password():
     if "password_correct" not in st.session_state:
         apply_ultra_center_css()
         
-        # 使用一個大的 container 包裹所有東西確保同步置中
-        with st.container():
-            # 1. Logo
-            try:
-                st.image("solidwizard_logo.png", width=240)
-            except:
-                st.warning("⚠️ 請確認 solidwizard_logo.png 已上傳")
+        # 這裡不使用 st.columns，直接垂直排列以確保 CSS 置中生效
+        # 1. Logo
+        try:
+            st.image("solidwizard_logo.png", width=240)
+        except:
+            st.warning("⚠️ 請確認 solidwizard_logo.png 檔案已上傳")
 
-            # 2. 標題
-            st.markdown('<div class="user-name">實威國際 3D列印線上估價</div>', unsafe_allow_html=True)
-            
-            # 3. 密碼框
-            pwd = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="輸入密碼")
-            
-            # 4. 登入按鈕
-            if st.button("登入"):
-                if pwd == "1234":
-                    st.session_state["password_correct"] = True
-                    st.rerun()
-                else:
-                    st.error("密碼錯誤")
+        # 2. 標題
+        st.markdown('<div class="user-name">實威國際 3D列印線上估價</div>', unsafe_allow_html=True)
+        
+        # 3. 密碼框
+        pwd = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="輸入密碼")
+        
+        # 4. 登入按鈕
+        if st.button("登入"):
+            if pwd == "1234":
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error("密碼錯誤")
         return False
     return True
 
-# --- 4. 讀取材料 ---
+# --- 4. 讀取材料 (不變) ---
 @st.cache_data
 def load_materials():
     try:
@@ -137,17 +141,25 @@ def load_materials():
 if check_password():
     df_m = load_materials()
     
-    # 登入成功後恢復報價系統介面
+    # 登入成功後恢復報價系統樣式
     st.markdown("""
         <style>
-        .stApp { background: white !important; align-items: flex-start !important; justify-content: flex-start !important; height: auto !important; }
-        [data-testid="stAppViewContainer"], [data-testid="stMain"], .main .block-container { 
-            height: auto !important; width: 100% !important; display: block !important; 
+        .stApp { 
+            background: white !important; 
+            align-items: flex-start !important; 
+            justify-content: flex-start !important; 
+            height: auto !important; 
         }
-        .main .block-container { 
-            max-width: 1200px !important; padding-top: 2rem !important; margin: 0 auto !important; 
+        [data-testid="stAppViewContainer"], [data-testid="stMain"], .main .block-container { 
+            height: auto !important; 
+            width: 100% !important; 
+            display: block !important; 
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 2rem !important;
         }
         section[data-testid="stSidebar"] { display: block !important; width: 260px !important; }
+        [data-testid="stHeader"] { display: block !important; }
         </style>
     """, unsafe_allow_html=True)
 

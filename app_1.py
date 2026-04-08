@@ -12,17 +12,7 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 # 2. 全域樣式優化
 st.markdown("""
     <style>
-    /* --- 登入頁面專用樣式 --- */
-    /* 讓登入按鈕變成白底藍字 */
-    div.stButton > button:first-child {
-        background-color: #FFFFFF !important;
-        color: #1E40AF !important;
-        border: 2px solid #FFFFFF !important;
-        font-weight: bold !important;
-        width: 100% !important;
-    }
-    
-    /* --- 手機版懸浮選單按鈕 --- */
+    /* 手機版懸浮選單按鈕 */
     [data-testid="stSidebarCollapseButton"] {
         position: fixed !important;
         top: 15px !important;
@@ -40,12 +30,10 @@ st.markdown("""
     }
     [data-testid="stSidebarCollapseButton"] svg { fill: white !important; }
 
-    /* 背景與基礎文字 */
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
 
-    /* --- 輸入框樣式 --- */
-    /* Upload 區塊：白底黑字且縮小 */
+    /* Upload 區塊：白底黑字 */
     div[data-testid="stFileUploader"] section {
         background-color: #FFFFFF !important; 
         color: #000000 !important;
@@ -93,23 +81,17 @@ st.markdown("""
 
 # 3. 登入介面邏輯
 if "password_correct" not in st.session_state:
-    st.markdown("""
-        <style>
-        .stApp { background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important; }
-        h2 { color: white !important; }
-        </style>
-    """, unsafe_allow_html=True)
-    st.markdown("<div style='height: 10vh;'></div>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align:center;'>實威國際 3D列印報價系統</h2>", unsafe_allow_html=True)
+    st.markdown("<style>.stApp { background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important; }</style>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 15vh;'></div>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center; color:white !important;'>實威國際 3D列印報價系統</h2>", unsafe_allow_html=True)
     col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
-        pwd = st.text_input("請輸入登入密碼", type="password")
+        pwd = st.text_input("密碼", type="password")
         if st.button("確認登入"):
             if pwd == "1234":
                 st.session_state["password_correct"] = True
                 st.rerun()
-            else:
-                st.error("密碼錯誤")
+            else: st.error("密碼錯誤")
     st.stop()
 
 # 4. 資料庫 (材料單價)
@@ -143,16 +125,40 @@ if choice == "💰 自動估價系統":
     st.divider()
     
     vol_mm3 = 0
+    m_mesh = None
+
     if input_method == "📤 上傳 STL":
+        st.write("### 第一步：請上傳 STL 檔案")
         up_file = st.file_uploader("Upload", type=["stl"], label_visibility="collapsed")
+        
         if up_file:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
-                tmp.write(up_file.getvalue()); t_path = tmp.name
+                tmp.write(up_file.getvalue())
+                t_path = tmp.name
             try:
+                # 解析模型
                 m_mesh = mesh.Mesh.from_file(t_path)
                 v_val, _, _ = m_mesh.get_mass_properties()
                 vol_mm3 = int(v_val)
-            except: st.error("STL 解析失敗")
+                
+                # --- 新增：STL 3D 預覽畫面 ---
+                st.write("📦 **模型預覽 (可拖動旋轉)**")
+                verts = m_mesh.vectors.reshape(-1, 3)
+                # 抽樣以維持效能 (最多顯示 20000 個點)
+                if len(verts) > 20000:
+                    verts = verts[::max(1, len(verts)//20000)]
+                
+                x, y, z = verts[:,0], verts[:,1], verts[:,2]
+                fig = go.Figure(data=[go.Mesh3d(x=x, y=y, z=z, color='lightblue', opacity=0.8)])
+                fig.update_layout(
+                    scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'),
+                    margin=dict(l=0, r=0, b=0, t=0),
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"STL 解析失敗: {e}")
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:
@@ -167,9 +173,7 @@ if choice == "💰 自動估價系統":
             st.info(f"💡 材料成本：NT$ {u_cost:.6f}/mm³")
         
         with col2:
-            # 2. 利潤倍率預設為 1
             markup = st.slider("2. 利潤倍率", 0.5, 10.0, 1.0, 0.5)
-            # 基本報價費預設為 0
             base_fee = st.number_input("3. 基本報價費 (NT$)", min_value=0, value=0, step=10, format="%d")
 
         # 計算
@@ -180,7 +184,6 @@ if choice == "💰 自動估價系統":
 
         st.divider()
         st.write("### 建議報價總計")
-        # 1. 結果顯示到小數點一位
         st.markdown(f'NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)
 
         # 分析區塊
@@ -207,5 +210,4 @@ elif choice == "📏 尺寸校正計算":
         suggested_scale = (1 / factor) * 100 if factor != 0 else 0
         st.write("### 補償結果")
         st.metric("補償因子 (Factor)", f"{factor:.4f}")
-        # 同樣顯示到小數點一位
         st.markdown(f'建議比例：<span class="price-result">{suggested_scale:.1f}%</span>', unsafe_allow_html=True)

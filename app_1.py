@@ -39,28 +39,20 @@ if "password_correct" not in st.session_state:
             else: st.error("密碼錯誤")
     st.stop()
 
-# --- 進入系統後的 CSS (強化手機版側邊欄開關) ---
+# --- 進入系統後的 CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF !important; }
     
-    /* 強制顯示手機版的側邊欄開啟按鈕 (左上角) */
+    /* 強制顯示手機版側邊欄按鈕 (左上角) */
     [data-testid="stSidebarCollapseButton"] {
         background-color: #1E40AF !important;
         color: #FFFFFF !important;
         border-radius: 5px !important;
-        left: 10px !important;
-        top: 10px !important;
-        display: block !important;
-        z-index: 99999 !important;
+        left: 10px !important; top: 10px !important;
+        display: block !important; z-index: 99999 !important;
     }
     
-    /* 側邊欄內部的顏色調整 */
-    section[data-testid="stSidebar"] {
-        background-color: #F8FAFC !important;
-        border-right: 1px solid #E2E8F0 !important;
-    }
-
     /* 縮小元件寬度 */
     div[data-testid="stNumberInput"], div[data-baseweb="select"], div[data-testid="stFileUploader"], .stSlider { 
         max-width: 250px !important; 
@@ -91,78 +83,72 @@ def load_materials():
     return df
 df_m = load_materials()
 
-# 4. 側邊欄 (確定在登入後才定義)
+# 4. 側邊欄
 with st.sidebar:
     st.markdown("### 🛠️ 系統功能")
-    choice = st.radio("請選擇操作：", ["💰 自動估價系統", "📏 尺寸校正計算"])
+    # 這裡的選項名稱必須跟下方的 if 完全一致
+    choice = st.radio("請選擇：", ["💰 自動估價", "📏 尺寸補償"])
     st.divider()
     if st.button("🚪 登出系統"):
         del st.session_state["password_correct"]
         st.rerun()
 
 # 5. 主程式邏輯
-if choice == "💰 自動估價系統":
-    st.title("💰 3D列印自動報價")
-    up_file = st.file_uploader("Upload", type=["stl", "step", "stp"], label_visibility="collapsed")
+if choice == "💰 自動估價":
+    st.title("💰 3D列印報價")
+    
+    # --- 關鍵：重新加入選擇來源 ---
+    input_method = st.radio("選擇體積來源：", ["📤 上傳模型", "⌨️ 手動輸入"], horizontal=True)
     
     vol_mm3 = 0
     mesh_for_viz = None
 
-    if up_file:
-        ext = os.path.splitext(up_file.name)[-1].lower()
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-            tmp.write(up_file.getvalue()); t_path = tmp.name
-        
-        try:
-            # 優先處理 STL
-            if ext == ".stl":
-                m = trimesh.load(t_path)
-                vol_mm3 = int(abs(m.volume))
-                mesh_for_viz = m
-            else:
-                # STEP 解析 (嘗試獲取預覽數據)
-                try:
-                    loaded = trimesh.load(t_path)
-                    mesh_for_viz = loaded.dump(concatenate=True) if isinstance(loaded, trimesh.Scene) else loaded
-                    vol_mm3 = int(abs(mesh_for_viz.volume))
-                    if vol_mm3 <= 0: vol_mm3 = int(mesh_for_viz.convex_hull.volume)
-                except:
-                    vol_mm3 = 0
+    if input_method == "📤 上傳模型":
+        up_file = st.file_uploader("Upload STL/STEP", type=["stl", "step", "stp"], label_visibility="collapsed")
+        if up_file:
+            ext = os.path.splitext(up_file.name)[-1].lower()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                tmp.write(up_file.getvalue()); t_path = tmp.name
             
-            # 顯示 3D 預覽
-            if mesh_for_viz:
-                st.write(f"📦 **模型預覽 ({ext.upper()})**")
-                vertices = mesh_for_viz.vertices
-                faces = mesh_for_viz.faces
-                fig = go.Figure(data=[go.Mesh3d(x=vertices[:,0], y=vertices[:,1], z=vertices[:,2], i=faces[:,0], j=faces[:,1], k=faces[:,2], color='#D1D5DB', lighting=dict(ambient=0.1, diffuse=0.9, specular=1.5))])
-                fig.update_layout(scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), bgcolor='#0F172A'), margin=dict(l=0, r=0, b=0, t=0), height=350)
-                st.plotly_chart(fig, use_container_width=True)
+            try:
+                # 靜默嘗試解析
+                loaded = trimesh.load(t_path)
+                mesh_for_viz = loaded.dump(concatenate=True) if isinstance(loaded, trimesh.Scene) else loaded
+                vol_mm3 = int(abs(mesh_for_viz.volume))
+                if vol_mm3 <= 0: vol_mm3 = int(mesh_for_viz.convex_hull.volume)
+                
+                # 預覽圖
+                if mesh_for_viz:
+                    st.write(f"📦 **3D 預覽 ({ext.upper()})**")
+                    vertices = mesh_for_viz.vertices
+                    faces = mesh_for_viz.faces
+                    fig = go.Figure(data=[go.Mesh3d(x=vertices[:,0], y=vertices[:,1], z=vertices[:,2], i=faces[:,0], j=faces[:,1], k=faces[:,2], color='#D1D5DB')])
+                    fig.update_layout(scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), bgcolor='#0F172A'), margin=dict(l=0, r=0, b=0, t=0), height=300)
+                    st.plotly_chart(fig, use_container_width=True)
+            except:
+                st.warning("⚠️ 此檔案無法自動計算體積。")
+            finally:
+                if os.path.exists(t_path): os.remove(t_path)
+    else:
+        # --- 重新加入手動輸入框 ---
+        vol_mm3 = st.number_input("請輸入模型體積 (mm³)：", min_value=0, step=100, value=0)
 
-        except Exception as e:
-            st.error(f"解析失敗: {e}")
-        finally:
-            if os.path.exists(t_path): os.remove(t_path)
-
-    # 報價顯示區
+    # 報價計算區 (只要有體積就顯示)
     if vol_mm3 > 0:
-        st.success(f"✅ 偵測體積：{vol_mm3:,} mm³")
-        m_choice = st.selectbox("1. 選擇材料", df_m["Formlabs"].tolist())
+        st.success(f"📍 當前計算體積：{vol_mm3:,} mm³")
+        m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
         u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
         markup = st.slider("2. 利潤倍率", 0.5, 10.0, 1.0, 0.5)
         base_fee = st.number_input("3. 基本費 (NT$)", min_value=0, value=0)
 
         total_price = (vol_mm3 * u_cost * markup) + base_fee
         st.divider()
-        st.write("### 建議報價總計")
-        st.markdown(f'NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)
-    elif up_file:
-        st.info("💡 預覽已載入，但體積無法自動解析。請確認模型是否為密封實體，或改用 STL 格式。")
+        st.markdown(f'### 建議報價：NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)
 
-else:
+elif choice == "📏 尺寸補償":
     st.title("📏 尺寸補償計算")
-    d_size = st.number_input("設計尺寸 (mm)", value=20.0, step=0.1)
-    a_size = st.number_input("實測尺寸 (mm)", value=19.8, step=0.1)
-    if d_size > 0 and a_size > 0:
-        res = (d_size / a_size) * 100
-        st.write("### 建議縮放比例")
-        st.markdown(f'<span class="price-result">{res:.2f}%</span>', unsafe_allow_html=True)
+    d_size = st.number_input("設計尺寸 (mm)", min_value=0.1, value=20.0)
+    a_size = st.number_input("實測尺寸 (mm)", min_value=0.1, value=19.8)
+    res = (d_size / a_size) * 100
+    st.write("### 建議縮放比例")
+    st.markdown(f'<span class="price-result">{res:.2f}%</span>', unsafe_allow_html=True)

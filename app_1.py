@@ -11,63 +11,75 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 
 # 2. 登入狀態檢測與全域 CSS
 if "password_correct" not in st.session_state:
-    # --- 登入頁面專屬黑底 CSS ---
+    # --- 登入頁面：強化按鈕可見度 ---
     st.markdown("""
         <style>
         .stApp {
-            background-color: #0F172A !important; /* 深黑藍背景 */
+            background-color: #0F172A !important;
         }
-        h2, label, p {
-            color: #FFFFFF !important; /* 白色文字 */
+        h2, p, label {
+            color: #FFFFFF !important;
         }
-        /* 登入輸入框樣式 */
-        div[data-testid="stNumberInput"] input, div[data-testid="stTextInput"] input {
+        /* 修正輸入框：加入明顯邊框 */
+        div[data-testid="stTextInput"] input {
             background-color: #1E293B !important;
             color: #FFFFFF !important;
-            border: 1px solid #334155 !important;
+            border: 2px solid #334155 !important;
             -webkit-text-fill-color: #FFFFFF !important;
+            border-radius: 8px !important;
         }
-        /* 登入按鈕樣式 */
+        /* 💥 強制修正登入按鈕 💥 */
         button[kind="primary"] {
-            background-color: #1E40AF !important;
-            color: white !important;
+            background-color: #1E40AF !important; /* 實威藍 */
+            color: #FFFFFF !important;
+            border: 1px solid #3B82F6 !important;
             width: 100% !important;
+            height: 45px !important;
+            font-weight: bold !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            margin-top: 10px !important;
+        }
+        /* 確保按鈕文字也是白色 */
+        button[kind="primary"] div p {
+            color: #FFFFFF !important;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    st.markdown("<div style='height: 20vh;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 15vh;'></div>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;'>SOLIDWIZARD</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;'>3D列印線上估價系統</p>", unsafe_allow_html=True)
     
-    col_l, col_m, col_r = st.columns([1, 2, 1])
+    col_l, col_m, col_r = st.columns([1, 4, 1]) # 調整比例讓手機版更寬
     with col_m:
         pwd = st.text_input("管理員密碼", type="password")
+        # 使用 primary 屬性確保套用上述 CSS
         if st.button("確認登入", kind="primary"):
             if pwd == "1234": 
                 st.session_state["password_correct"] = True
                 st.rerun()
             else: 
-                st.error("密碼錯誤，請重新輸入")
+                st.error("密碼錯誤")
     st.stop()
 
-# --- 進入系統後的 CSS (白底 + 精簡輸入框) ---
+# --- 進入系統後的 CSS (白底 + 精簡介面) ---
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF !important; color: #000000 !important; }
 
-    /* 縮小所有輸入框與選單的寬度 */
+    /* 縮小輸入元件寬度 */
     div[data-testid="stNumberInput"], 
     div[data-baseweb="select"],
     div[data-testid="stFileUploader"] {
         max-width: 280px !important;
     }
 
-    /* 上傳區塊：藍底白字 + 精簡尺寸 */
+    /* 上傳區塊：藍底白字 */
     div[data-testid="stFileUploader"] section {
         background-color: #1E40AF !important; 
         color: #FFFFFF !important;
-        border: 2px solid #1E3A8A !important;
         border-radius: 10px !important;
         padding: 8px !important;
     }
@@ -81,10 +93,9 @@ st.markdown("""
         position: fixed !important; top: 15px !important; left: 15px !important;
         z-index: 999999 !important; background-color: #1E40AF !important;
         color: #FFFFFF !important; border-radius: 50% !important;
-        width: 48px !important; height: 48px !important;
     }
 
-    /* 輸入框與選單：深藍底白字 + 緊湊高度 */
+    /* 輸入框與選單：深藍底白字 */
     div[data-testid="stNumberInput"] input, 
     div[data-baseweb="select"] > div {
         background-color: #1E40AF !important; 

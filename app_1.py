@@ -4,6 +4,34 @@ from stl import mesh
 import tempfile
 import os
 
+# --- 簡單的密碼驗證系統 ---
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == "1234": # 這裡改成你想要的密碼
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # 驗證後刪除暫存密碼
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # 第一次進入網頁，要求輸入密碼
+        st.text_input("請輸入開啟密碼", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        # 密碼打錯時
+        st.text_input("密碼錯誤，請重新輸入", type="password", on_change=password_entered, key="password")
+        st.error("😕 密碼不正確")
+        return False
+    else:
+        # 密碼正確
+        return True
+
+# --- 程式主體判斷 ---
+if check_password():
+    # 這裡放你原本所有的程式碼 (st.title, selection, st.file_uploader 等等)
+    st.success("解鎖成功！歡迎使用報價系統")
+    # ...
+
 st.set_page_config(page_title="3D列印專業助手", page_icon="🖨️", layout="wide")
 
 # --- 側邊欄：功能導覽 (使用圖像選擇) ---

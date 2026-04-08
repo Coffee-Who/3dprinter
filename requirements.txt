@@ -3,4 +3,4 @@ streamlit-image-select
 numpy-stl
 numpy
 pandas
-streamlit-stl
+plotly

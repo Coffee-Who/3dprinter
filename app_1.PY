@@ -23,7 +23,49 @@ st.divider()
 if selection == "6954_6438b3654f0ad.png":
     st.subheader("💰 線上估價系統")
    # ... 這裡放STL上傳 ..
+   from stl import mesh
+import tempfile
+import os
 
+def get_stl_volume(file):
+    # 建立暫存檔處理上傳數據
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
+        tmp.write(file.getvalue())
+        tmp_path = tmp.name
+    
+    # 讀取 STL 並計算體積
+    main_mesh = mesh.Mesh.from_file(tmp_path)
+    volume, cog, inertia = main_mesh.get_mass_properties()
+    
+    os.remove(tmp_path)
+    # STL 預設單位通常是 mm³，除以 1000 得到 cm³ (cc)
+    return volume / 1000
+
+st.title("📦 STL 體積自動計算報價")
+
+uploaded_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
+
+if uploaded_file is not None:
+    # 執行計算
+    v_cm3 = get_stl_volume(uploaded_file)
+    
+    # 顯示結果
+    st.metric("偵測模型體積", f"{v_cm3:.2f} cm³ (cc)")
+    
+    st.divider()
+    
+    # 價格設定
+    col1, col2 = st.columns(2)
+    with col1:
+        price_per_cm3 = st.number_input("每 cm³ 單價 (元)", value=15.0)
+    with col2:
+        base_fee = st.number_input("基本上機費 (元)", value=100)
+    
+    # 計算總價
+    total_price = (v_cm3 * price_per_cm3) + base_fee
+    
+    st.header(f"💰 預估報價：NT$ {int(total_price)}")
+    st.caption("註：此報價不含支撐材體積，建議依據實際切片結果微調。")
     # ... 這裡放你原本的估價程式碼 ...
     material = st.selectbox("材料", ["PLA", "PETG", "ABS", "TPU", "Resin"])
     weight = st.number_input("重量 (g)", value=10.0)

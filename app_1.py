@@ -7,10 +7,9 @@ import plotly.graph_objects as go
 import numpy as np
 from streamlit_image_select import image_select
 
-# 1. 頁面基本設定
 st.set_page_config(page_title="3D列印專業服務系統", page_icon="🖨️", layout="wide")
 
-# --- 2. 密碼驗證系統 ---
+# --- 1. 密碼驗證 ---
 def check_password():
     if "password_correct" not in st.session_state:
         st.title("🔒 內部系統登入")
@@ -24,7 +23,7 @@ def check_password():
         return False
     return True
 
-# --- 3. 讀取材料資料 ---
+# --- 2. 讀取材料 ---
 @st.cache_data
 def load_materials():
     try:
@@ -34,87 +33,97 @@ def load_materials():
     except:
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
-# --- 4. 修正版 3D 預覽 (提高相容性) ---
+# --- 3. 高品質 3D 預覽 (修正簡化過度問題) ---
 def show_3d_preview(file_path):
     try:
         m_data = mesh.Mesh.from_file(file_path)
         vecs = m_data.vectors
+        total_faces = len(vecs)
         
-        # 強制大幅抽樣以確保網頁不當掉
-        max_faces = 12000
-        if len(vecs) > max_faces:
-            step = len(vecs) // max_faces
+        # 動態調整：只有超過 60,000 面才會開始簡化，且最多保留到 40,000 面
+        if total_faces > 60000:
+            st.info(f"💡 原始模型面數較高 ({total_faces})，已自動進行輕量化優化。")
+            target_faces = 40000
+            step = total_faces // target_faces
             vecs = vecs[::step]
         
         p, q, r = vecs.shape
         v = vecs.reshape(p*q, r)
         f = np.arange(p*q).reshape(p, q)
         
-        # 使用 Mesh3d 同時渲染面與邊線
-        fig = go.Figure(data=[
-            go.Mesh3d(
-                x=v[:,0], y=v[:,1], z=v[:,2], 
-                i=f[:,0], j=f[:,1], k=f[:,2],
-                color='royalblue', 
-                opacity=1.0,
-                flatshading=True,
-                # 這裡強制開啟網格線條
-                contour=dict(show=True, color='black', width=1),
-                showlegend=False
-            )
-        ])
-        
+        fig = go.Figure()
+
+        # 實體面：使用較亮的藍色與更好的陰影
+        fig.add_trace(go.Mesh3d(
+            x=v[:,0], y=v[:,1], z=v[:,2], 
+            i=f[:,0], j=f[:,1], k=f[:,2],
+            color='#3B82F6', # 更亮的藍色
+            opacity=1.0,
+            flatshading=False,
+            lighting=dict(ambient=0.4, diffuse=0.8, specular=0.2, roughness=0.5),
+            name='實體'
+        ))
+
+        # 銳利黑線：大幅降低透明度，讓它看起來像淡淡的工程網格
+        fig.add_trace(go.Mesh3d(
+            x=v[:,0], y=v[:,1], z=v[:,2], 
+            i=f[:,0], j=f[:,1], k=f[:,2],
+            color='black',
+            opacity=0.15, # 調淡黑線，避免干擾視覺
+            wireframe=True,
+            name='網格'
+        ))
+
         fig.update_layout(
             scene=dict(
-                xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, 
-                aspectmode='data', bgcolor='white'
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                zaxis=dict(visible=False),
+                aspectmode='data',
+                bgcolor='white',
+                camera=dict(eye=dict(x=1.2, y=1.2, z=1.2))
             ),
-            margin=dict(l=0, r=0, b=0, t=0), height=500
+            margin=dict(l=0, r=0, b=0, t=0),
+            height=650
         )
         st.plotly_chart(fig, use_container_width=True)
         
     except Exception as e:
-        st.error(f"預覽生成失敗。原因: {e}")
+        st.error(f"預覽生成失敗: {e}")
 
-# --- 5. 主程式執行 ---
+# --- 4. 主程式執行 ---
 if check_password():
     df_m = load_materials()
     
-    # 強力版 CSS：縮小 image-select 圖示並修正跑位
+    # CSS：精準縮小選單圖示
     st.markdown("""
         <style>
-        /* 鎖定所有 image-select 內的圖片容器 */
-        div[data-testid="stHorizontalBlock"] div[style*="width"] img {
-            width: 50px !important;
-            height: 50px !important;
-            max-width: 50px !important;
-            object-fit: contain !important;
+        div[data-testid="stHorizontalBlock"] img {
+            width: 45px !important;
+            height: 45px !important;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        /* 縮小下方文字標題大小 */
         div[data-testid="stHorizontalBlock"] p {
-            font-size: 12px !important;
+            font-size: 11px !important;
+            margin-top: 5px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     with st.sidebar:
         st.title("🛠️ 功能選單")
-        # 這裡的圖示會被上方的 CSS 縮小
         sel = image_select(
-            label="請選擇服務項目", 
-            images=[
-                "https://cdn-icons-png.flaticon.com/512/2953/2953536.png", 
-                "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"
-            ], 
-            captions=["自動估價", "尺寸校正"],
-            index=0
+            label="請選擇服務", 
+            images=["https://cdn-icons-png.flaticon.com/512/2953/2953536.png", "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"], 
+            captions=["自動估價", "尺寸校正"]
         )
 
     if "2953536" in sel:
-        st.title("💰 3D列印自動估價系統")
-        up_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
+        st.title("💰 3D列印報價系統 (高品質預覽)")
+        up_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
         
-        c1, c2 = st.columns([1.5, 1])
+        c1, c2 = st.columns([1.6, 1])
         vol_cm3 = 0.0
 
         if up_file:
@@ -123,42 +132,38 @@ if check_password():
                 t_path = tmp.name
             
             with c1:
-                st.subheader("📦 3D 結構分析")
                 show_3d_preview(t_path)
             
             with c2:
-                st.subheader("📊 報價數據")
+                st.subheader("📊 數據分析")
                 try:
                     m = mesh.Mesh.from_file(t_path)
                     v_val, _, _ = m.get_mass_properties()
                     vol_cm3 = float(v_val) / 1000.0
-                    st.metric("偵測體積", f"{vol_cm3:.2f} cm³")
+                    st.metric("模型總體積", f"{vol_cm3:.2f} cm³")
                 except:
                     st.error("計算失敗")
                 
                 m_choice = st.selectbox("樹脂型號", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
-                
                 markup = st.slider("報價倍率", 1.0, 10.0, 3.0, step=0.1)
-                base_fee = st.number_input("起鍋費", value=150)
+                base_fee = st.number_input("上機費 (固定費)", value=150)
                 
                 final_total = (vol_cm3 * u_cost * markup) + base_fee
-                
                 st.divider()
                 st.markdown(f"### 建議報價: <span style='color:red; font-size:40px;'>NT$ {int(final_total)}</span>", unsafe_allow_html=True)
                 
-                with st.expander("🔍 查看細項"):
-                    st.write(f"- 材料成本: NT$ {int(vol_cm3 * u_cost)}")
-                    st.write(f"- 倍率加成: x{markup}")
-                    st.write(f"- 固定費用: NT$ {base_fee}")
-            
+                with st.expander("🔍 價格明細"):
+                    cost_raw = vol_cm3 * u_cost
+                    st.write(f"- 材料基本成本: NT$ {int(cost_raw)}")
+                    st.write(f"- 倍率加成利潤: NT$ {int(cost_raw * (markup-1))}")
+                    st.write(f"- 固定成本(上機費): NT$ {base_fee}")
             os.remove(t_path)
         else:
-            st.info("💡 請上傳 STL 檔案。")
-
+            st.info("💡 請上傳 STL 檔案開始分析。")
     else:
         st.title("📏 SLA 尺寸校正助手")
-        ca = st.number_input("CAD 尺寸 (mm)", value=10.0)
-        re = st.number_input("實測尺寸 (mm)", value=10.0)
+        ca = st.number_input("CAD 設計值", value=10.0)
+        re = st.number_input("實測值", value=10.0)
         if ca > 0:
-            st.metric("Preform 校正因子", f"{(re/ca):.4f}")
+            st.metric("應填入校正因子", f"{(re/ca):.4f}")

@@ -14,7 +14,7 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 def apply_ultra_center_css():
     st.markdown("""
         <style>
-        /* A. 強制全站背景與垂直水平置中 */
+        /* A. 全站背景與強效置中佈局 */
         .stApp {
             background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%);
             display: flex !important;
@@ -22,7 +22,7 @@ def apply_ultra_center_css():
             align-items: center !important;
         }
 
-        /* B. 覆寫 Streamlit 預設容器，徹底消除靠左偏向 */
+        /* B. 移除 Streamlit 預設邊距，強制容器置中 */
         [data-testid="stAppViewContainer"] {
             display: flex !important;
             justify-content: center !important;
@@ -30,30 +30,31 @@ def apply_ultra_center_css():
         }
         
         .main .block-container {
-            max-width: 1000px !important; /* 限制寬度讓內容更集中 */
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 auto !important; /* 強制水平置中 */
+            max-width: 600px !important; /* 縮小容器寬度，讓對齊更精準 */
             display: flex !important;
             flex-direction: column !important;
             justify-content: center !important;
             align-items: center !important;
+            text-align: center !important;
         }
 
-        /* C. 隱飾 Header 與側邊欄 (登入前) */
-        [data-testid="stHeader"] { display: none; }
-        
-        /* D. 登入 UI 元件細節 */
+        /* C. 強制圖片 (Logo) 置中 */
+        [data-testid="stImage"] {
+            display: flex !important;
+            justify-content: center !important;
+            margin: 0 auto !important;
+        }
+
+        /* D. 系統標題 */
         .user-name {
             color: white;
             font-size: 28px;
             font-weight: 500;
-            margin: 20px 0 40px 0;
+            margin: 20px 0 30px 0;
             font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
-            text-align: center;
         }
 
-        /* 密碼框：與 Logo 一樣置中且縮短 */
+        /* E. 密碼框樣式與寬度 */
         div[data-baseweb="input"] {
             background-color: rgba(255, 255, 255, 0.1) !important;
             border: 2px solid rgba(255, 255, 255, 0.3) !important;
@@ -63,23 +64,20 @@ def apply_ultra_center_css():
         }
         input { color: white !important; text-align: center !important; }
         
-        /* 按鈕置中 */
-        button {
+        /* F. 【關鍵修正】強制登入按鈕置中 */
+        [data-testid="stBaseButton-secondary"], 
+        [data-testid="stBaseButton-primary"],
+        .stButton button {
+            display: block !important;
+            margin: 20px auto 0 auto !important; /* 水平自動邊距強制置中 */
             width: 120px !important;
             background-color: rgba(255, 255, 255, 0.2) !important;
             color: white !important;
             border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            margin: 20px auto !important;
-            display: block !important;
         }
-
-        /* E. 系統內部元件居中 (登入後) */
-        .stPlotlyChart, .stFileUploader, .stMetric, .stSelectbox, .stSlider {
-            display: flex !important;
-            justify-content: center !important;
-            margin: 0 auto !important;
-            width: 100% !important;
-        }
+        
+        /* 隱藏頂部 Header */
+        [data-testid="stHeader"] { display: none; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -88,20 +86,19 @@ def check_password():
     if "password_correct" not in st.session_state:
         apply_ultra_center_css()
         
-        # 構建登入介面
-        # Logo
+        # 1. Logo (確保檔案 solidwizard_logo.png 存在)
         try:
             st.image("solidwizard_logo.png", width=240)
         except:
             st.warning("⚠️ 檔案缺失: solidwizard_logo.png")
 
-        # 標題
+        # 2. 標題
         st.markdown('<div class="user-name">實威國際 3D列印線上估價</div>', unsafe_allow_html=True)
         
-        # 密碼框 (與 Logo 對齊置中)
+        # 3. 密碼框
         pwd = st.text_input("PW", type="password", label_visibility="collapsed", placeholder="輸入密碼")
         
-        # 登入按鈕
+        # 4. 登入按鈕 (直接放置，不再使用 columns，靠 CSS 強制居中)
         if st.button("登入"):
             if pwd == "1234":
                 st.session_state["password_correct"] = True
@@ -125,16 +122,16 @@ def load_materials():
 if check_password():
     df_m = load_materials()
     
-    # 進入後的內部版面樣式
+    # 登入後的佈局調整
     st.markdown("""
         <style>
-        /* 側邊欄維持寬度 */
+        .stApp { background: white !important; align-items: flex-start !important; }
         section[data-testid="stSidebar"] { width: 260px !important; min-width: 260px !important; }
-        /* 內頁背景改回淺色方便閱讀 (可選) */
-        .stApp { background: white !important; }
         .main .block-container { 
-            justify-content: flex-start !important; 
+            max-width: 1200px !important; 
             padding-top: 3rem !important; 
+            align-items: flex-start !important;
+            text-align: left !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -149,13 +146,10 @@ if check_password():
 
     if "2953536" in sel:
         st.title("💰 專業 3D 列印自動報價")
-        # 上傳檔案 (會根據 CSS 全螢幕水平置中)
         up_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
         
         if up_file:
-            # 建立 columns 讓預覽與報價並排，但整體在中央
             c1, c2 = st.columns([1.5, 1])
-            
             with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
                 tmp.write(up_file.getvalue())
                 t_path = tmp.name
@@ -187,15 +181,7 @@ if check_password():
                     total = (vol_cm3 * u_cost * markup) + base_fee
                     st.divider()
                     st.markdown(f"### 建議報價")
-                    st.markdown(f"<h1 style='color:red; text-align:center;'>NT$ {int(total)}</h1>", unsafe_allow_html=True)
+                    st.markdown(f"<h1 style='color:red;'>NT$ {int(total)}</h1>", unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"渲染錯誤: {e}")
             os.remove(t_path)
-    else:
-        st.title("📏 尺寸校正助手")
-        col_m = st.columns([1, 2, 1])[1] # 取中間那一欄
-        with col_m:
-            design = st.number_input("CAD 尺寸 (mm)", value=10.0)
-            actual = st.number_input("列印實測 (mm)", value=10.0)
-            if design > 0:
-                st.metric("補償因子", f"{(actual/design):.4f}")

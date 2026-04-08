@@ -9,10 +9,9 @@ import numpy as np
 # 1. 頁面配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide")
 
-# 2. 全域 CSS (白底 Upload, 藍底輸入框, 手機懸浮按鈕)
+# 2. 全域 CSS 樣式
 st.markdown("""
     <style>
-    /* 手機版懸浮選單按鈕 */
     [data-testid="stSidebarCollapseButton"] {
         position: fixed !important; top: 15px !important; left: 15px !important;
         z-index: 999999 !important; background-color: #1E40AF !important;
@@ -21,21 +20,11 @@ st.markdown("""
         box-shadow: 0px 4px 12px rgba(0,0,0,0.4) !important;
         display: flex !important; justify-content: center !important; align-items: center !important;
     }
-    
     .stApp { background-color: #FFFFFF !important; }
-
-    /* Upload 區塊：白底 */
-    div[data-testid="stFileUploader"] section {
-        background-color: #FFFFFF !important; 
-        border: 2px dashed #CBD5E1 !important;
-    }
-
-    /* 輸入框：深藍底白字 */
+    div[data-testid="stFileUploader"] section { background-color: #FFFFFF !important; border: 2px dashed #CBD5E1 !important; }
     div[data-testid="stNumberInput"] input, div[data-baseweb="select"] > div {
         background-color: #1E40AF !important; color: #FFFFFF !important;
     }
-
-    /* 建議報價結果：黃底紅字 */
     .price-result {
         display: inline-block; background-color: #FFFF00 !important;
         color: #E11D48 !important; padding: 10px 20px;
@@ -81,43 +70,50 @@ if choice == "💰 自動估價系統":
             with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
                 tmp.write(up_file.getvalue()); t_path = tmp.name
             try:
-                # 使用 numpy-stl 讀取完整結構
                 your_mesh = mesh.Mesh.from_file(t_path)
                 vol_mm3 = int(abs(your_mesh.get_mass_properties()[0]))
 
-                # --- 🎯 專業級 3D 預覽 (不失真版本) ---
-                st.write("📦 **模型結構預覽**")
+                # --- 🎯 專業打光渲染 (強化陰影與立體感) ---
+                st.write("📦 **高對比實體預覽**")
                 
-                # 提取頂點
                 points = your_mesh.points.reshape(-1, 3)
                 v1, v2, v3 = points[::3], points[1::3], points[2::3]
                 vertices = np.vstack([v1, v2, v3])
                 
-                # 生成正確的面索引 (i, j, k)
                 n = len(v1)
-                i = np.arange(n)
-                j = i + n
-                k = i + 2*n
+                i, j, k = np.arange(n), np.arange(n) + n, np.arange(n) + 2*n
+
+                # 計算模型大小以動態調整光源位置
+                max_dim = np.max(vertices.max(axis=0) - vertices.min(axis=0))
 
                 fig = go.Figure(data=[
                     go.Mesh3d(
                         x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                         i=i, j=j, k=k,
-                        color='#A0A0A0', # 實體灰
-                        flatshading=True, # 展現專業面感，不亂線
-                        intensity=vertices[:,2], # 增加視覺深度感
-                        colorscale=[[0, '#808080'], [1, '#D3D3D3']],
-                        showscale=False,
-                        lighting=dict(ambient=0.5, diffuse=0.8, specular=0.1)
+                        color='#D1D5DB', # 使用稍亮的灰色作為底色
+                        flatshading=True, # 保持專業面感
+                        # 強化光影參數
+                        lighting=dict(
+                            ambient=0.3,   # 降低環境光，讓陰影更深
+                            diffuse=0.9,   # 強化漫反射，亮部更明顯
+                            specular=1.2,  # 提高鏡面高光，產生邊緣亮點
+                            roughness=0.1, # 降低粗糙度，讓光影轉折更銳利
+                            fresnel=0.5
+                        ),
+                        # 設定主光源方向 (斜上方)
+                        lightposition=dict(x=max_dim*2, y=max_dim*2, z=max_dim*5),
+                        showscale=False
                     )
                 ])
 
                 fig.update_layout(
                     scene=dict(
                         xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
-                        aspectmode='data', bgcolor='#222222' # 深色工程背景
+                        aspectmode='data', 
+                        bgcolor='#0F172A', # 改用深藍黑背景，更能襯托出模型的陰影與光澤
+                        camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)) # 預設最佳觀看視角
                     ),
-                    margin=dict(l=0, r=0, b=0, t=0), height=450
+                    margin=dict(l=0, r=0, b=0, t=0), height=500
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -125,7 +121,7 @@ if choice == "💰 自動估價系統":
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:
-        vol_mm3 = st.number_input("輸入體積", value=0)
+        vol_mm3 = st.number_input("輸入體積 (mm³)", value=0, step=1, format="%d")
 
     if vol_mm3 > 0:
         st.write(f"**📐 體積:** {vol_mm3:,} mm³")
@@ -134,8 +130,8 @@ if choice == "💰 自動估價系統":
             m_choice = st.selectbox("1. 材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
         with col2:
-            markup = st.slider("2. 倍率", 0.5, 10.0, 1.0, 0.5)
-            base_fee = st.number_input("3. 基本費", value=0)
+            markup = st.slider("2. 利潤倍率", 0.5, 10.0, 1.0, 0.5)
+            base_fee = st.number_input("3. 基本報價費 (NT$)", value=0, step=10, format="%d")
 
         total = (vol_mm3 * u_cost * markup) + base_fee
         st.divider()

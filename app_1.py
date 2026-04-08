@@ -5,12 +5,11 @@ import tempfile
 import os
 import plotly.graph_objects as go
 import numpy as np
-from streamlit_image_select import image_select
 
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 登入介面專用 CSS
+# 2. 登入介面專用 CSS (維持您喜歡的樣子)
 def apply_login_style():
     st.markdown("""
         <style>
@@ -41,7 +40,6 @@ def apply_login_style():
         </style>
     """, unsafe_allow_html=True)
 
-# 載入材料清單
 @st.cache_data
 def load_materials():
     try:
@@ -49,12 +47,9 @@ def load_materials():
         df['每cm3成本'] = df['單價'] / 1000
         return df
     except:
-        return pd.DataFrame({
-            "Formlabs": ["一般樹脂", "Tough 2000", "Flexible 80A"],
-            "每cm3成本": [6.5, 8.5, 9.5]
-        })
+        return pd.DataFrame({"Formlabs": ["一般樹脂", "Tough 2000"], "每cm3成本": [6.5, 8.5]})
 
-# 3. 登入邏輯判斷
+# 3. 登入邏輯
 if "password_correct" not in st.session_state:
     apply_login_style()
     try:
@@ -71,7 +66,7 @@ if "password_correct" not in st.session_state:
             st.error("密碼不正確")
     st.stop()
 
-# 4. 登入成功後：顯示主系統
+# 4. 登入成功後：系統主介面
 st.markdown("""
     <style>
     .stApp { background: #F8FAFC !important; align-items: flex-start !important; justify-content: flex-start !important; height: auto !important; }
@@ -83,32 +78,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 側邊欄選單
+# --- 側邊欄改用穩定選單 ---
 with st.sidebar:
     st.title("🛠️ 功能選單")
-    # 關鍵：加入 return_value="index" 確保拿到的是數字 0 或 1
-    page_idx = image_select(
-        label="選擇服務項目", 
-        images=[
-            "https://cdn-icons-png.flaticon.com/512/2953/2953536.png", 
-            "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"
-        ], 
-        captions=["自動估價", "尺寸校正"],
-        return_value="index"  
+    # 改用官方原生選單，保證 100% 能切換
+    choice = st.radio(
+        "請選擇服務：",
+        ["💰 自動估價系統", "📏 尺寸校正計算"],
+        index=0
     )
     st.divider()
     if st.button("登出系統"):
         del st.session_state["password_correct"]
         st.rerun()
 
-# -------------------------------------------
-# 邏輯判斷：根據索引 page_idx 切換功能
-# -------------------------------------------
-
-if page_idx == 0:  # 點擊第一個圖示：自動估價
-    st.title("💰 專業 3D 列印自動報價系統")
+# --- 邏輯切換 ---
+if choice == "💰 自動估價系統":
+    st.title("💰 專業 3D 列印自動報價")
     df_m = load_materials()
-    up_file = st.file_uploader("第一步：請上傳 STL 模型檔案", type=["stl"])
+    up_file = st.file_uploader("請上傳 STL 模型檔案", type=["stl"])
     
     if up_file:
         c1, c2 = st.columns([1.6, 1])
@@ -135,7 +123,7 @@ if page_idx == 0:  # 點擊第一個圖示：自動估價
             with c2:
                 st.subheader("📊 報價設定")
                 st.info(f"偵測體積: **{vol_cm3:.2f} cm³**")
-                m_choice = st.selectbox("選擇樹脂材料", df_m["Formlabs"].tolist())
+                m_choice = st.selectbox("選擇材料", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
                 markup = st.slider("報價加成 (利潤)", 1.0, 10.0, 3.0, 0.1)
                 total = (vol_cm3 * u_cost * markup) + 150
@@ -147,16 +135,15 @@ if page_idx == 0:  # 點擊第一個圖示：自動估價
         finally:
             if os.path.exists(t_path): os.remove(t_path)
 
-elif page_idx == 1:  # 點擊第二個圖示：尺寸校正
+elif choice == "📏 尺寸校正計算":
     st.title("📏 尺寸校正補償計算")
-    st.write("輸入設計與實測尺寸，計算最佳補償比例。")
     col_a, col_b = st.columns(2)
     with col_a:
-        d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0, step=0.1)
+        d_size = st.number_input("設計尺寸 (mm)", value=20.0)
     with col_b:
-        a_size = st.number_input("列印實測尺寸 (mm)", value=19.8, step=0.1)
+        a_size = st.number_input("實測尺寸 (mm)", value=19.8)
     
     if d_size > 0:
         factor = a_size / d_size
         st.metric("補償因子 (Scale Factor)", f"{factor:.4f}")
-        st.success(f"建議在軟體中將縮放比例設為: **{(1/factor)*100:.2f}%**")
+        st.success(f"縮放比例: **{(1/factor)*100:.2f}%**")

@@ -5,7 +5,7 @@ import tempfile
 import os
 import pandas as pd
 
-# 1. 基礎頁面設定
+# 1. 基礎頁面設定 (必須在最前面)
 st.set_page_config(page_title="3D列印專業服務系統", page_icon="🖨️", layout="wide")
 
 # --- 2. 密碼驗證系統 ---
@@ -31,13 +31,15 @@ def check_password():
 @st.cache_data
 def load_materials():
     try:
-        # 讀取你上傳的 CSV 檔案
-        df = pd.read_csv("Formlabs材料.xlsx - 工作表1.csv")
+        # 讀取你上傳的 CSV 檔案 (檔名必須完全正確)
+        csv_file = "Formlabs材料.xlsx - 工作表1.csv"
+        df = pd.read_csv(csv_file)
         # 自動計算每 cm3 的成本 (單價 / 1000)
         df['每cm3成本'] = df['單價'] / 1000
         return df
     except Exception as e:
         st.error(f"找不到材料清單檔案: {e}")
+        # 如果檔案讀取失敗，提供備用選項
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
 # --- 4. 程式主體 ---
@@ -78,4 +80,19 @@ if check_password():
                 vol, _, _ = m.get_mass_properties()
                 os.remove(tmp_path)
                 v_cm3 = vol / 1000
-                st.success(f"✅ 偵測模型體積：{v_cm3:.2f
+                st.success(f"✅ 偵測模型體積：{v_cm3:.2f} cm³")
+            else:
+                v_cm3 = st.number_input("手動輸入體積 (cm³)", min_value=0.0, step=0.1)
+
+        with col2:
+            st.subheader("2. 報價計算")
+            # 讓使用者從清單選擇樹脂型號
+            material_choice = st.selectbox("請選擇樹脂型號", df_materials["Formlabs"])
+            
+            # 自動帶入單價
+            cost_unit = df_materials.loc[df_materials["Formlabs"] == material_choice, "每cm3成本"].values[0]
+            st.info(f"該材料成本：NT$ {cost_unit:.2f} / cm³")
+            
+            # 設定參數
+            markup = st.slider("報價倍率 (含支撐損耗與人工)", 1.0, 10.0, 3.0)
+            base_fee = st.number_input("基本起鍋費", value=150)

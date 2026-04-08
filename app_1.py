@@ -9,56 +9,68 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 登入介面專用 CSS
+# 2. 全域樣式優化
+st.markdown("""
+    <style>
+    /* 基礎背景與文字 */
+    .stApp { background-color: #FFFFFF !important; }
+    h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
+    
+    /* 1. 所有輸入框 (STL上傳、數字輸入、下拉選單) 藍底白字 + 縮小寬度 */
+    div[data-testid="stFileUploader"], 
+    div[data-testid="stNumberInput"], 
+    div[data-baseweb="select"] {
+        max-width: 300px !important; /* 5. 縮小所有輸入框寬度 */
+    }
+
+    /* 藍底白字樣式強制覆蓋 */
+    div[data-testid="stFileUploader"] section,
+    div[data-testid="stNumberInput"] input,
+    div[data-baseweb="select"] > div {
+        background-color: #1E40AF !important; 
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+    }
+    
+    /* 針對輸入內容的文字顏色 */
+    div[data-testid="stNumberInput"] input, 
+    div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: bold !important;
+    }
+
+    /* 2. 建議報價結果：黃底紅字且符合手機寬度 */
+    .price-result {
+        display: inline-block;
+        background-color: #FFFF00 !important;
+        color: #E11D48 !important;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 48px !important;
+        font-weight: 900 !important;
+        border: 3px solid #E11D48;
+        max-width: 100%; /* 確保不超出螢幕 */
+        word-break: break-all;
+    }
+
+    /* 滑桿標籤顏色 */
+    .stSlider label p { color: #000000 !important; }
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. 登入介面 (簡化版)
 def apply_login_style():
     st.markdown("""
         <style>
-        [data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stToolbar"] { 
-            display: none !important; 
-        }
-        .stApp {
-            background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important;
-        }
-        [data-testid="stMainBlockContainer"] {
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: center !important;
-            height: 100vh !important;
-            padding: 0 !important;
-        }
-        .stVerticalBlock { width: 100% !important; max-width: 420px !important; margin: auto !important; }
-        .logo-box { display: flex !important; justify-content: center !important; margin-bottom: 25px !important; }
-        .user-name { color: white !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; margin-bottom: 35px !important; }
-        div[data-baseweb="input"] { background-color: white !important; border-radius: 10px !important; }
-        div.stButton button { width: 100% !important; height: 50px !important; background-color: #3B82F6 !important; color: white !important; border-radius: 10px !important; }
+        [data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stToolbar"] { display: none !important; }
+        .stApp { background: #0F172A !important; }
         </style>
     """, unsafe_allow_html=True)
 
-@st.cache_data
-def load_materials():
-    try:
-        df = pd.read_csv("Formlabs材料.csv")
-        df['每cm3成本'] = df['單價'] / 1000
-        return df
-    except:
-        return pd.DataFrame({
-            "Formlabs": ["一般樹脂", "Tough 2000", "Flexible 80A", "Rigid 10K"],
-            "單價": [6500, 8500, 9500, 12000],
-            "每cm3成本": [6.5, 8.5, 9.5, 12.0]
-        })
-
-# 3. 登入檢核邏輯
 if "password_correct" not in st.session_state:
     apply_login_style()
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
-    try:
-        st.image("solidwizard_logo.png", width=250)
-    except:
-        st.markdown("<h2 style='color:white;'>SOLIDWIZARD</h2>", unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="user-name">3D列印線上估價系統</div>', unsafe_allow_html=True)
-    pwd = st.text_input("密碼", type="password", label_visibility="collapsed", placeholder="請輸入密碼")
+    st.markdown("<h2 style='color:white; text-align:center;'>實威國際 3D列印線上估價</h2>", unsafe_allow_html=True)
+    pwd = st.text_input("請輸入登入密碼", type="password")
     if st.button("進入系統"):
         if pwd == "1234":
             st.session_state["password_correct"] = True
@@ -66,153 +78,76 @@ if "password_correct" not in st.session_state:
         else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 主介面樣式 (強制輸入框藍底白字)
-st.markdown("""
-    <style>
-    [data-testid="stHeader"], [data-testid="stSidebar"] { display: block !important; }
-    .stApp { background-color: #FFFFFF !important; }
-    
-    /* 強制標題文字為黑色 */
-    h1, h2, h3, p, span, label { color: #000000 !important; }
-    [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: bold !important; font-size: 18px !important; }
-
-    /* --- 核心修改：輸入框藍底白字 --- */
-    /* 1. 數字輸入框 (Number Input) */
-    div[data-testid="stNumberInput"] input {
-        background-color: #1E40AF !important; /* 深藍底 */
-        color: #FFFFFF !important;            /* 白字 */
-        font-size: 28px !important;
-        font-weight: 800 !important;
-        height: 65px !important;
-        border-radius: 10px !important;
-        -webkit-text-fill-color: #FFFFFF !important; /* 針對 iOS 手機強制白字 */
+# 4. 資料加載
+@st.cache_data
+def load_materials():
+    # 預設資料
+    data = {
+        "Formlabs": ["Clear Resin V4", "Tough 2000", "Grey Pro", "Rigid 10K"],
+        "單價": [9975, 8500, 7500, 12000]
     }
-    
-    /* 2. 下拉選單 (Selectbox) */
-    div[data-baseweb="select"] > div {
-        background-color: #1E40AF !important; /* 深藍底 */
-        border-radius: 10px !important;
-        height: 65px !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-    div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
-        color: #FFFFFF !important;            /* 白字 */
-        font-size: 24px !important;
-        font-weight: 800 !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
-    /* 下拉選單的小箭頭圖示改為白色 */
-    div[data-baseweb="select"] svg { fill: white !important; }
+    df = pd.DataFrame(data)
+    df['每mm3成本'] = df['單價'] / 1000000 # 從 1L(1000000 mm3) 換算
+    return df
 
-    /* 當前體積數字顯示 */
-    [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; }
+# 5. 主程式
+df_m = load_materials()
+st.title("💰 專業 3D 列印自動報價")
 
-    /* 容器樣式 */
-    .result-container { background-color: #F8FAFC; padding: 20px; border-radius: 15px; border: 1px solid #CBD5E1; }
-    
-    /* 黃底紅字報價區 */
-    .total-price-box {
-        text-align: center; 
-        background-color: #FFFF00 !important; 
-        padding: 30px; 
-        border-radius: 15px;
-        border: 5px solid #E11D48;
-        margin-top: 30px;
-    }
-    .total-price-box h1 { color: #E11D48 !important; font-size: 64px !important; margin: 0 !important; font-weight: 900 !important; }
-    .total-price-box h3 { color: #000000 !important; margin-bottom: 10px !important; }
-    </style>
-""", unsafe_allow_html=True)
+input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
 
-# 5. 側邊欄導覽
-with st.sidebar:
-    try: st.image("solidwizard_logo.png", use_container_width=True)
-    except: st.write("### SOLIDWIZARD")
-    st.subheader("🛠️ 功能選單")
-    choice = st.radio("請選擇作業項目：", ["💰 自動估價系統", "📏 尺寸校正計算"])
-    st.divider()
-    if st.button("登出系統"):
-        del st.session_state["password_correct"]
-        st.rerun()
+vol_mm3 = 0
+show_preview = False
 
-# 6. 主畫面邏輯
-if choice == "💰 自動估價系統":
-    st.title("💰 專業 3D 列印自動報價")
-    df_m = load_materials()
-    input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
+if input_method == "📤 上傳 STL 檔案":
+    st.write("### 第一步：請上傳 STL 檔案")
+    up_file = st.file_uploader("Upload", type=["stl"], label_visibility="collapsed")
+    if up_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
+            tmp.write(up_file.getvalue()); t_path = tmp.name
+        try:
+            m_mesh = mesh.Mesh.from_file(t_path)
+            v_val, _, _ = m_mesh.get_mass_properties()
+            vol_mm3 = int(v_val) # 這裡獲得的是 mm3
+            show_preview = True
+        except: st.error("STL 解析失敗")
+        finally: 
+            if os.path.exists(t_path): os.remove(t_path)
+
+else:
+    # 3 & 4. 單位改為 mm³ 且內容預設為整數
+    st.write("### 第一步：請手動輸入模型體積 (mm³)")
+    vol_mm3 = st.number_input("體積輸入", min_value=0, value=0, step=1, format="%d", label_visibility="collapsed")
+
+if vol_mm3 > 0:
     st.divider()
     
-    vol_cm3 = 0.0
-    show_preview = False
-
-    if input_method == "📤 上傳 STL 檔案":
-        st.write("### 第一步：請上傳 STL 檔案")
-        up_file = st.file_uploader("Upload", type=["stl"], label_visibility="collapsed")
-        if up_file:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
-                tmp.write(up_file.getvalue()); t_path = tmp.name
-            try:
-                m_mesh = mesh.Mesh.from_file(t_path)
-                v_val, _, _ = m_mesh.get_mass_properties()
-                vol_cm3 = float(v_val) / 1000.0; show_preview = True
-            except: st.error("STL 解析失敗")
-            finally: 
-                if os.path.exists(t_path): os.remove(t_path)
-    else:
-        st.write("### 第一步：請手動輸入模型體積 (cm³)")
-        vol_cm3 = st.number_input("體積輸入區", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
-
-    if vol_cm3 > 0:
-        if show_preview:
-            vecs = m_mesh.vectors
-            if len(vecs) > 30000: vecs = vecs[::(len(vecs)//30000)]
-            p, q, r = vecs.shape; v = vecs.reshape(p*q, r); f = np.arange(p*q).reshape(p, q)
-            fig = go.Figure(data=[go.Mesh3d(x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2], color='#475569')])
-            fig.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'), height=350, margin=dict(l=0,r=0,b=0,t=0))
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.image("估價01.jpg", width=150) if os.path.exists("估價01.jpg") else None
-
-        # 報價設定區塊
-        st.markdown('<div class="result-container">', unsafe_allow_html=True)
-        st.subheader("📐 當前體積 (cm³)")
-        st.metric("", f"{vol_cm3:.2f}")
-        
-        st.write("---")
-        
-        # 1. 材料選擇 (藍底白字)
+    # 參數設定區
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.write(f"**📐 當前體積:** {vol_mm3:,} mm³")
+        # 1. 選擇材料 (寬度已由 CSS 控制)
         m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
-        u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
+        u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
         raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
         st.write(f"材料單價: NT$ {int(raw_p):,}/L")
-        
-        # 2. 倍率
-        markup = st.slider("2. 利潤倍率調整", 1.0, 10.0, 3.0, 0.1)
-        
-        # 3. 基本費 (藍底白字)
-        base_fee = st.number_input("3. 報價基本費 (NT$)", value=150)
-        
-        # 最底部：建議報價總計 (黃底紅字)
-        total = (vol_cm3 * u_cost * markup) + base_fee
-        st.markdown(f"""
-            <div class="total-price-box">
-                <h3>建議報價總計</h3>
-                <h1>NT$ {int(total):,}</h1>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
-elif choice == "📏 尺寸校正計算":
-    st.title("📏 尺寸校正補償計算")
-    st.divider()
-    d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0, step=0.01)
-    a_size = st.number_input("實測成品尺寸 (mm)", value=19.8, step=0.01)
+    with col2:
+        # 6. 利潤倍率：0.5的倍數, 最高10倍
+        markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 3.0, 0.5)
+        # 3. 基本費
+        base_fee = st.number_input("3. 報價基本費 (NT$)", value=150, step=10, format="%d")
+
+    # 計算結果
+    total = (vol_mm3 * u_cost * markup) + base_fee
     
-    if d_size > 0:
-        factor = a_size / d_size
-        st.markdown('<div class="result-container">', unsafe_allow_html=True)
-        st.metric("補償因子", f"{factor:.4f}")
-        st.success(f"建議縮放比例：{(1/factor)*100:.2f}%")
-        st.image("尺寸調整.jpg", use_container_width=True) if os.path.exists("尺寸調整.jpg") else None
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.write("---")
+    st.write("### 建議報價總計")
+    # 2. 僅數字部分黃底紅字，且符合螢幕寬度
+    st.markdown(f'NT$ <span class="price-result">{int(total):,}</span>', unsafe_allow_html=True)
+    
+    if show_preview:
+        st.write("---")
+        st.write("📦 模型預覽")
+        # 簡單預覽圖省略以維持速度

@@ -14,13 +14,11 @@ if "password_correct" not in st.session_state:
     # --- 登入頁面：強化按鈕可見度 ---
     st.markdown("""
         <style>
-        .stApp {
-            background-color: #0F172A !important;
-        }
-        h2, p, label {
-            color: #FFFFFF !important;
-        }
-        /* 修正輸入框：加入明顯邊框 */
+        /* 1. 登入背景 */
+        .stApp { background-color: #0F172A !important; }
+        h2, p, label { color: #FFFFFF !important; }
+        
+        /* 2. 輸入框 */
         div[data-testid="stTextInput"] input {
             background-color: #1E293B !important;
             color: #FFFFFF !important;
@@ -28,22 +26,21 @@ if "password_correct" not in st.session_state:
             -webkit-text-fill-color: #FFFFFF !important;
             border-radius: 8px !important;
         }
-        /* 💥 強制修正登入按鈕 💥 */
-        button[kind="primary"] {
+
+        /* 3. 強制渲染按鈕樣式 (不依賴 kind 參數) */
+        div.stButton > button {
             background-color: #1E40AF !important; /* 實威藍 */
             color: #FFFFFF !important;
             border: 1px solid #3B82F6 !important;
             width: 100% !important;
-            height: 45px !important;
+            height: 50px !important;
+            font-size: 18px !important;
             font-weight: bold !important;
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            margin-top: 10px !important;
+            border-radius: 8px !important;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
         }
-        /* 確保按鈕文字也是白色 */
-        button[kind="primary"] div p {
-            color: #FFFFFF !important;
+        div.stButton > button:active {
+            background-color: #3B82F6 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -52,16 +49,16 @@ if "password_correct" not in st.session_state:
     st.markdown("<h2 style='text-align:center;'>SOLIDWIZARD</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;'>3D列印線上估價系統</p>", unsafe_allow_html=True)
     
-    col_l, col_m, col_r = st.columns([1, 4, 1]) # 調整比例讓手機版更寬
+    col_l, col_m, col_r = st.columns([1, 6, 1]) # 手機版給予更多寬度
     with col_m:
         pwd = st.text_input("管理員密碼", type="password")
-        # 使用 primary 屬性確保套用上述 CSS
-        if st.button("確認登入", kind="primary"):
+        # 移除 kind="primary" 以避免 TypeError
+        if st.button("確認登入"):
             if pwd == "1234": 
                 st.session_state["password_correct"] = True
                 st.rerun()
             else: 
-                st.error("密碼錯誤")
+                st.error("密碼錯誤，請重新輸入")
     st.stop()
 
 # --- 進入系統後的 CSS (白底 + 精簡介面) ---

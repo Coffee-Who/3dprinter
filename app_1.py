@@ -9,7 +9,7 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 登入介面專用 CSS (絕對置中樣式)
+# 2. 登入介面專用 CSS
 def apply_login_style():
     st.markdown("""
         <style>
@@ -77,19 +77,26 @@ st.markdown("""
     section[data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; margin-left: 0 !important; }
     .main .block-container { max-width: 100% !important; padding: 2rem 3rem 2rem 2rem !important; margin-left: 0 !important; margin-right: auto !important; }
     
-    /* 1. 將 Radio 選項文字加大 */
+    /* Radio 選項與標籤文字加大 */
     [data-testid="stWidgetLabel"] p, div[data-testid="stMarkdownContainer"] p {
         font-size: 20px !important;
         font-weight: 500 !important;
     }
     
-    /* 強調標題文字 */
     .big-font {
         font-size: 24px !important;
         font-weight: bold !important;
         color: #1E40AF !important;
         margin-bottom: 15px !important;
         display: block;
+    }
+
+    /* 加大輸入欄位文字 */
+    div[data-testid="stNumberInput"] input {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        color: #1E40AF !important;
+        height: 60px !important;
     }
 
     .sidebar-title { font-size: 20px; font-weight: bold; color: #1E40AF; margin-bottom: 20px; }
@@ -112,7 +119,6 @@ if choice == "💰 自動估價系統":
     st.title("💰 專業 3D 列印自動報價")
     df_m = load_materials()
     
-    # 這裡的標籤文字會被 CSS 加大
     input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
     st.divider()
     
@@ -137,13 +143,13 @@ if choice == "💰 自動估價系統":
             finally:
                 if os.path.exists(t_path): os.remove(t_path)
     else:
-        # 手動輸入模式
-        st.markdown('<span class="big-font">第一步：請手動輸入模型體積</span>', unsafe_allow_html=True)
-        
-        # 2. 透過 columns 縮小輸入欄位的寬度
-        col_input, col_empty = st.columns([1, 2]) # 1:2 的比例，讓輸入框只佔 1/3 寬度
+        st.markdown('<span class="big-font">第一步：請手動輸入模型體積 (cm³)</span>', unsafe_allow_html=True)
+        col_input, col_icon = st.columns([1.2, 2.5])
         with col_input:
-            vol_cm3 = st.number_input("體積數值 (cm³ / ml)", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
+            vol_cm3 = st.number_input("體積數值", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
+        with col_icon:
+            try: st.image("估價01.jpg", width=60)
+            except: pass
 
     if vol_cm3 > 0:
         c1, c2 = st.columns([1.6, 1])
@@ -160,6 +166,8 @@ if choice == "💰 自動估價系統":
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("ℹ️ 目前為手動輸入模式，無 3D 預覽圖。")
+                try: st.image("估價01.jpg", width=250)
+                except: pass
         
         with c2:
             st.subheader("📊 報價設定")
@@ -168,22 +176,43 @@ if choice == "💰 自動估價系統":
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
             markup = st.slider("2. 利潤加成倍率", 1.0, 10.0, 3.0, 0.1)
             base_fee = st.number_input("3. 基本處理費 (NTD)", value=150)
-            
             total = (vol_cm3 * u_cost * markup) + base_fee
             st.divider()
-            st.markdown(f"### 建議報價總計")
-            st.markdown(f"<h1 style='color:#E11D48; font-size:54px;'>NT$ {int(total):,}</h1>", unsafe_allow_html=True)
+            res_col1, res_col2 = st.columns([1, 4])
+            with res_col1:
+                try: st.image("估價01.jpg", width=70)
+                except: pass
+            with res_col2:
+                st.markdown(f"### 建議報價總計")
+                st.markdown(f"<h1 style='color:#E11D48; font-size:54px;'>NT$ {int(total):,}</h1>", unsafe_allow_html=True)
     else:
         st.info("💡 請上傳檔案或輸入體積以開始計算。")
 
 elif choice == "📏 尺寸校正計算":
     st.title("📏 尺寸校正補償計算")
-    col_a, col_b = st.columns(2)
+    st.write("根據實際成品與 CAD 尺寸的差異，計算縮放補償比例。")
+    st.divider()
+    
+    col_a, col_b = st.columns([1.5, 1])
     with col_a:
-        d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0)
-        a_size = st.number_input("實測尺寸 (mm)", value=19.8)
+        st.markdown('<span class="big-font">請輸入量測數據</span>', unsafe_allow_html=True)
+        # 放置圖示引導輸入
+        sub_col1, sub_col2 = st.columns([1, 3])
+        with sub_col1:
+            try: st.image("尺寸調整.jpg", width=120)
+            except: pass
+        with sub_col2:
+            d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0, step=0.01)
+            a_size = st.number_input("實測成品尺寸 (mm)", value=19.8, step=0.01)
+    
     with col_b:
         if d_size > 0:
             factor = a_size / d_size
-            st.metric("補償因子", f"{factor:.4f}")
-            st.success(f"建議縮放比例: **{(1/factor)*100:.2f}%**")
+            st.markdown('<span class="big-font">計算結果</span>', unsafe_allow_html=True)
+            st.metric("當前補償因子", f"{factor:.4f}")
+            
+            st.divider()
+            st.success(f"建議在 PreForm 設定縮放：\n## **{(1/factor)*100:.2f}%**")
+            # 在計算結果下方再放一次小圖示強化關聯
+            try: st.image("尺寸調整.jpg", width=200)
+            except: pass

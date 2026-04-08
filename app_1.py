@@ -73,67 +73,93 @@ if choice == "💰 自動估價系統":
                 your_mesh = mesh.Mesh.from_file(t_path)
                 vol_mm3 = int(abs(your_mesh.get_mass_properties()[0]))
 
-                # --- 🎯 專業打光渲染 (強化陰影與立體感) ---
-                st.write("📦 **高對比實體預覽**")
+                # --- 🎯 專業雙光源打光策略 (強化陰影與結構) ---
+                st.write("📦 **高解析度實體著色預覽**")
                 
+                # 取得頂點並重新排列以符合高精度 Mesh3d 格式
                 points = your_mesh.points.reshape(-1, 3)
                 v1, v2, v3 = points[::3], points[1::3], points[2::3]
                 vertices = np.vstack([v1, v2, v3])
-                
                 n = len(v1)
                 i, j, k = np.arange(n), np.arange(n) + n, np.arange(n) + 2*n
 
-                # 計算模型大小以動態調整光源位置
+                # 計算模型大小以動態調整打光中心
+                mid_point = (vertices.max(axis=0) + vertices.min(axis=0)) / 2
                 max_dim = np.max(vertices.max(axis=0) - vertices.min(axis=0))
 
                 fig = go.Figure(data=[
                     go.Mesh3d(
                         x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                         i=i, j=j, k=k,
-                        color='#D1D5DB', # 使用稍亮的灰色作為底色
-                        flatshading=True, # 保持專業面感
-                        # 強化光影參數
+                        color='#D1D5DB', # 質感淺灰
+                        opacity=1.0,
+                        
+                        # 重要：Gouraud 著色可平滑三角面結構，不亂線且呈現光滑實體感
+                        # 如果需要專業面感，可將此改為True
+                        flatshading=False, 
+                        
+                        # 進階打光參數
                         lighting=dict(
-                            ambient=0.3,   # 降低環境光，讓陰影更深
-                            diffuse=0.9,   # 強化漫反射，亮部更明顯
-                            specular=1.2,  # 提高鏡面高光，產生邊緣亮點
-                            roughness=0.1, # 降低粗糙度，讓光影轉折更銳利
+                            ambient=0.1,    # 極低環境光，強迫產生陰影
+                            diffuse=0.9,    # 高漫反射，亮部清晰
+                            specular=1.5,   # 極高高光，轉折處會產生銳利光亮
+                            roughness=0.1,  # 低粗糙度，讓光影轉折銳利
                             fresnel=0.5
                         ),
-                        # 設定主光源方向 (斜上方)
-                        lightposition=dict(x=max_dim*2, y=max_dim*2, z=max_dim*5),
+                        
+                        # 光源策略：使用自動跟隨攝影機的頭燈＋側向棚燈
+                        lightposition=dict(
+                            # 棚燈位置：設定斜上方45度，且隨模型大小動態調整距離
+                            x=mid_point[0]+max_dim, 
+                            y=mid_point[1]+max_dim, 
+                            z=mid_point[2]+max_dim
+                        ),
                         showscale=False
                     )
                 ])
 
                 fig.update_layout(
                     scene=dict(
-                        xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False),
+                        xaxis=dict(visible=False, showgrid=False, zeroline=False),
+                        yaxis=dict(visible=False, showgrid=False, zeroline=False),
+                        zaxis=dict(visible=False, showgrid=False, zeroline=False),
                         aspectmode='data', 
-                        bgcolor='#0F172A', # 改用深藍黑背景，更能襯托出模型的陰影與光澤
-                        camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)) # 預設最佳觀看視角
+                        bgcolor='#0F172A', # 深藍黑背景，衬托陰影
+                        
+                        # 攝影機初始視角
+                        camera=dict(
+                            eye=dict(x=1.3, y=1.3, z=1.3),
+                            up=dict(x=0, y=0, z=1)
+                        )
                     ),
-                    margin=dict(l=0, r=0, b=0, t=0), height=500
+                    margin=dict(l=0, r=0, b=0, t=0), height=550
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-            except: st.error("解析失敗")
+            except Exception as e:
+                st.error(f"STL 解析失敗，請確認檔案。")
             finally: 
                 if os.path.exists(t_path): os.remove(t_path)
     else:
         vol_mm3 = st.number_input("輸入體積 (mm³)", value=0, step=1, format="%d")
 
     if vol_mm3 > 0:
-        st.write(f"**📐 體積:** {vol_mm3:,} mm³")
+        st.write(f"**📐 當前模型體積:** {vol_mm3:,} mm³")
         col1, col2 = st.columns(2)
         with col1:
-            m_choice = st.selectbox("1. 材料", df_m["Formlabs"].tolist())
-            u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
+            m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
+            u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "per_mm3_cost"].values[0]
+            raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
+            st.info(f"💡 材料成本：NT$ {u_cost:.6f}/mm³ (L單價: {int(raw_p):,})")
+        
         with col2:
-            markup = st.slider("2. 利潤倍率", 0.5, 10.0, 1.0, 0.5)
-            base_fee = st.number_input("3. 基本報價費 (NT$)", value=0, step=10, format="%d")
+            markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 1.0, 0.5)
+            base_fee = st.number_input("3. 報價基本費 (NT$)", min_value=0, value=0, step=10, format="%d")
 
-        total = (vol_mm3 * u_cost * markup) + base_fee
+        # 計算結果顯示到小數點一位
+        mat_cost_total = vol_mm3 * u_cost
+        total_price = (mat_cost_total * markup) + base_fee
+        
         st.divider()
         st.write("### 建議報價總計")
-        st.markdown(f'NT$ <span class="price-result">{total:,.1f}</span>', unsafe_allow_html=True)
+        st.markdown(f'NT$ <span class="price-result">{total_price:,.1f}</span>', unsafe_allow_html=True)

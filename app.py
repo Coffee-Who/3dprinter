@@ -10,7 +10,7 @@ st.title("🖨️ 3D 列印專業服務系統")
 selection = image_select(
     label="請選擇功能項目",
     images=[
-        "https://github.com/Coffee-Who/3dprinter/blob/main/6954_6438b3654f0ad.png",  # 估價圖示 (範例)
+        "6954_6438b3654f0ad.png",  # 估價圖示 (範例)
         "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"   # 校正圖示 (範例)
     ],
     captions=["💰 線上估價系統", "📏 尺寸校正助手"],

@@ -9,7 +9,7 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 登入介面專用 CSS
+# 2. 登入介面專用 CSS (絕對置中樣式)
 def apply_login_style():
     st.markdown("""
         <style>
@@ -69,7 +69,7 @@ if "password_correct" not in st.session_state:
             st.error("密碼不正確")
     st.stop()
 
-# 4. 主介面 CSS 優化 (文字加大與框體等寬)
+# 4. 主介面 CSS 優化
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background-color: #F8FAFC !important; }
@@ -77,7 +77,13 @@ st.markdown("""
     section[data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; margin-left: 0 !important; }
     .main .block-container { max-width: 100% !important; padding: 2rem 3rem 2rem 2rem !important; margin-left: 0 !important; margin-right: auto !important; }
     
-    /* 加大上傳文字標題 */
+    /* 1. 將 Radio 選項文字加大 */
+    [data-testid="stWidgetLabel"] p, div[data-testid="stMarkdownContainer"] p {
+        font-size: 20px !important;
+        font-weight: 500 !important;
+    }
+    
+    /* 強調標題文字 */
     .big-font {
         font-size: 24px !important;
         font-weight: bold !important;
@@ -86,11 +92,6 @@ st.markdown("""
         display: block;
     }
 
-    /* 確保 Number Input 容器寬度撐滿 */
-    div[data-testid="stNumberInput"] {
-        width: 100% !important;
-    }
-    
     .sidebar-title { font-size: 20px; font-weight: bold; color: #1E40AF; margin-bottom: 20px; }
     </style>
 """, unsafe_allow_html=True)
@@ -111,6 +112,7 @@ if choice == "💰 自動估價系統":
     st.title("💰 專業 3D 列印自動報價")
     df_m = load_materials()
     
+    # 這裡的標籤文字會被 CSS 加大
     input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
     st.divider()
     
@@ -118,7 +120,6 @@ if choice == "💰 自動估價系統":
     show_preview = False
 
     if input_method == "📤 上傳 STL 檔案":
-        # 使用自定義 HTML 類別加大文字
         st.markdown('<span class="big-font">第一步：請上傳 STL 模型檔案</span>', unsafe_allow_html=True)
         up_file = st.file_uploader("Upload STL", type=["stl"], label_visibility="collapsed")
         
@@ -138,8 +139,11 @@ if choice == "💰 自動估價系統":
     else:
         # 手動輸入模式
         st.markdown('<span class="big-font">第一步：請手動輸入模型體積</span>', unsafe_allow_html=True)
-        # 這裡會自動撐滿寬度
-        vol_cm3 = st.number_input("體積數值 (cm³ / ml)", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
+        
+        # 2. 透過 columns 縮小輸入欄位的寬度
+        col_input, col_empty = st.columns([1, 2]) # 1:2 的比例，讓輸入框只佔 1/3 寬度
+        with col_input:
+            vol_cm3 = st.number_input("體積數值 (cm³ / ml)", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
 
     if vol_cm3 > 0:
         c1, c2 = st.columns([1.6, 1])

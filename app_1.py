@@ -27,7 +27,6 @@ def check_password():
 @st.cache_data
 def load_materials():
     try:
-        # 讀取你提供的 Formlabs材料.csv
         df = pd.read_csv("Formlabs材料.csv")
         df['每cm3成本'] = df['單價'] / 1000
         return df
@@ -39,15 +38,10 @@ if check_password():
     df_materials = load_materials()
     
     with st.sidebar:
-        st.title("🛠️ 功能選單")
         selection = image_select(
-            label="功能導覽",
-            images=[
-                "https://cdn-icons-png.flaticon.com/512/2953/2953536.png",
-                "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"
-            ],
-            captions=["自動估價系統", "SLA 尺寸校正"],
-            index=0
+            label="功能選單",
+            images=["https://cdn-icons-png.flaticon.com/512/2953/2953536.png", "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"],
+            captions=["自動估價系統", "SLA 尺寸校正"]
         )
 
     if "2953536" in selection:
@@ -65,28 +59,28 @@ if check_password():
                 tmp_path = tmp.name
             
             with col1:
-                st.subheader("📦 3D 網格預覽")
-                # --- 開啟三角網格模式 ---
+                st.subheader("📦 3D 網格結構預覽")
+                # 這裡調整顏色參數讓網格線更明顯
                 stl_from_file(
                     file_path=tmp_path, 
-                    color='#808080',      # 設定成沉穩的灰色
-                    material='flat', 
-                    auto_rotate=True,
-                    wireframe=True        # <--- 重點！開啟三角網格顯示
+                    color='#555555',      # 模型改用深灰色
+                    material='flat',      # 使用平面材質，網格線會更清晰
+                    auto_rotate=False,    # 關閉自動旋轉方便觀察細節
+                    wireframe=True        # 強制開啟三角網格線
                 )
-                st.caption("提示：滑鼠左鍵旋轉、右鍵平移、滾輪縮放。可以看到細膩的三角網格。")
+                st.caption("提示：近距離滾輪放大，可以觀察到表面的三角網格連線。")
 
             with col2:
-                st.subheader("📊 數據分析")
+                st.subheader("📊 數據分析與報價")
                 try:
                     m = mesh.Mesh.from_file(tmp_path)
                     vol, _, _ = m.get_mass_properties()
                     v_cm3 = float(vol) / 1000.0
-                    st.metric("模型體積", f"{v_cm3:.2f} cm³")
+                    st.metric("偵測體積", f"{v_cm3:.2f} cm³")
                 except:
                     st.error("解析失敗")
                 
-                material_choice = st.selectbox("選擇材料型號", df_materials["Formlabs"].tolist())
+                material_choice = st.selectbox("請選擇材料", df_materials["Formlabs"].tolist())
                 cost_unit = df_materials.loc[df_materials["Formlabs"] == material_choice, "每cm3成本"].values[0]
                 
                 markup = st.slider("報價倍率", 1.0, 10.0, 3.0)
@@ -94,13 +88,12 @@ if check_password():
                 
                 total_price = (v_cm3 * cost_unit * markup) + base_fee
                 st.divider()
-                st.markdown(f"### 📢 建議報價：<span style='color:red; font-size:40px;'>NT$ {int(total_price)}</span>", unsafe_allow_html=True)
+                st.markdown(f"### 建議報價：<span style='color:red; font-size:40px;'>NT$ {int(total_price)}</span>", unsafe_allow_html=True)
 
             os.remove(tmp_path)
         else:
-            st.info("請先上傳 STL 檔案以查看預覽與價格。")
+            st.info("💡 請上傳 STL 檔案以顯示 3D 網格預覽。")
 
     else:
-        # 校正助手邏輯保持不變...
         st.title("📏 SLA 尺寸校正助手")
-        # (您的校正程式碼...)
+        # (校正邏輯保持不變)

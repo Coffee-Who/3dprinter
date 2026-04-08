@@ -33,31 +33,59 @@ def load_materials():
     except:
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
-# --- 3. 3D 預覽函數 ---
+# --- 3. 強化版 3D 預覽 (藍色主體 + 黑色網格) ---
 def show_3d_preview(file_path):
     try:
         m_data = mesh.Mesh.from_file(file_path)
         vecs = m_data.vectors
-        if len(vecs) > 25000:
-            step = len(vecs) // 25000
+        
+        # 強制抽樣：將面數限制在 15,000 以內以確保 100% 渲染成功
+        max_display_faces = 15000
+        if len(vecs) > max_display_faces:
+            step = len(vecs) // max_display_faces
             vecs = vecs[::step]
         
         p, q, r = vecs.shape
         v = vecs.reshape(p*q, r)
         f = np.arange(p*q).reshape(p, q)
         
-        fig = go.Figure(data=[go.Mesh3d(
+        # 建立 Mesh 圖層
+        fig = go.Figure()
+        
+        # 藍色主體
+        fig.add_trace(go.Mesh3d(
             x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2],
             color='royalblue', opacity=1.0, flatshading=True,
-            line=dict(color='black', width=1), showlegend=False
-        )])
+            name='模型主體'
+        ))
+        
+        # 黑色線框 (Wireframe)
+        fig.add_trace(go.Mesh3d(
+            x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2],
+            color='black', opacity=1.0, wireframe=True,
+            name='三角網格'
+        ))
+
         fig.update_layout(
-            scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'),
-            margin=dict(l=0, r=0, b=0, t=0), height=500
+            scene=dict(
+                xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, 
+                aspectmode='data', bgcolor='white'
+            ),
+            margin=dict(l=0, r=0, b=0, t=0), height=600,
+            showlegend=False
         )
         st.plotly_chart(fig, use_container_width=True)
-    except:
-        st.warning("⚠️ 預覽暫時無法載入")
+        
+    except Exception as e:
+        st.error(f"預覽渲染遇到問題，已切換至輕量模式。")
+        # 降級方案：顯示點雲
+        try:
+            v = mesh.Mesh.from_file(file_path).vectors.reshape(-1, 3)
+            if len(v) > 10000: v = v[::(len(v)//10000)]
+            fig = go.Figure(data=[go.Scatter3d(x=v[:,0], y=v[:,1], z=v[:,2], mode='markers', marker=dict(size=1, color='royalblue'))])
+            st.plotly_chart(fig, use_container_width=True)
+        except:
+            st.warning("無法顯示該檔案預覽")
 
 # --- 4. 主程式 ---
 if check_password():
@@ -82,7 +110,7 @@ if check_password():
                 t_path = tmp.name
             
             with c1:
-                st.subheader("📦 3D 網格結構分析")
+                st.subheader("📦 3D 結構分析預覽")
                 show_3d_preview(t_path)
             
             with c2:
@@ -95,35 +123,33 @@ if check_password():
                 except:
                     st.error("體積計算失敗")
                 
-                # 材料與單價
                 m_choice = st.selectbox("樹脂型號 (來自 Excel)", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
                 
-                # 計算設定
-                markup = st.slider("報價倍率 (含利潤與損耗)", 1.0, 5.0, 1.0, step=0.1)
-                base_fee = st.number_input("上機基本費 ", value=150)
+                markup = st.slider("報價倍率 (利潤/人工)", 1.0, 10.0, 3.0, step=0.1)
+                base_fee = st.number_input("起鍋費 (固定成本)", value=150)
                 
-                # 總價計算
-                material_total = vol_cm3 * u_cost
-                markup_total = material_total * (markup - 1)
+                # 計算細項
+                cost_raw = vol_cm3 * u_cost
+                cost_profit = cost_raw * (markup - 1)
                 final_total = (vol_cm3 * u_cost * markup) + base_fee
                 
                 st.divider()
                 st.markdown(f"### 📢 建議報價: <span style='color:red; font-size:40px;'>NT$ {int(final_total)}</span>", unsafe_allow_html=True)
                 
-                # --- 重新加入細項說明 ---
+                # 重新加入細項
                 with st.expander("🔍 查看報價組成細項"):
-                    st.write(f"1. **材料原始成本**: NT$ {int(material_total)} ({vol_cm3:.2f} cm³ × {u_cost:.2f} 元)")
-                    st.write(f"2. **加工與利潤加成**: NT$ {int(markup_total)} (倍率 x{markup})")
-                    st.write(f"3. **固定費用**: NT$ {base_fee} 元")
-                    st.info(f"計算公式: (體積 × 單價 × 倍率) + 固定費")
+                    st.write(f"1. **材料原始成本**: NT$ {int(cost_raw)} ({vol_cm3:.2f} cm³ × {u_cost:.2f} 元)")
+                    st.write(f"2. **加工與利潤加成**: NT$ {int(cost_profit)} (倍率 x{markup})")
+                    st.write(f"3. **上機固定費用**: NT$ {base_fee} 元")
+                    st.info(f"總價 = (材料成本 × 倍率) + 固定費")
             
             os.remove(t_path)
         else:
-            st.info("💡 請上傳 STL 檔案開始估價。")
+            st.info("💡 請上傳 STL 檔案開始分析。")
     else:
         st.title("📏 SLA 尺寸校正助手")
-        ca = st.number_input("CAD 設計尺寸 (mm)", value=10.0)
-        re = st.number_input("實測尺寸 (mm)", value=10.0)
+        ca = st.number_input("CAD 設計值 (mm)", value=10.0)
+        re = st.number_input("實測值 (mm)", value=10.0)
         if ca > 0:
-            st.metric("Preform 校正因子", f"{(re/ca):.4f}")
+            st.metric("校正因子", f"{(re/ca):.4f}")

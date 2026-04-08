@@ -12,41 +12,35 @@ st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide"
 # 2. 全域樣式優化
 st.markdown("""
     <style>
-    /* 確保手機版側邊欄切換按鈕可見 (解決手機版選單不見問題) */
+    /* 確保手機版側邊欄切換按鈕在白底上清晰可見 */
     [data-testid="stSidebarCollapseButton"] {
-        display: block !important;
-        color: #000000 !important;
-        background-color: #F0F2F6 !important;
-        border-radius: 50% !important;
+        background-color: #E2E8F0 !important;
+        color: #1E40AF !important;
+        border-radius: 8px !important;
         top: 10px !important;
-        left: 10px !important;
     }
     
-    /* 確保側邊欄標題與內容顏色正常 */
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label p {
-        color: #000000 !important;
-    }
-
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
-    
-    /* 1. STL 上傳框改為白底黑字 */
+
+    /* --- 1. 僅上傳區塊改成 白底黑字 --- */
     div[data-testid="stFileUploader"] section {
         background-color: #FFFFFF !important; 
         color: #000000 !important;
-        border: 2px dashed #1E40AF !important;
+        border: 2px dashed #CBD5E1 !important;
         border-radius: 8px !important;
+        max-width: 250px !important; /* 縮小寬度 */
     }
-    /* 上傳框內的文字與圖示顏色 */
-    div[data-testid="stFileUploader"] label, div[data-testid="stFileUploader"] svg {
+    div[data-testid="stFileUploader"] label, 
+    div[data-testid="stFileUploader"] p, 
+    div[data-testid="stFileUploader"] small {
         color: #000000 !important;
-        fill: #000000 !important;
     }
 
-    /* 其他輸入框 (數字、下拉選單) 維持藍底白字 + 寬度限制 */
+    /* --- 2. 其餘輸入框 (數字、下拉選單) 維持藍底白字 --- */
     div[data-testid="stNumberInput"], 
     div[data-baseweb="select"] {
-        max-width: 300px !important; 
+        max-width: 250px !important; /* 縮小所有欄位寬度 */
     }
 
     div[data-testid="stNumberInput"] input,
@@ -56,18 +50,19 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
+    /* 強制設定輸入框內文字為白色 (防止手機版跑色) */
     div[data-testid="stNumberInput"] input, 
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         -webkit-text-fill-color: #FFFFFF !important;
         font-weight: bold !important;
     }
 
-    /* 建議報價結果樣式 */
+    /* 3. 建議報價結果樣式 */
     .price-result {
         display: inline-block;
         background-color: #FFFF00 !important;
         color: #E11D48 !important;
-        padding: 8px 18px;
+        padding: 5px 15px;
         border-radius: 8px;
         font-size: 42px !important;
         font-weight: 900 !important;
@@ -100,7 +95,7 @@ def load_materials():
     df['每mm3成本'] = df['單價'] / 1000000 
     return df
 
-# 5. 側邊欄導覽 (功能選單)
+# 5. 側邊欄導覽
 with st.sidebar:
     try:
         st.image("solidwizard_logo.png", use_container_width=True)
@@ -146,7 +141,6 @@ if choice == "💰 自動估價系統":
             st.write(f"**📐 當前體積:** {vol_mm3:,} mm³")
             m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每mm3成本"].values[0]
-            st.write(f"單價: NT$ {int(df_m.loc[df_m['Formlabs']==m_choice, '單價'].values[0]):,}/L")
         with col2:
             markup = st.slider("2. 利潤倍率調整", 0.5, 10.0, 3.0, 0.5)
             base_fee = st.number_input("3. 報價基本費 (NT$)", value=150, step=10, format="%d")
@@ -168,8 +162,5 @@ elif choice == "📏 尺寸校正計算":
         factor = a_size / d_size
         suggested_scale = (1 / factor) * 100 if factor != 0 else 0
         st.divider()
-        res1, res2 = st.columns(2)
-        with res1: st.metric("補償因子", f"{factor:.4f}")
-        with res2:
-            st.write("建議縮放比例")
-            st.markdown(f'<span class="price-result">{suggested_scale:.2f}%</span>', unsafe_allow_html=True)
+        st.write("建議縮放比例")
+        st.markdown(f'<span class="price-result">{suggested_scale:.2f}%</span>', unsafe_allow_html=True)

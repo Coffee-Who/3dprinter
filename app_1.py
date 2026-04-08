@@ -9,7 +9,7 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 登入介面專用 CSS (僅在未登入時強力隱藏所有元件)
+# 2. 登入介面專用 CSS
 def apply_login_style():
     st.markdown("""
         <style>
@@ -65,19 +65,17 @@ if "password_correct" not in st.session_state:
         else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 主介面樣式 (登入後解鎖側邊欄並設定大字體)
+# 4. 主介面樣式 (解鎖側邊欄與設定大字體)
 st.markdown("""
     <style>
-    /* 解鎖側邊欄與頁首，並恢復正常背景 */
-    [data-testid="stHeader"], [data-testid="stSidebar"] { 
-        display: block !important; 
-    }
+    /* 解鎖元件顯示 */
+    [data-testid="stHeader"], [data-testid="stSidebar"] { display: block !important; }
     .stApp { background-color: #F8FAFC !important; }
     
-    /* 核心數據加大顯示 */
+    /* 當前體積數字 (42px) */
     [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; }
 
-    /* 修正材料選擇框 (Selectbox) 的大字 */
+    /* 材料選擇框大字 */
     div[data-baseweb="select"] > div {
         font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important; height: 80px !important;
         display: flex !important; align-items: center !important;
@@ -86,17 +84,17 @@ st.markdown("""
         font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important;
     }
 
-    /* 基本費輸入框樣式 */
+    /* 基本費輸入框大字 */
     div[data-testid="stNumberInput"] input {
         font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; height: 80px !important;
     }
 
-    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; margin-top: 20px; }
+    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     .big-font { font-size: 24px !important; font-weight: bold !important; color: #1E40AF !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# 5. 側邊欄導覽 (現在會顯示了)
+# 5. 側邊欄導覽
 with st.sidebar:
     try: st.image("solidwizard_logo.png", use_container_width=True)
     except: st.write("### SOLIDWIZARD")
@@ -146,24 +144,41 @@ if choice == "💰 自動估價系統":
         else:
             st.image("估價01.jpg", width=250) if os.path.exists("估價01.jpg") else None
 
+        # --- 報價面板 (參數垂直排列排列) ---
         st.markdown('<div class="result-container">', unsafe_allow_html=True)
         st.subheader("📊 報價參數設定")
-        set1, set2, set3, set4 = st.columns([1.2, 2.0, 0.8, 1.0])
-        with set1: st.metric("當前體積 (cm³)", f"{vol_cm3:.2f}")
-        with set2:
+        
+        main_col1, main_col2 = st.columns([1, 2.5])
+        
+        with main_col1:
+            st.metric("當前體積 (cm³)", f"{vol_cm3:.2f}")
+            st.image("估價01.jpg", width=120) if os.path.exists("估價01.jpg") else None
+        
+        with main_col2:
+            # 1. 材料選擇
             m_choice = st.selectbox("1. 選擇材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
             raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
-            st.markdown(f'<p style="font-size:16px; font-weight:bold; color:#64748B; margin-top:5px;">單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
-        with set3: markup = st.slider("2. 倍率", 1.0, 10.0, 3.0, 0.1)
-        with set4: base_fee = st.number_input("3. 基本費", value=150)
+            st.markdown(f'<p style="font-size:16px; font-weight:bold; color:#64748B;">材料單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
+            
+            st.write("") # 間隔
+            
+            # 2. 倍率 (放在材料下方)
+            markup = st.slider("2. 利潤倍率調整", 1.0, 10.0, 3.0, 0.1)
+            
+            st.write("") # 間隔
+            
+            # 3. 基本費 (放在倍率下方)
+            base_fee = st.number_input("3. 報價基本費 (NT$)", value=150)
+
         st.divider()
-        res1, res2 = st.columns([1, 5])
-        with res1: st.image("估價01.jpg", width=100) if os.path.exists("估價01.jpg") else None
-        with res2:
-            total = (vol_cm3 * u_cost * markup) + base_fee
-            st.markdown("### 建議報價總計")
-            st.markdown(f"<h1 style='color:#E11D48; font-size:64px; margin-top:-10px;'>NT$ {int(total):,}</h1>", unsafe_allow_html=True)
+        
+        # 建議報價結果
+        total = (vol_cm3 * u_cost * markup) + base_fee
+        st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+        st.markdown("### 建議報價總計")
+        st.markdown(f"<h1 style='color:#E11D48; font-size:72px; margin-top:-10px;'>NT$ {int(total):,}</h1>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif choice == "📏 尺寸校正計算":
@@ -173,6 +188,7 @@ elif choice == "📏 尺寸校正計算":
     with in1: d_size = st.number_input("CAD 設計尺寸 (mm)", value=20.0, step=0.01)
     with in2: a_size = st.number_input("實測成品尺寸 (mm)", value=19.8, step=0.01)
     with in3: st.image("尺寸調整.jpg", width=100) if os.path.exists("尺寸調整.jpg") else None
+    
     if d_size > 0:
         factor = a_size / d_size
         st.markdown('<div class="result-container">', unsafe_allow_html=True)

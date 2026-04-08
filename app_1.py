@@ -17,57 +17,62 @@ def apply_ultra_center_css():
         /* 隱藏預設頂部 Header */
         [data-testid="stHeader"] { display: none; }
 
-        /* A. 全站背景與置中佈局 */
+        /* A. 全站背景與強效置中佈局 */
         .stApp {
-            background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%);
+            background: radial-gradient(circle at center, #1E40AF 0%, #0F172A 100%) !important;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            height: 100vh;
+            height: 100vh !important;
         }
 
-        /* B. 強制主容器內容居中，解除靠左限制 */
+        /* B. 強制主容器內容居中，解除 Streamlit 預設的左側對齊 */
         [data-testid="stAppViewContainer"] {
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
             width: 100% !important;
         }
+        
+        [data-testid="stMain"] {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            width: 100% !important;
+        }
 
-        /* C. 針對 Streamlit 的 block-container 進行深度置中 */
+        /* C. 核心元件容器：強制所有子元件垂直排列且居中 */
         .main .block-container {
-            max-width: 500px !important; /* 限制寬度讓元件對齊 */
+            max-width: 500px !important; 
             padding: 0 !important;
             margin: auto !important;
             display: flex !important;
             flex-direction: column !important;
-            align-items: center !important; /* 關鍵：垂直軸對齊 */
+            align-items: center !important; /* 確保所有東西在水平線上置中 */
             justify-content: center !important;
         }
 
-        /* D. 強制圖片 (Logo) 置中 */
-        [data-testid="stImage"] > img {
-            margin-left: auto !important;
-            margin-right: auto !important;
-            display: block !important;
-        }
-        
-        /* 確保圖片外層 div 也是置中的 */
-        div[data-testid="stImage"] {
+        /* D. Logo (圖片) 置中修正 */
+        [data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
             width: 100% !important;
+            margin: 0 auto !important;
+        }
+        [data-testid="stImage"] img {
+            display: block !important;
+            margin: 0 auto !important;
         }
 
         /* E. 系統標題文字 */
         .user-name {
-            color: white;
-            font-size: 28px;
-            font-weight: 500;
-            margin: 25px 0 35px 0;
-            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
-            text-align: center;
-            width: 100%;
+            color: white !important;
+            font-size: 28px !important;
+            font-weight: 500 !important;
+            margin: 25px 0 35px 0 !important;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif !important;
+            text-align: center !important;
+            width: 100% !important;
         }
 
         /* F. 密碼框：精準寬度與居中 */
@@ -78,14 +83,18 @@ def apply_ultra_center_css():
             width: 260px !important;
             margin: 0 auto !important;
         }
-        input { color: white !important; text-align: center !important; }
+        input { 
+            color: white !important; 
+            text-align: center !important; 
+        }
         
-        /* G. 按鈕：移除所有預設對齊，強制水平置中 */
+        /* G. 按鈕：徹底置中修復 */
+        /* 針對 Streamlit 按鈕的包裹層進行置中 */
         div.stButton {
-            text-align: center !important;
             display: flex !important;
             justify-content: center !important;
             width: 100% !important;
+            margin: 0 auto !important;
         }
         
         .stButton button {
@@ -95,6 +104,14 @@ def apply_ultra_center_css():
             border: 1px solid rgba(255, 255, 255, 0.4) !important;
             margin: 10px auto !important;
         }
+        
+        /* 隱藏錯誤提示的背景，保持美觀 */
+        .stAlert {
+            background-color: transparent !important;
+            border: none !important;
+            color: #FF7070 !important;
+            text-align: center !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -103,11 +120,11 @@ def check_password():
     if "password_correct" not in st.session_state:
         apply_ultra_center_css()
         
-        # 1. Logo (確保 solidwizard_logo.png 在根目錄)
+        # 1. Logo (請確保 solidwizard_logo.png 存在)
         try:
             st.image("solidwizard_logo.png", width=240)
         except:
-            st.warning("⚠️ 請上傳 solidwizard_logo.png")
+            st.warning("⚠️ 檔案缺失: solidwizard_logo.png")
 
         # 2. 標題
         st.markdown('<div class="user-name">實威國際 3D列印線上估價</div>', unsafe_allow_html=True)
@@ -139,7 +156,7 @@ def load_materials():
 if check_password():
     df_m = load_materials()
     
-    # 進入後的樣式恢復 (取消全畫面居中，改回靠上佈局)
+    # 進入後的樣式恢復 (取消全畫面置中)
     st.markdown("""
         <style>
         .stApp { background: white !important; align-items: flex-start !important; justify-content: flex-start !important; height: auto !important; }
@@ -148,8 +165,7 @@ if check_password():
             max-width: 1200px !important; 
             padding-top: 2rem !important; 
             align-items: flex-start !important; 
-            margin-left: auto !important;
-            margin-right: auto !important;
+            margin: 0 auto !important;
         }
         </style>
     """, unsafe_allow_html=True)

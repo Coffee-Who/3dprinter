@@ -66,34 +66,52 @@ if "password_correct" not in st.session_state:
         else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 主介面樣式 (強制文字黑色以解決手機版看不見的問題)
+# 4. 主介面樣式 (強制輸入框藍底白字)
 st.markdown("""
     <style>
     [data-testid="stHeader"], [data-testid="stSidebar"] { display: block !important; }
     .stApp { background-color: #FFFFFF !important; }
     
-    /* 強制主畫面標題與一般文字為黑色 */
-    h1, h2, h3, p, span, label, div { color: #000000 !important; }
+    /* 強制標題文字為黑色 */
+    h1, h2, h3, p, span, label { color: #000000 !important; }
+    [data-testid="stWidgetLabel"] p { color: #000000 !important; font-weight: bold !important; font-size: 18px !important; }
 
-    /* 單選框與 Widget 標籤文字顏色修正 */
-    [data-testid="stWidgetLabel"] p, [data-testid="stMarkdownContainer"] p {
-        color: #000000 !important;
-        font-weight: bold !important;
-        font-size: 18px !important;
+    /* --- 核心修改：輸入框藍底白字 --- */
+    /* 1. 數字輸入框 (Number Input) */
+    div[data-testid="stNumberInput"] input {
+        background-color: #1E40AF !important; /* 深藍底 */
+        color: #FFFFFF !important;            /* 白字 */
+        font-size: 28px !important;
+        font-weight: 800 !important;
+        height: 65px !important;
+        border-radius: 10px !important;
+        -webkit-text-fill-color: #FFFFFF !important; /* 針對 iOS 手機強制白字 */
     }
-
-    /* 當前體積數字顏色 */
-    [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #000000 !important; }
-
-    /* 輸入框與選擇框內容文字 */
-    div[data-baseweb="select"] > div, div[data-testid="stNumberInput"] input {
-        font-size: 28px !important; font-weight: 800 !important; color: #000000 !important;
+    
+    /* 2. 下拉選單 (Selectbox) */
+    div[data-baseweb="select"] > div {
+        background-color: #1E40AF !important; /* 深藍底 */
+        border-radius: 10px !important;
+        height: 65px !important;
+        display: flex !important;
+        align-items: center !important;
     }
+    div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
+        color: #FFFFFF !important;            /* 白字 */
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    /* 下拉選單的小箭頭圖示改為白色 */
+    div[data-baseweb="select"] svg { fill: white !important; }
+
+    /* 當前體積數字顯示 */
+    [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; }
 
     /* 容器樣式 */
     .result-container { background-color: #F8FAFC; padding: 20px; border-radius: 15px; border: 1px solid #CBD5E1; }
     
-    /* 黃底紅字報價區 (置底顯示) */
+    /* 黃底紅字報價區 */
     .total-price-box {
         text-align: center; 
         background-color: #FFFF00 !important; 
@@ -143,10 +161,9 @@ if choice == "💰 自動估價系統":
                 if os.path.exists(t_path): os.remove(t_path)
     else:
         st.write("### 第一步：請手動輸入模型體積 (cm³)")
-        vol_cm3 = st.number_input("體積", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
+        vol_cm3 = st.number_input("體積輸入區", min_value=0.0, value=0.0, step=0.1, label_visibility="collapsed")
 
     if vol_cm3 > 0:
-        # 顯示 3D 預覽或圖片
         if show_preview:
             vecs = m_mesh.vectors
             if len(vecs) > 30000: vecs = vecs[::(len(vecs)//30000)]
@@ -159,12 +176,12 @@ if choice == "💰 自動估價系統":
 
         # 報價設定區塊
         st.markdown('<div class="result-container">', unsafe_allow_html=True)
-        st.subheader("📏 當前體積 (cm³)")
+        st.subheader("📐 當前體積 (cm³)")
         st.metric("", f"{vol_cm3:.2f}")
         
         st.write("---")
         
-        # 1. 材料選擇
+        # 1. 材料選擇 (藍底白字)
         m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
         u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
         raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
@@ -173,7 +190,7 @@ if choice == "💰 自動估價系統":
         # 2. 倍率
         markup = st.slider("2. 利潤倍率調整", 1.0, 10.0, 3.0, 0.1)
         
-        # 3. 基本費
+        # 3. 基本費 (藍底白字)
         base_fee = st.number_input("3. 報價基本費 (NT$)", value=150)
         
         # 最底部：建議報價總計 (黃底紅字)

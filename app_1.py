@@ -28,37 +28,58 @@ def check_password():
 @st.cache_data
 def load_materials():
     try:
-        # 讀取你上傳的 Formlabs材料.csv
         df = pd.read_csv("Formlabs材料.csv")
         df['每cm3成本'] = df['單價'] / 1000
         return df
-    except:
+    except Exception as e:
+        st.warning(f"材料清單讀取異常，請檢查 GitHub 檔案。")
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
-# --- 4. Plotly 預覽功能 (藍色主體 + 黑色網格線) ---
+# --- 4. 優化後的 Plotly 預覽 (藍色主體 + 黑色網格線) ---
 def show_3d_preview(file_path):
     try:
+        # 讀取 STL 模型
         m_data = mesh.Mesh.from_file(file_path)
-        p, q, r = m_data.vectors.shape
-        vertices = m_data.vectors.reshape(p*q, r)
+        
+        # 限制預覽的面數，避免網頁崩潰 (如果面數超過 50,000 則抽樣顯示)
+        max_faces = 50000
+        if len(m_data.vectors) > max_faces:
+            st.warning("⚠️ 模型面數過高，預覽已自動進行簡化以加速載入。")
+            indices = np.random.choice(len(m_data.vectors), max_faces, replace=False)
+            vectors = m_data.vectors[indices]
+        else:
+            vectors = m_data.vectors
+
+        p, q, r = vectors.shape
+        vertices = vectors.reshape(p*q, r)
         faces = np.arange(p*q).reshape(p, q)
         
         fig = go.Figure(data=[
             go.Mesh3d(
                 x=vertices[:,0], y=vertices[:,1], z=vertices[:,2],
                 i=faces[:,0], j=faces[:,1], k=faces[:,2],
-                color='royalblue', opacity=1.0, flatshading=True,
-                line=dict(color='black', width=1), # 黑色三角網格
+                color='royalblue',      # 藍色模型
+                opacity=1.0,
+                flatshading=True,
+                line=dict(color='black', width=1), # 黑色邊線
                 showlegend=False
             )
         ])
+        
         fig.update_layout(
-            scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectmode='data'),
-            margin=dict(l=0, r=0, b=0, t=0), height=500
+            scene=dict(
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                zaxis=dict(visible=False),
+                aspectmode='data'
+            ),
+            margin=dict(l=0, r=0, b=0, t=0),
+            height=600
         )
         st.plotly_chart(fig, use_container_width=True)
-    except:
-        st.warning("無法顯示 3D 預覽，但仍可計算價格。")
+    except Exception as e:
+        st.error(f"❌ 3D 預覽載入失敗。原因: {e}")
+        st.info("💡 這可能是因為模型檔案結構特殊，但不影響體積計算。")
 
 # --- 5. 主程式執行 ---
 if check_password():
@@ -78,7 +99,7 @@ if check_password():
 
     if "2953536" in selection:
         st.title("💰 Formlabs 自動估價系統")
-        uploaded_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
+        uploaded_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
         
         col1, col2 = st.columns([1.5, 1])
         v_cm3 = 0.0
@@ -98,32 +119,6 @@ if check_password():
                     m_calc = mesh.Mesh.from_file(tmp_path)
                     vol, _, _ = m_calc.get_mass_properties()
                     v_cm3 = float(vol) / 1000.0
-                    st.metric("偵測體積", f"{v_cm3:.2f} cm³")
+                    st.metric("偵測體積 (ml)", f"{v_cm3:.2f} cm³")
                 except:
-                    st.error("體積計算失敗")
-
-                m_type = st.selectbox("樹脂型號", df_materials["Formlabs"].tolist())
-                unit_cost = df_materials.loc[df_materials["Formlabs"] == m_type, "每cm3成本"].values[0]
-                
-                # 這裡修正了之前報錯的括號問題
-                markup = st.slider("報價倍率 (含人工損耗)", 1.0, 10.0, 3.0)
-                base_fee = st.number_input("基本起鍋費", value=150)
-                
-                total = (v_cm3 * unit_cost * markup) + base_fee
-                st.divider()
-                st.markdown(f"### 建議報價：<span style='color:red; font-size:40px;'>NT$ {int(total)}</span>", unsafe_allow_html=True)
-                st.info(f"材料成本參考：NT$ {unit_cost:.2f} / cm³")
-            
-            os.remove(tmp_path)
-        else:
-            st.info("💡 請上傳 STL 檔案來開始分析。")
-
-    else:
-        st.title("📏 SLA 尺寸校正助手")
-        c1, c2 = st.columns(2)
-        with c1:
-            cad = st.number_input("CAD 設計值 (mm)", value=10.0)
-        with c2:
-            real = st.number_input("實際量測值 (mm)", value=10.0)
-        if cad > 0:
-            st.metric("應填入 Preform 的校正因子", f"{(real/cad):.4f}")
+                    st.error("體積計算

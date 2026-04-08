@@ -61,4 +61,40 @@ def show_3d_preview(file_path):
 if check_password():
     df_m = load_materials()
     with st.sidebar:
-        sel = image_select(label="功能", images=["https://cdn-icons-png.flaticon.com/512/2953/2953536.png", "https://cdn
+        sel = image_select(label="功能", images=["https://cdn-icons-png.flaticon.com/512/2953/2953536.png", "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"], captions=["估價", "校正"])
+
+    if "2953536" in sel:
+        st.title("💰 報價系統")
+        up_file = st.file_uploader("上傳 STL", type=["stl"])
+        c1, c2 = st.columns([1.5, 1])
+        vol_cm3 = 0.0
+
+        if up_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmp:
+                tmp.write(up_file.getvalue())
+                t_path = tmp.name
+            with c1:
+                show_3d_preview(t_path)
+            with c2:
+                try:
+                    m = mesh.Mesh.from_file(t_path)
+                    v_val, _, _ = m.get_mass_properties()
+                    vol_cm3 = float(v_val) / 1000.0
+                    st.metric("體積", f"{vol_cm3:.2f} cm³")
+                except:
+                    st.error("計算失敗")
+                
+                m_choice = st.selectbox("樹脂型號", df_m["Formlabs"].tolist())
+                u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
+                markup = st.slider("倍率", 1.0, 10.0, 3.0)
+                base = st.number_input("固定費", value=150)
+                total = (vol_cm3 * u_cost * markup) + base
+                st.divider()
+                st.markdown(f"### 建議報價: <span style='color:red; font-size:35px;'>NT$ {int(total)}</span>", unsafe_allow_html=True)
+            os.remove(t_path)
+    else:
+        st.title("📏 尺寸校正")
+        ca = st.number_input("CAD (mm)", value=10.0)
+        re = st.number_input("實測 (mm)", value=10.0)
+        if ca > 0:
+            st.metric("校正因子", f"{(re/ca):.4f}")

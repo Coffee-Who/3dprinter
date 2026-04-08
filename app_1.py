@@ -25,6 +25,7 @@ def apply_login_style():
             justify-content: center !important;
             align-items: center !important;
             height: 100vh !important;
+            padding: 0 !important;
         }
         .stVerticalBlock { width: 100% !important; max-width: 420px !important; margin: auto !important; }
         .logo-box { display: flex !important; justify-content: center !important; margin-bottom: 25px !important; }
@@ -65,32 +66,38 @@ if "password_correct" not in st.session_state:
         else: st.error("密碼錯誤")
     st.stop()
 
-# 4. 主介面樣式 (解鎖側邊欄與設定大字體)
+# 4. 主介面樣式 (解鎖側邊欄與大字體優化)
 st.markdown("""
     <style>
-    /* 解鎖元件顯示 */
     [data-testid="stHeader"], [data-testid="stSidebar"] { display: block !important; }
     .stApp { background-color: #F8FAFC !important; }
     
-    /* 當前體積數字 (42px) */
     [data-testid="stMetricValue"] { font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; }
 
-    /* 材料選擇框大字 */
     div[data-baseweb="select"] > div {
-        font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important; height: 80px !important;
+        font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important; height: 75px !important;
         display: flex !important; align-items: center !important;
     }
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         font-size: 32px !important; font-weight: 800 !important; color: #1E40AF !important;
     }
 
-    /* 基本費輸入框大字 */
     div[data-testid="stNumberInput"] input {
-        font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; height: 80px !important;
+        font-size: 42px !important; font-weight: 800 !important; color: #1E40AF !important; height: 75px !important;
     }
 
-    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .result-container { background-color: #FFFFFF; padding: 30px; border-radius: 15px; border: 1px solid #E2E8F0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .big-font { font-size: 24px !important; font-weight: bold !important; color: #1E40AF !important; }
+    
+    /* 黃底紅字報價區樣式 */
+    .total-price-box {
+        text-align: center; 
+        background-color: #FFFF00; /* 黃底 */
+        padding: 20px; 
+        border-radius: 15px;
+        border: 3px solid #E11D48;
+        margin: 10px 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -111,6 +118,7 @@ if choice == "💰 自動估價系統":
     df_m = load_materials()
     input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
     st.divider()
+    
     vol_cm3 = 0.0
     show_preview = False
 
@@ -139,46 +147,40 @@ if choice == "💰 自動估價系統":
             if len(vecs) > 30000: vecs = vecs[::(len(vecs)//30000)]
             p, q, r = vecs.shape; v = vecs.reshape(p*q, r); f = np.arange(p*q).reshape(p, q)
             fig = go.Figure(data=[go.Mesh3d(x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2], color='#475569')])
-            fig.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'), height=450, margin=dict(l=0,r=0,b=0,t=0))
+            fig.update_layout(scene=dict(xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, aspectmode='data'), height=400, margin=dict(l=0,r=0,b=0,t=0))
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.image("估價01.jpg", width=250) if os.path.exists("估價01.jpg") else None
-
-        # --- 報價面板 (參數垂直排列排列) ---
+        
         st.markdown('<div class="result-container">', unsafe_allow_html=True)
-        st.subheader("📊 報價參數設定")
+        row_col1, row_col2 = st.columns([1, 1.5])
         
-        main_col1, main_col2 = st.columns([1, 2.5])
-        
-        with main_col1:
+        with row_col1:
+            st.subheader("📏 模型數據")
             st.metric("當前體積 (cm³)", f"{vol_cm3:.2f}")
-            st.image("估價01.jpg", width=120) if os.path.exists("估價01.jpg") else None
-        
-        with main_col2:
-            # 1. 材料選擇
-            m_choice = st.selectbox("1. 選擇材料", df_m["Formlabs"].tolist())
+            st.write("---")
+            m_choice = st.selectbox("1. 選擇列印材料", df_m["Formlabs"].tolist())
             u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
             raw_p = df_m.loc[df_m["Formlabs"] == m_choice, "單價"].values[0]
-            st.markdown(f'<p style="font-size:16px; font-weight:bold; color:#64748B;">材料單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
-            
-            st.write("") # 間隔
-            
-            # 2. 倍率 (放在材料下方)
+            st.markdown(f'<p style="color:#64748B; font-weight:bold;">單價: NT$ {int(raw_p):,}/L</p>', unsafe_allow_html=True)
             markup = st.slider("2. 利潤倍率調整", 1.0, 10.0, 3.0, 0.1)
-            
-            st.write("") # 間隔
-            
-            # 3. 基本費 (放在倍率下方)
             base_fee = st.number_input("3. 報價基本費 (NT$)", value=150)
 
-        st.divider()
-        
-        # 建議報價結果
-        total = (vol_cm3 * u_cost * markup) + base_fee
-        st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-        st.markdown("### 建議報價總計")
-        st.markdown(f"<h1 style='color:#E11D48; font-size:72px; margin-top:-10px;'>NT$ {int(total):,}</h1>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        with row_col2:
+            st.subheader("🖼️ 參考示意")
+            if not show_preview:
+                st.image("估價01.jpg", use_container_width=True) if os.path.exists("估價01.jpg") else None
+            else:
+                st.info("模型已載入，請於上方查看 3D 預覽。")
+            
+            st.write("---")
+            total = (vol_cm3 * u_cost * markup) + base_fee
+            # 關鍵修改：套用 total-price-box 樣式 (黃底紅字)
+            st.markdown(f"""
+                <div class="total-price-box">
+                    <h3 style="color:#0F172A; margin-bottom:5px;">建議報價總計</h3>
+                    <h1 style="color:#E11D48; font-size:72px; margin:0;">NT$ {int(total):,}</h1>
+                </div>
+            """, unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
 
 elif choice == "📏 尺寸校正計算":

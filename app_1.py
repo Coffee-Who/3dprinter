@@ -34,14 +34,14 @@ def load_materials():
     except Exception:
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
-# --- 4. 主程式 ---
+# --- 4. 主程式執行 ---
 if check_password():
     df_m = load_materials()
     
     # 【核心 CSS】縮小側邊欄與圖示
     st.markdown("""
         <style>
-        /* 縮小側邊欄寬度 */
+        /* 縮小側邊欄寬度至 260px */
         section[data-testid="stSidebar"] {
             width: 260px !important;
             min-width: 260px !important;
@@ -57,7 +57,7 @@ if check_password():
             padding: 2px;
         }
         
-        /* 縮小選單文字 */
+        /* 縮小選單文字標籤 */
         div[data-testid="stHorizontalBlock"] p {
             font-size: 10px !important;
             margin-top: 2px !important;
@@ -65,11 +65,11 @@ if check_password():
             font-weight: 600;
         }
 
-        /* 調整主畫面間距 */
+        /* 調整主內容區域間距 */
         .main .block-container {
-            padding-top: 2rem;
-            padding-left: 3rem;
-            padding-right: 3rem;
+            padding-top: 1.5rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -77,7 +77,7 @@ if check_password():
     with st.sidebar:
         st.title("🛠️ 控制面板")
         sel = image_select(
-            label="選擇功能", 
+            label="選擇功能項目", 
             images=[
                 "https://cdn-icons-png.flaticon.com/512/2953/2953536.png", 
                 "https://cdn-icons-png.flaticon.com/512/3563/3563437.png"
@@ -89,7 +89,7 @@ if check_password():
     # --- 5. 自動估價 (高精細預覽版) ---
     if "2953536" in sel:
         st.title("💰 Formlabs 自動報價系統")
-        up_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
+        up_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
         
         c1, c2 = st.columns([1.8, 1])
         vol_cm3 = 0.0
@@ -106,8 +106,7 @@ if check_password():
                     vecs = m_mesh.vectors
                     total_faces = len(vecs)
                     
-                    # --- 網格顯示精細度翻倍邏輯 ---
-                    # 門檻提高到 80,000 面，確保模型細節完整
+                    # --- 網格顯示量：提高至 80,000 面 ---
                     if total_faces > 80000:
                         step = total_faces // 80000
                         vecs = vecs[::step]
@@ -120,10 +119,10 @@ if check_password():
                         go.Mesh3d(
                             x=v[:,0], y=v[:,1], z=v[:,2],
                             i=f[:,0], j=f[:,1], k=f[:,2],
-                            color='#334155', # 深灰色質感
+                            color='#334155', # 鈦灰色質感
                             opacity=1.0,
                             flatshading=False,
-                            # 專業光學模擬
+                            # 專業 PBR 模擬光影
                             lighting=dict(
                                 ambient=0.4, 
                                 diffuse=0.8, 
@@ -131,8 +130,12 @@ if check_password():
                                 roughness=0.2,
                                 fresnel=1.2
                             ),
-                            # 增加細緻輪廓線
-                            contour=dict(show=True, color='white', width=0.5)
+                            # 修正後的輪廓線：width 設為 1 符合官方規範 [1, 16]
+                            contour=dict(
+                                show=True, 
+                                color='white', 
+                                width=1 
+                            )
                         )
                     ])
                     
@@ -148,33 +151,35 @@ if check_password():
                     )
                     st.plotly_chart(fig, use_container_width=True)
                     
+                    # 計算體積
                     v_val, _, _ = m_mesh.get_mass_properties()
                     vol_cm3 = float(v_val) / 1000.0
                 except Exception as e:
-                    st.error(f"預覽失敗: {e}")
+                    st.error(f"3D 渲染錯誤: {e}")
             
             with c2:
                 st.subheader("📊 報價數據")
-                st.metric("偵測體積", f"{vol_cm3:.2f} cm³")
-                m_choice = st.selectbox("樹脂材料", df_m["Formlabs"].tolist())
+                st.metric("分析模型體積", f"{vol_cm3:.2f} cm³")
+                m_choice = st.selectbox("樹脂型號", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
-                markup = st.slider("報價倍率", 1.0, 10.0, 3.0, 0.1)
-                base_fee = st.number_input("上機費", value=150)
+                markup = st.slider("利潤加成倍率", 1.0, 10.0, 3.0, 0.1)
+                base_fee = st.number_input("基本起鍋費 (NTD)", value=150)
                 
                 final_total = (vol_cm3 * u_cost * markup) + base_fee
                 st.divider()
                 st.markdown(f"### 建議報價: <span style='color:red; font-size:40px;'>NT$ {int(final_total)}</span>", unsafe_allow_html=True)
                 
-                with st.expander("🔍 報價組成明細"):
-                    st.write(f"- 材料基本成本: NT$ {int(vol_cm3 * u_cost)}")
-                    st.write(f"- 加工與利潤: NT$ {int(vol_cm3 * u_cost * (markup-1))}")
-                    st.write(f"- 上機固定費: NT$ {base_fee}")
+                with st.expander("🔍 報價結構拆解"):
+                    st.write(f"- 材料基本費用: NT$ {int(vol_cm3 * u_cost)}")
+                    st.write(f"- 工時利潤加成: NT$ {int(vol_cm3 * u_cost * (markup-1))}")
+                    st.write(f"- 固定成本費用: NT$ {base_fee}")
             os.remove(t_path)
         else:
-            st.info("💡 請上傳 STL 檔案開始。")
+            st.info("👋 歡迎使用！請上傳 STL 檔案以顯示高解析度預覽與成本分析。")
     else:
         st.title("📏 尺寸校正助手")
-        ca = st.number_input("CAD 尺寸 (mm)", value=10.0)
-        re = st.number_input("實測尺寸 (mm)", value=10.0)
+        ca = st.number_input("CAD 原型尺寸 (mm)", value=10.0)
+        re = st.number_input("列印實測尺寸 (mm)", value=10.0)
         if ca > 0:
-            st.metric("應填入校正因子", f"{(re/ca):.4f}")
+            st.metric("Preform 補償因子", f"{(re/ca):.4f}")
+            st.caption("公式：實測 / 設計 = 補償比率")

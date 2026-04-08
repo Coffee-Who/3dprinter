@@ -20,7 +20,7 @@ selection = image_select(
 st.divider()
 
 # --- 2. 根據圖像選擇顯示內容 ---
-if selection == "https://cdn-icons-png.flaticon.com/512/2953/2953536.png":
+if selection == "6954_6438b3654f0ad.png":
     st.subheader("💰 線上估價系統")
     # ... 這裡放你原本的估價程式碼 ...
     material = st.selectbox("材料", ["PLA", "PETG", "ABS", "TPU", "Resin"])

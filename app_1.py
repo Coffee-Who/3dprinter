@@ -60,13 +60,6 @@ st.markdown("""
         display: inline-block; background-color: #FFFF00 !important; color: #E11D48 !important; 
         padding: 8px 16px; border-radius: 8px; font-size: 32px !important; font-weight: 900 !important; border: 3px solid #E11D48; 
     }
-    
-    /* 成本分析小卡樣式 */
-    .analysis-card {
-        background-color: #F1F5F9; border-left: 5px solid #64748B; padding: 15px; border-radius: 8px; margin: 10px 0;
-    }
-    .cost-label { color: #475569; font-size: 0.9em; }
-    .cost-value { color: #1E293B; font-weight: bold; font-size: 1.1em; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -134,14 +127,21 @@ if choice == "💰 自動估價":
         
         # --- 材料選擇與同步成本 ---
         m_choice = st.selectbox("1. 選擇列印材料", df_m["材料名稱"].tolist())
+        
+        # 抓取原廠售價與每單位成本
+        base_price = df_m.loc[df_m["材料名稱"] == m_choice, "單價"].values[0]
         u_cost = df_m.loc[df_m["材料名稱"] == m_choice, "每mm3成本"].values[0]
         pure_cost = vol_mm3 * u_cost
         
-        # 直接在材料下方顯示同步成本
+        # 顯示材料售價與消耗成本卡片
         st.markdown(f"""
-            <div style="margin-top:-10px; margin-bottom:20px; padding:5px 10px; border-left:3px solid #1E40AF; background:#F0F7FF;">
-                <span class="cost-label">當前零件純材料成本：</span>
-                <span style="color:#1E40AF; font-weight:bold;">NT$ {pure_cost:,.2f}</span>
+            <div style="margin-top:-10px; margin-bottom:20px; padding:12px 15px; border-left:4px solid #1E40AF; background:#F0F7FF; border-radius:4px;">
+                <div style="color:#475569; font-size:0.95em; margin-bottom:5px;">
+                    🛒 材料原廠售價：<b>NT$ {base_price:,.0f} / 公升</b> <span style="font-size:0.85em;">(約 NT$ {u_cost:.4f} / mm³)</span>
+                </div>
+                <div style="color:#1E293B; font-size:1.1em;">
+                    💧 本件材料消耗成本：<span style="color:#1E40AF; font-weight:bold;">NT$ {pure_cost:,.2f}</span>
+                </div>
             </div>
         """, unsafe_allow_html=True)
         
@@ -162,7 +162,7 @@ if choice == "💰 自動估價":
         # 同步顯示詳細成本分析表
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("材料總成本", f"NT$ {pure_cost:,.1f}")
+            st.metric("總材料消耗成本", f"NT$ {pure_cost:,.1f}")
         with col2:
             st.metric("基本費收入", f"NT$ {base_fee:,.0f}")
         with col3:

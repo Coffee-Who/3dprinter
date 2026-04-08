@@ -9,25 +9,46 @@ import numpy as np
 # 1. 頁面基本配置
 st.set_page_config(page_title="實威國際 3D列印線上估價", layout="wide", page_icon="🖨️")
 
-# 2. 全域樣式優化 (確保側邊欄顯示 + 輸入框樣式)
+# 2. 全域樣式優化
 st.markdown("""
     <style>
-    /* 確保側邊欄與標頭顯示 */
-    [data-testid="stSidebar"] { display: block !important; visibility: visible !important; }
-    [data-testid="stHeader"] { display: block !important; }
+    /* 確保手機版側邊欄切換按鈕可見 (解決手機版選單不見問題) */
+    [data-testid="stSidebarCollapseButton"] {
+        display: block !important;
+        color: #000000 !important;
+        background-color: #F0F2F6 !important;
+        border-radius: 50% !important;
+        top: 10px !important;
+        left: 10px !important;
+    }
     
+    /* 確保側邊欄標題與內容顏色正常 */
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label p {
+        color: #000000 !important;
+    }
+
     .stApp { background-color: #FFFFFF !important; }
     h1, h2, h3, p, span, label { color: #000000 !important; font-family: "Microsoft JhengHei", sans-serif; }
     
-    /* 輸入框 (STL、數字、下拉選單) 藍底白字 + 寬度限制 */
-    div[data-testid="stFileUploader"], 
+    /* 1. STL 上傳框改為白底黑字 */
+    div[data-testid="stFileUploader"] section {
+        background-color: #FFFFFF !important; 
+        color: #000000 !important;
+        border: 2px dashed #1E40AF !important;
+        border-radius: 8px !important;
+    }
+    /* 上傳框內的文字與圖示顏色 */
+    div[data-testid="stFileUploader"] label, div[data-testid="stFileUploader"] svg {
+        color: #000000 !important;
+        fill: #000000 !important;
+    }
+
+    /* 其他輸入框 (數字、下拉選單) 維持藍底白字 + 寬度限制 */
     div[data-testid="stNumberInput"], 
     div[data-baseweb="select"] {
         max-width: 300px !important; 
     }
 
-    /* 藍底白字設定 */
-    div[data-testid="stFileUploader"] section,
     div[data-testid="stNumberInput"] input,
     div[data-baseweb="select"] > div {
         background-color: #1E40AF !important; 
@@ -35,14 +56,13 @@ st.markdown("""
         border-radius: 8px !important;
     }
     
-    /* 針對 iOS 手機與一般瀏覽器的文字顏色修正 */
     div[data-testid="stNumberInput"] input, 
     div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         -webkit-text-fill-color: #FFFFFF !important;
         font-weight: bold !important;
     }
 
-    /* 建議報價結果：黃底紅字 */
+    /* 建議報價結果樣式 */
     .price-result {
         display: inline-block;
         background-color: #FFFF00 !important;
@@ -80,7 +100,7 @@ def load_materials():
     df['每mm3成本'] = df['單價'] / 1000000 
     return df
 
-# 5. 側邊欄導覽
+# 5. 側邊欄導覽 (功能選單)
 with st.sidebar:
     try:
         st.image("solidwizard_logo.png", use_container_width=True)
@@ -96,7 +116,6 @@ with st.sidebar:
 # 6. 主程式邏輯
 df_m = load_materials()
 
-# --- 分支 1：自動估價系統 ---
 if choice == "💰 自動估價系統":
     st.title("💰 專業 3D 列印自動報價")
     input_method = st.radio("選擇體積來源：", ["📤 上傳 STL 檔案", "⌨️ 手動輸入數值"], horizontal=True)
@@ -137,40 +156,20 @@ if choice == "💰 自動估價系統":
         st.write("### 建議報價總計")
         st.markdown(f'NT$ <span class="price-result">{int(total):,}</span>', unsafe_allow_html=True)
 
-# --- 分支 2：尺寸校正計算 (完整恢復) ---
 elif choice == "📏 尺寸校正計算":
     st.title("📏 尺寸校正補償計算")
-    st.write("請輸入設計尺寸與成品實測尺寸，系統將自動計算補償因子與建議縮放比例。")
     st.divider()
-    
     col_a, col_b = st.columns(2)
-    
     with col_a:
-        st.write("### 1. 輸入尺寸數據")
-        d_size = st.number_input("CAD 設計尺寸 (mm)", min_value=0.01, value=20.00, step=0.01, format="%.2f")
-        a_size = st.number_input("實測成品尺寸 (mm)", min_value=0.01, value=19.80, step=0.01, format="%.2f")
+        d_size = st.number_input("CAD 設計尺寸 (mm)", min_value=0.01, value=20.00, step=0.01)
+        a_size = st.number_input("實測成品尺寸 (mm)", min_value=0.01, value=19.80, step=0.01)
     
-    with col_b:
-        if os.path.exists("尺寸調整.jpg"):
-            st.image("尺寸調整.jpg", caption="尺寸校正示意圖", use_container_width=True)
-        else:
-            st.info("💡 提示：請確保輸入的單位一致 (mm)。")
-
     if d_size > 0:
-        # 計算公式：補償因子 = 實測尺寸 / 設計尺寸
         factor = a_size / d_size
-        # 建議縮放比例 = (1 / 補償因子) * 100%
         suggested_scale = (1 / factor) * 100 if factor != 0 else 0
-        
         st.divider()
-        st.write("### 💡 計算結果")
-        
         res1, res2 = st.columns(2)
-        with res1:
-            st.metric("補償因子 (Factor)", f"{factor:.4f}")
-            st.write("此數值可用於軟體內部的收縮率補償設定。")
-            
+        with res1: st.metric("補償因子", f"{factor:.4f}")
         with res2:
-            st.write("建議縮放比例 (Scale)")
+            st.write("建議縮放比例")
             st.markdown(f'<span class="price-result">{suggested_scale:.2f}%</span>', unsafe_allow_html=True)
-            st.write("請在 PreForm 或 CAD 軟體中以此比例縮放模型。")

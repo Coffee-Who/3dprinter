@@ -119,45 +119,54 @@ if choice == "💰 自動估價系統":
                 v_val, _, _ = m_mesh.get_mass_properties()
                 vol_mm3 = int(v_val)
                 
-                # --- 進階詳細 3D 預覽畫面 ---
-                st.write("📦 **模型詳細預覽 (可縮放/旋轉/平移)**")
+                # --- 進階詳細 3D 著色實體預覽畫面 ---
+                st.write("📦 **模型著色預覽 (Shaded Solid View)**")
                 
-                # 取得頂點與三角形面
+                # 取得頂點
                 p = m_mesh.vectors.reshape(-1, 3)
                 # 抽樣邏輯：若面數過多則進行抽樣以維持手機版流暢度
                 sample_rate = 1 if len(p) < 30000 else len(p) // 30000
                 p = p[::sample_rate]
                 
-                x, y, z = p[:, 0], p[:, 1], p[:, 2]
+                # 取得模型邊界以設定深灰網格背景
+                min_pts = p.min(axis=0)
+                max_pts = p.max(axis=0)
+                bounds = max_pts - min_pts
+                mid_point = (max_pts + min_pts) / 2
                 
+                # 繪製實體圖
                 fig = go.Figure(data=[
-                    go.Mesh3d(
-                        x=x, y=y, z=z,
-                        color='#1E40AF', # 實威藍
-                        opacity=0.9,
-                        flatshading=True, # 顯示三角面感
-                        lighting=dict(
-                            ambient=0.5,
-                            diffuse=0.8,
-                            fresnel=0.2,
-                            specular=0.5,
-                            roughness=0.3
+                    go.Volume(
+                        x=p[:, 0], y=p[:, 1], z=p[:, 2],
+                        value=np.ones(len(p)), # 純色
+                        isomin=0.5, isomax=1.5, # 實體渲染
+                        opacity=1.0, # 不透明
+                        surface_count=20, # 表面細膩度
+                        caps=dict(x_show=False, y_show=False, z_show=False), # 隱藏切片蓋
+                        colorscale='Greys', # 使用灰色系模擬實體
+                        showscale=False, # 隱藏色條
+                        lighting=dict( # 強化立體感的光影
+                            ambient=0.4,
+                            diffuse=0.9,
+                            fresnel=0.3,
+                            specular=0.8,
+                            roughness=0.2
                         ),
-                        lightposition=dict(x=100, y=100, z=100)
+                        lightposition=dict(x=mid_point[0]+bounds.max(), y=mid_point[1]+bounds.max(), z=mid_point[2]+bounds.max())
                     )
                 ])
                 
-                # 設定場景外觀
+                # 設定場景外觀與背景網格
                 fig.update_layout(
                     scene=dict(
-                        xaxis=dict(visible=False),
-                        yaxis=dict(visible=False),
-                        zaxis=dict(visible=False),
+                        xaxis=dict(visible=False, showgrid=False, zeroline=False),
+                        yaxis=dict(visible=False, showgrid=False, zeroline=False),
+                        zaxis=dict(visible=False, showgrid=False, zeroline=False),
                         aspectmode='data', # 保持 1:1:1 比例
-                        bgcolor='rgba(240,242,246,0.5)' # 淺灰背景
+                        bgcolor='rgb(30, 30, 30)' # 深灰色背景，模擬切層軟體
                     ),
                     margin=dict(l=0, r=0, b=0, t=0),
-                    height=450 # 增加高度
+                    height=500 # 增加高度
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
@@ -215,4 +224,3 @@ elif choice == "📏 尺寸校正計算":
         st.write("### 補償結果")
         st.metric("補償因子 (Factor)", f"{factor:.4f}")
         st.markdown(f'建議比例：<span class="price-result">{suggested_scale:.1f}%</span>', unsafe_allow_html=True)
-        

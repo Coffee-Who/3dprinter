@@ -28,77 +28,78 @@ def check_password():
 @st.cache_data
 def load_materials():
     try:
-        # 讀取您上傳的 Formlabs材料.csv
         df = pd.read_csv("Formlabs材料.csv")
         df['每cm3成本'] = df['單價'] / 1000
         return df
     except:
         return pd.DataFrame({"Formlabs": ["一般樹脂"], "每cm3成本": [10.0]})
 
-# --- 4. 強化版 3D 預覽 (藍色主體 + 黑色網格) ---
+# --- 4. 修正版 3D 預覽 (提高相容性) ---
 def show_3d_preview(file_path):
     try:
         m_data = mesh.Mesh.from_file(file_path)
         vecs = m_data.vectors
         
-        # 強制抽樣：限制面數以確保 100% 渲染成功
-        max_display_faces = 15000
-        if len(vecs) > max_display_faces:
-            step = len(vecs) // max_display_faces
+        # 強制大幅抽樣以確保網頁不當掉
+        max_faces = 12000
+        if len(vecs) > max_faces:
+            step = len(vecs) // max_faces
             vecs = vecs[::step]
         
         p, q, r = vecs.shape
         v = vecs.reshape(p*q, r)
         f = np.arange(p*q).reshape(p, q)
         
-        fig = go.Figure()
+        # 使用 Mesh3d 同時渲染面與邊線
+        fig = go.Figure(data=[
+            go.Mesh3d(
+                x=v[:,0], y=v[:,1], z=v[:,2], 
+                i=f[:,0], j=f[:,1], k=f[:,2],
+                color='royalblue', 
+                opacity=1.0,
+                flatshading=True,
+                # 這裡強制開啟網格線條
+                contour=dict(show=True, color='black', width=1),
+                showlegend=False
+            )
+        ])
         
-        # 藍色模型主體
-        fig.add_trace(go.Mesh3d(
-            x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2],
-            color='royalblue', opacity=1.0, flatshading=True, name='主體'
-        ))
-        
-        # 黑色三角網格線
-        fig.add_trace(go.Mesh3d(
-            x=v[:,0], y=v[:,1], z=v[:,2], i=f[:,0], j=f[:,1], k=f[:,2],
-            color='black', opacity=1.0, wireframe=True, name='網格'
-        ))
-
         fig.update_layout(
             scene=dict(
                 xaxis_visible=False, yaxis_visible=False, zaxis_visible=False, 
                 aspectmode='data', bgcolor='white'
             ),
-            margin=dict(l=0, r=0, b=0, t=0), height=550, showlegend=False
+            margin=dict(l=0, r=0, b=0, t=0), height=500
         )
         st.plotly_chart(fig, use_container_width=True)
         
     except Exception as e:
-        st.warning("預覽渲染中，請稍候或上傳較小檔案。")
+        st.error(f"預覽生成失敗。原因: {e}")
 
 # --- 5. 主程式執行 ---
 if check_password():
     df_m = load_materials()
     
-    # 注入 CSS 縮小側邊欄圖示
+    # 強力版 CSS：縮小 image-select 圖示並修正跑位
     st.markdown("""
         <style>
-        /* 縮小 image-select 的圖片尺寸 */
-        [data-testid="stHorizontalBlock"] img {
+        /* 鎖定所有 image-select 內的圖片容器 */
+        div[data-testid="stHorizontalBlock"] div[style*="width"] img {
             width: 50px !important;
             height: 50px !important;
+            max-width: 50px !important;
             object-fit: contain !important;
         }
-        /* 讓選項看起來更緊湊 */
-        .st-emotion-cache-1kyx730 {
-            padding: 5px !important;
+        /* 縮小下方文字標題大小 */
+        div[data-testid="stHorizontalBlock"] p {
+            font-size: 12px !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
     with st.sidebar:
         st.title("🛠️ 功能選單")
+        # 這裡的圖示會被上方的 CSS 縮小
         sel = image_select(
             label="請選擇服務項目", 
             images=[
@@ -122,47 +123,42 @@ if check_password():
                 t_path = tmp.name
             
             with c1:
-                st.subheader("📦 3D 結構分析預覽")
+                st.subheader("📦 3D 結構分析")
                 show_3d_preview(t_path)
             
             with c2:
-                st.subheader("📊 數據分析與報價")
+                st.subheader("📊 報價數據")
                 try:
                     m = mesh.Mesh.from_file(t_path)
                     v_val, _, _ = m.get_mass_properties()
                     vol_cm3 = float(v_val) / 1000.0
                     st.metric("偵測體積", f"{vol_cm3:.2f} cm³")
                 except:
-                    st.error("體積計算失敗")
+                    st.error("計算失敗")
                 
-                m_choice = st.selectbox("樹脂型號 (來源 Excel)", df_m["Formlabs"].tolist())
+                m_choice = st.selectbox("樹脂型號", df_m["Formlabs"].tolist())
                 u_cost = df_m.loc[df_m["Formlabs"] == m_choice, "每cm3成本"].values[0]
                 
-                markup = st.slider("報價倍率 (人工/利潤)", 1.0, 10.0, 3.0, step=0.1)
-                base_fee = st.number_input("上機固定費", value=150)
+                markup = st.slider("報價倍率", 1.0, 10.0, 3.0, step=0.1)
+                base_fee = st.number_input("起鍋費", value=150)
                 
-                # 報價計算
-                cost_raw = vol_cm3 * u_cost
-                cost_profit = cost_raw * (markup - 1)
                 final_total = (vol_cm3 * u_cost * markup) + base_fee
                 
                 st.divider()
-                st.markdown(f"### 📢 建議報價: <span style='color:red; font-size:40px;'>NT$ {int(final_total)}</span>", unsafe_allow_html=True)
+                st.markdown(f"### 建議報價: <span style='color:red; font-size:40px;'>NT$ {int(final_total)}</span>", unsafe_allow_html=True)
                 
-                # 報價細項
-                with st.expander("🔍 查看報價組成細項"):
-                    st.write(f"1. **材料原始成本**: NT$ {int(cost_raw)} ({vol_cm3:.2f} cm³ × {u_cost:.2f} 元)")
-                    st.write(f"2. **加工與利潤加成**: NT$ {int(cost_profit)} (倍率 x{markup})")
-                    st.write(f"3. **上機固定費用**: NT$ {base_fee} 元")
-                    st.info(f"總價公式: (材料成本 × 倍率) + 固定費")
+                with st.expander("🔍 查看細項"):
+                    st.write(f"- 材料成本: NT$ {int(vol_cm3 * u_cost)}")
+                    st.write(f"- 倍率加成: x{markup}")
+                    st.write(f"- 固定費用: NT$ {base_fee}")
             
             os.remove(t_path)
         else:
-            st.info("💡 請從左側選單上傳 STL 檔案。")
+            st.info("💡 請上傳 STL 檔案。")
 
     else:
         st.title("📏 SLA 尺寸校正助手")
-        ca = st.number_input("CAD 設計尺寸 (mm)", value=10.0)
+        ca = st.number_input("CAD 尺寸 (mm)", value=10.0)
         re = st.number_input("實測尺寸 (mm)", value=10.0)
         if ca > 0:
             st.metric("Preform 校正因子", f"{(re/ca):.4f}")

@@ -114,3 +114,4 @@ if start_btn:
                 st.info("所有平台皆未發現相關資料。")
         finally:
             driver.quit()
+            st.image(driver.get_screenshot_as_png())

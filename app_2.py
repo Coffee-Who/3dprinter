@@ -110,7 +110,7 @@ with col1:
     profit_multiplier = st.number_input("利潤倍率", value=1.0, step=0.5)
 
 with col2:
-    support_percent = st.slider("支撐比例 (%)", 0, 50, 20, step=5)
+    support_percent = st.slider("支撐材用量比例 (%)(估價時可自行先預設支撐材用量)", 0, 50, 20, step=5)
 
 # =========================
 # 即時計算
@@ -136,7 +136,7 @@ if volume_cm3 and volume_cm3 > 0:
         st.metric("材料成本", f"{cost:.0f} 元")
 
     with col2:
-        st.metric("支撐比例", f"{support_percent}%")
+        st.metric("支撐材用量比例", f"{support_percent}%")
         st.metric("利潤倍率", f"{profit_multiplier}")
         st.metric("💰 報價", f"{final_price:.0f} 元")
 

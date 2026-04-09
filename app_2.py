@@ -5,27 +5,26 @@ import requests
 import io
 
 # =========================
-# 頁面設定
+# 頁面設定（手機預設開sidebar）
 # =========================
 st.set_page_config(
     page_title="3D列印估價系統",
     layout="wide",
-    initial_sidebar_state="expanded"  # 手機板預設展開
+    initial_sidebar_state="expanded"
 )
 
 # =========================
-# 高級 UI 樣式
+# UI STYLE（產品級）
 # =========================
 st.markdown("""
 <style>
-/* 整體背景 */
 .main {
     background: linear-gradient(135deg, #eef2ff, #f8fafc);
 }
 
-/* 側邊欄 */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #111827;
+    background-color: #0f172a;
     color: white;
 }
 
@@ -34,30 +33,29 @@ section[data-testid="stSidebar"] {
     background: white;
     padding: 20px;
     border-radius: 18px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     margin-bottom: 20px;
 }
 
-/* 報價主卡 */
+/* 報價卡 */
 .price-card {
-    background: linear-gradient(135deg, #2563eb, #1e40af);
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
     color: white;
     padding: 30px;
     border-radius: 20px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(37,99,235,0.3);
 }
 
-/* 價格字 */
+/* 價格 */
 .price {
     font-size: 60px;
     font-weight: 800;
 }
 
-/* 小標題 */
+/* 小字 */
 .label {
     font-size: 14px;
-    opacity: 0.8;
+    opacity: 0.85;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -74,32 +72,36 @@ def load_materials():
     df.columns = df.columns.str.strip().str.replace('\ufeff', '')
     return df
 
-materials_df = load_materials()
+df = load_materials()
 
 # =========================
-# 側邊欄（控制面板）
+# Sidebar 控制台
 # =========================
 st.sidebar.title("⚙️ 控制面板")
 
-# 選擇輸入方式
 mode = st.sidebar.radio("輸入方式", ["上傳 STL", "手動輸入"])
 
 volume_cm3 = 0
+mesh = None
+uploaded_file = None
 
+# ===== STL =====
 if mode == "上傳 STL":
     uploaded_file = st.sidebar.file_uploader("上傳 STL", type=["stl"])
+
     if uploaded_file:
         try:
             mesh = trimesh.load(uploaded_file, file_type='stl')
             volume_cm3 = mesh.volume / 1000
-            st.sidebar.success(f"體積：{volume_cm3:.2f} cm³")
+            st.sidebar.success(f"{volume_cm3:.2f} cm³")
         except:
-            st.sidebar.error("檔案解析失敗，請確認 STL 檔案正確")
+            st.sidebar.error("檔案解析失敗")
+
+# ===== 手動 =====
 else:
     cm = st.sidebar.number_input("體積 (cm³)", 0.0)
     mm = st.sidebar.number_input("體積 (mm³)", 0.0)
 
-    # cm/mm 自動換算
     if cm > 0:
         volume_cm3 = cm
         st.sidebar.caption(f"{cm*1000:.0f} mm³")
@@ -107,28 +109,28 @@ else:
         volume_cm3 = mm / 1000
         st.sidebar.caption(f"{volume_cm3:.2f} cm³")
 
-# 材料選擇
-material = st.sidebar.selectbox("材料", materials_df["Formlabs"])
-row = materials_df[materials_df["Formlabs"] == material].iloc[0]
+# ===== 材料 =====
+material = st.sidebar.selectbox("材料", df["Formlabs"])
+row = df[df["Formlabs"] == material].iloc[0]
 
-cost_cm3 = row["單價"] / 1000  # 每 cm³ 價格
+cost_cm3 = row["單價"] / 1000
 
-# 設定利潤倍率與支撐比例
-profit = st.sidebar.number_input("利潤倍率", value=1.0, step=0.5)
-support = st.sidebar.slider("支撐比例 (%)", 0, 50, 20, step=5)
+# ===== 參數 =====
+profit = st.sidebar.number_input("利潤倍率", 1.0, step=0.5)
+support = st.sidebar.slider("支撐 (%)", 0, 50, 20, step=5)
 
 # =========================
-# 主畫面（報價 Dashboard）
+# 主畫面
 # =========================
 st.title("🧮 3D列印即時估價系統")
 
 if volume_cm3 > 0:
 
-    effective_volume = volume_cm3 * (1 + support / 100)
-    cost = effective_volume * cost_cm3
+    effective = volume_cm3 * (1 + support / 100)
+    cost = effective * cost_cm3
     price = cost * profit
 
-    # 🔥 主報價卡
+    # 🔥 報價主卡
     st.markdown(f"""
     <div class="price-card">
         <div class="label">預估報價</div>
@@ -136,40 +138,71 @@ if volume_cm3 > 0:
     </div>
     """, unsafe_allow_html=True)
 
-    # 📊 三個小卡片顯示細節
-    col1, col2, col3 = st.columns(3)
+    # 📊 數據卡
+    c1, c2, c3 = st.columns(3)
 
-    col1.markdown(f"""
+    c1.markdown(f"""
     <div class="card">
         <div class="label">原始體積</div>
         <h2>{volume_cm3:.2f} cm³</h2>
     </div>
     """, unsafe_allow_html=True)
 
-    col2.markdown(f"""
+    c2.markdown(f"""
     <div class="card">
         <div class="label">含支撐體積</div>
-        <h2>{effective_volume:.2f} cm³</h2>
+        <h2>{effective:.2f} cm³</h2>
     </div>
     """, unsafe_allow_html=True)
 
-    col3.markdown(f"""
+    c3.markdown(f"""
     <div class="card">
         <div class="label">材料成本</div>
         <h2>{int(cost)} 元</h2>
     </div>
     """, unsafe_allow_html=True)
 
-    # 📋 報價明細文字
+    # =========================
+    # 🔥 3D 預覽
+    # =========================
+    if mesh is not None:
+
+        st.markdown("### 🧊 3D模型預覽")
+
+        try:
+            import plotly.graph_objects as go
+
+            vertices = mesh.vertices
+            faces = mesh.faces
+
+            fig = go.Figure(data=[go.Mesh3d(
+                x=vertices[:, 0],
+                y=vertices[:, 1],
+                z=vertices[:, 2],
+                i=faces[:, 0],
+                j=faces[:, 1],
+                k=faces[:, 2],
+                color='lightblue'
+            )])
+
+            fig.update_layout(height=500, margin=dict(l=0,r=0,t=0,b=0))
+
+            st.plotly_chart(fig, use_container_width=True)
+
+        except:
+            st.warning("模型過大或無法預覽")
+
+    # =========================
+    # 報價文字
+    # =========================
     st.markdown("### 📋 報價內容")
+
     st.code(f"""
 材料：{material}
-原始體積：{volume_cm3:.2f} cm³
-含支撐：{effective_volume:.2f} cm³
-利潤倍率：{profit}
-支撐比例：{support}%
+體積：{volume_cm3:.2f} cm³
+支撐：{support}%
 報價：NT$ {int(price)}
 """)
 
 else:
-    st.info("請在左側控制面板輸入體積或上傳 STL 檔案")
+    st.info("請從左側開始輸入資料")

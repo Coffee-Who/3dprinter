@@ -14,3 +14,4 @@ cascadio
 streamlit
 numpy-stl
 reportlab
+webdriver-manager

@@ -3,14 +3,63 @@ import pandas as pd
 import trimesh
 import requests
 import io
-import numpy as np
-
-st.set_page_config(page_title="3D列印快速估價工具", layout="wide")
-
-st.title("🧮 3D列印快速估價工具（內部版）")
 
 # =========================
-# 讀取 CSV
+# 頁面設定
+# =========================
+st.set_page_config(
+    page_title="3D列印估價系統",
+    layout="wide"
+)
+
+# =========================
+# 高級 UI 樣式
+# =========================
+st.markdown("""
+<style>
+/* 背景 */
+.main {
+    background-color: #f3f4f6;
+}
+
+/* 標題 */
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* 卡片 */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+/* 報價 */
+.price {
+    font-size: 48px;
+    font-weight: 800;
+    color: #2563eb;
+}
+
+/* 小字 */
+.label {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* 分隔 */
+hr {
+    margin: 10px 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================
+# 讀取材料
 # =========================
 @st.cache_data
 def load_materials():
@@ -24,131 +73,110 @@ def load_materials():
 materials_df = load_materials()
 
 # =========================
-# 輸入方式
+# 標題
 # =========================
-mode = st.radio("選擇輸入方式", ["📂 上傳 STL", "✏️ 手動輸入"])
+st.markdown('<div class="title">🧮 3D列印快速估價系統</div>', unsafe_allow_html=True)
+
+# =========================
+# 版面
+# =========================
+left, right = st.columns([1, 1.3])
 
 volume_cm3 = None
 
 # =========================
-# STL 上傳 + 預覽
+# 左側（控制面板）
 # =========================
-if mode == "📂 上傳 STL":
-    uploaded_file = st.file_uploader("上傳 STL", type=["stl"])
+with left:
 
-    if uploaded_file is not None:
-        mesh = trimesh.load(uploaded_file, file_type='stl')
+    # 輸入
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📥 輸入方式")
 
-        # 體積 mm³ → cm³
-        volume_cm3 = mesh.volume / 1000
+    mode = st.radio("", ["上傳 STL", "手動輸入"])
 
-        st.success("✅ 檔案解析成功")
-        st.write(f"📦 體積：約 {volume_cm3:.2f} cm³")
+    if mode == "上傳 STL":
+        file = st.file_uploader("上傳 STL", type=["stl"])
+        if file:
+            mesh = trimesh.load(file, file_type='stl')
+            volume_cm3 = mesh.volume / 1000
+            st.success(f"體積：{volume_cm3:.2f} cm³")
+    else:
+        cm = st.number_input("cm³", 0.0)
+        mm = st.number_input("mm³", 0.0)
 
-        # ====== 3D 預覽（簡化版）======
-        st.subheader("3D預覽")
-        st.write("（可旋轉）")
+        if cm > 0:
+            volume_cm3 = cm
+            st.caption(f"{cm*1000:.0f} mm³")
+        elif mm > 0:
+            volume_cm3 = mm / 1000
+            st.caption(f"{volume_cm3:.2f} cm³")
 
-        vertices = mesh.vertices
-        faces = mesh.faces
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        st.plotly_chart({
-            "data": [{
-                "type": "mesh3d",
-                "x": vertices[:, 0],
-                "y": vertices[:, 1],
-                "z": vertices[:, 2],
-                "i": faces[:, 0],
-                "j": faces[:, 1],
-                "k": faces[:, 2],
-                "opacity": 1.0,
-            }],
-            "layout": {"margin": dict(l=0, r=0, b=0, t=0)}
-        }, use_container_width=True)
+    # 材料
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("🧪 材料")
 
-# =========================
-# 手動輸入（雙單位）
-# =========================
-else:
-    col1, col2 = st.columns(2)
+    material = st.selectbox("", materials_df["Formlabs"])
+    row = materials_df[materials_df["Formlabs"] == material].iloc[0]
 
-    with col1:
-        volume_cm = st.number_input("體積 (cm³)", min_value=0.0, value=0.0)
+    price_l = row["單價"]
+    cost_cm3 = price_l / 1000
 
-    with col2:
-        volume_mm = st.number_input("體積 (mm³)", min_value=0.0, value=0.0)
+    st.caption(f"{cost_cm3:.3f} 元 / cm³")
 
-    # 🔥 自動互斥 + 換算
-    if volume_cm > 0:
-        volume_cm3 = volume_cm
-        st.info(f"自動換算：{volume_cm * 1000:.2f} mm³")
-    elif volume_mm > 0:
-        volume_cm3 = volume_mm / 1000
-        st.info(f"自動換算：{volume_cm3:.2f} cm³")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 設定
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("⚙️ 設定")
+
+    profit = st.number_input("利潤倍率", value=1.0, step=0.5)
+    support = st.slider("支撐 (%)", 0, 50, 20, step=5)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================
-# 材料
+# 右側（報價儀表板）
 # =========================
-st.subheader("材料選擇")
+with right:
 
-material_name = st.selectbox("材料", materials_df["Formlabs"])
-material_row = materials_df[materials_df["Formlabs"] == material_name].iloc[0]
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📊 即時報價")
 
-price_per_liter = material_row["單價"]
-cost_per_cm3 = price_per_liter / 1000
+    if volume_cm3 and volume_cm3 > 0:
 
-st.write(f"📌 每 cm³ 成本：約 {cost_per_cm3:.3f} 元")
+        effective_volume = volume_cm3 * (1 + support / 100)
+        cost = effective_volume * cost_cm3
+        price = cost * profit
 
-# =========================
-# 參數設定
-# =========================
-st.subheader("計算設定")
+        # 大價格
+        st.markdown(f'<div class="price">NT$ {int(price)}</div>', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+        st.markdown("<hr>", unsafe_allow_html=True)
 
-with col1:
-    profit_multiplier = st.number_input("利潤倍率", value=1.0, step=0.5)
+        col1, col2, col3 = st.columns(3)
 
-with col2:
-    support_percent = st.slider("支撐材用量比例 (%)(估價時可自行先預設支撐材用量)", 0, 50, 20, step=5)
+        col1.metric("原始體積", f"{volume_cm3:.2f}")
+        col2.metric("含支撐", f"{effective_volume:.2f}")
+        col3.metric("材料成本", f"{cost:.0f}")
 
-# =========================
-# 即時計算
-# =========================
-if volume_cm3 and volume_cm3 > 0:
+        st.markdown("<hr>", unsafe_allow_html=True)
 
-    effective_volume = volume_cm3 * (1 + support_percent / 100)
+        st.caption(f"材料：{material}")
+        st.caption(f"利潤倍率：{profit}")
+        st.caption(f"支撐比例：{support}%")
 
-    cost = effective_volume * cost_per_cm3
-    final_price = cost * profit_multiplier
-
-    # =========================
-    # 顯示
-    # =========================
-    st.markdown("---")
-    st.subheader("📊 報價結果")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("原始體積 (cm³)", f"{volume_cm3:.2f}")
-        st.metric("含支撐體積 (cm³)", f"{effective_volume:.2f}")
-        st.metric("材料成本", f"{cost:.0f} 元")
-
-    with col2:
-        st.metric("支撐材用量比例", f"{support_percent}%")
-        st.metric("利潤倍率", f"{profit_multiplier}")
-        st.metric("💰 報價", f"{final_price:.0f} 元")
-
-    # 報價文字
-    quote_text = f"""
-材料：{material_name}
+        # 報價文字
+        st.code(f"""
+材料：{material}
 體積：{volume_cm3:.2f} cm³
-支撐：{support_percent}%
-報價：NT$ {int(final_price)}
-"""
+支撐：{support}%
+報價：NT$ {int(price)}
+""")
 
-    st.code(quote_text)
+    else:
+        st.info("請輸入體積或上傳檔案")
 
-else:
-    st.info("請輸入體積或上傳檔案")
+    st.markdown('</div>', unsafe_allow_html=True)

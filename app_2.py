@@ -1,114 +1,129 @@
 import streamlit as st
-import tempfile
-from stl import mesh
-import plotly.graph_objects as go
+import pandas as pd
+import trimesh
+import requests
+import io
 
-st.set_page_config(page_title="3D列印估價工具", layout="wide")
+st.set_page_config(page_title="3D列印快速估價工具", layout="wide")
 
-st.title("🧠 3D列印快速估價工具")
+st.title("🧮 3D列印快速估價工具（內部版）")
 
 # =========================
-# 上傳檔案
+# 讀取材料 CSV（GitHub）
 # =========================
-uploaded_file = st.file_uploader("上傳 STL / STEP 檔案", type=["stl", "step", "stp"])
+@st.cache_data
+def load_materials():
+    url = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/Formlabs%E6%9D%90%E6%96%99.csv"
+    response = requests.get(url)
+    response.encoding = 'utf-8'
+    df = pd.read_csv(io.StringIO(response.text))
+    return df
+
+materials_df = load_materials()
+
+# =========================
+# 輸入方式選擇
+# =========================
+mode = st.radio("選擇輸入方式", ["📂 上傳檔案", "✏️ 手動輸入體積"])
 
 volume = None
 
 # =========================
-# STL 處理 + 預覽
+# 上傳檔案
 # =========================
-if uploaded_file:
-    file_type = uploaded_file.name.split(".")[-1].lower()
+if mode == "📂 上傳檔案":
+    uploaded_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
 
-    if file_type == "stl":
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(uploaded_file.read())
-            tmp_path = tmp.name
+    if uploaded_file is not None:
+        try:
+            mesh = trimesh.load(uploaded_file, file_type='stl')
+            volume = mesh.volume / 1000  # mm³ → cm³
 
-        your_mesh = mesh.Mesh.from_file(tmp_path)
+            st.success(f"✅ 成功解析檔案")
+            st.write(f"📦 體積：約 {volume:.2f} cm³")
 
-        # 計算體積
-        volume_mm3, _, _ = your_mesh.get_mass_properties()
-        volume = volume_mm3 / 1000  # cm³
+        except Exception as e:
+            st.error(f"❌ 檔案解析失敗: {e}")
 
-        st.success(f"✅ 體積：約 {volume:.2f} cm³")
+# =========================
+# 手動輸入
+# =========================
+else:
+    volume = st.number_input("輸入體積 (cm³)", min_value=0.0, value=0.0)
 
-        # 3D 預覽（Plotly）
-        x, y, z = your_mesh.x.flatten(), your_mesh.y.flatten(), your_mesh.z.flatten()
+# =========================
+# 材料選擇
+# =========================
+st.subheader("材料選擇")
 
-        fig = go.Figure(data=[
-            go.Mesh3d(
-                x=x,
-                y=y,
-                z=z,
-                opacity=0.5
-            )
-        ])
+material_name = st.selectbox("選擇材料", materials_df["材料名稱"])
 
-        fig.update_layout(
-            title="模型預覽",
-            scene=dict(aspectmode='data')
-        )
+material_row = materials_df[materials_df["材料名稱"] == material_name].iloc[0]
 
-        st.plotly_chart(fig, use_container_width=True)
+cost_per_cm3 = material_row["成本(元/cm3)"]
 
+st.write(f"📌 單位成本：{cost_per_cm3} 元/cm³")
+
+# =========================
+# 進階設定
+# =========================
+st.subheader("進階設定")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    profit_multiplier = st.number_input("利潤倍率", value=2.0)
+
+with col2:
+    infill = st.slider("填充率 (%)", 10, 100, 100)
+
+with col3:
+    minimum_price = st.number_input("最低收費", value=500)
+
+# =========================
+# 計算按鈕
+# =========================
+if st.button("💰 計算報價"):
+
+    if volume is None or volume <= 0:
+        st.warning("⚠️ 請先提供有效體積")
     else:
-        st.warning("⚠️ STEP 檔案目前無法直接預覽，請轉為 STL")
-        st.info("👉 建議使用 Fusion360 / SolidWorks 轉 STL")
+        effective_volume = volume * (infill / 100)
 
-# =========================
-# 估價區
-# =========================
-st.subheader("⚙️ 估價設定")
+        cost = effective_volume * cost_per_cm3
+        final_price = cost * profit_multiplier
 
-material = st.selectbox("材料", [
-    "標準樹脂",
-    "高強度樹脂",
-    "耐溫樹脂"
-])
+        if final_price < minimum_price:
+            final_price = minimum_price
 
-usage = st.selectbox("用途", [
-    "外觀件",
-    "功能件"
-])
+        # =========================
+        # 顯示結果
+        # =========================
+        st.markdown("---")
+        st.subheader("📊 報價結果")
 
-# 成本設定
-material_cost = {
-    "標準樹脂": 20,
-    "高強度樹脂": 35,
-    "耐溫樹脂": 40
-}
+        col1, col2 = st.columns(2)
 
-machine_rate = 300
+        with col1:
+            st.metric("原始體積 (cm³)", f"{volume:.2f}")
+            st.metric("有效體積 (cm³)", f"{effective_volume:.2f}")
+            st.metric("材料成本 (元)", f"{cost:.0f}")
 
-# =========================
-# 計算
-# =========================
-if st.button("💰 立即估價"):
+        with col2:
+            st.metric("利潤倍率", f"{profit_multiplier}")
+            st.metric("最低收費", f"{minimum_price}")
+            st.metric("💰 最終報價", f"{final_price:.0f} 元")
 
-    if volume is None:
-        st.error("請先上傳 STL 檔案")
-    else:
-        print_time = volume * 0.1
+        # =========================
+        # 一鍵複製內容
+        # =========================
+        st.markdown("### 📋 報價文字")
 
-        material_price = volume * material_cost[material]
-        machine_price = print_time * machine_rate
-        post_process = 500 if usage == "功能件" else 300
+        quote_text = f"""
+材料：{material_name}
+體積：{volume:.2f} cm³
+填充率：{infill}%
+報價：NT$ {int(final_price)}
+"""
 
-        total_cost = material_price + machine_price + post_process
-        final_price = int(total_cost * 1.3)
-
-        lead_time = "2~3 天" if volume < 100 else "3~5 天"
-
-        st.success("✅ 估價完成")
-
-        st.markdown(f"""
-        ## 💰 預估價格：NTD {final_price}
-        ## ⏱ 交期：{lead_time}
-
-        ---
-        ### 🔍 成本拆解
-        - 材料：{int(material_price)}
-        - 機台：{int(machine_price)}
-        - 後處理：{post_process}
-        """)
+        st.code(quote_text)

@@ -14,3 +14,6 @@ cascadio
 streamlit
 numpy-stl
 reportlab
+trimesh
+numpy
+rtree

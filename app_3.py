@@ -7,43 +7,68 @@ from urllib.parse import quote
 from bs4 import BeautifulSoup
 
 # --- 頁面配置 ---
-st.set_page_config(page_title="跨平台企業情報搜集", layout="wide")
+st.set_page_config(page_title="萬用企業情報搜集器", layout="wide")
 
-# --- 通用 Google 站內搜尋邏輯 (核心新增功能) ---
 def scrape_custom_site(keyword, domain):
     """
-    利用 Google 的 site: 指令去特定網站搜尋資料
-    這讓你可以輸入任何網站，如 518.com.tw 或 yes123.com.tw
+    優化後的 Google 站內搜尋邏輯
     """
+    # 隨機更換 User-Agent 減少被擋機率
+    ua_list = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0"
+    ]
+    
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+        'User-Agent': random.choice(ua_list),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-TW,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+        'Referer': 'https://www.google.com/'
     }
-    # 組合 Google 指令，例如: "Formlabs site:518.com.tw"
-    search_query = f"{keyword} site:{domain.replace('https://', '').replace('http://', '').split('/')[0]}"
-    url = f"https://www.google.com/search?q={quote(search_query)}"
+
+    # 處理 domain 格式，確保只保留主網域
+    clean_domain = domain.replace('https://', '').replace('http://', '').split('/')[0]
+    
+    # 組合搜尋字串
+    if clean_domain.lower() == "google.com":
+        search_query = f"{keyword} 3D列印 徵才"
+    else:
+        search_query = f"{keyword} site:{clean_domain}"
+    
+    url = f"https://www.google.com/search?q={quote(search_query)}&hl=zh-TW"
     
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        # 增加隨機延遲模擬真人行為
+        time.sleep(random.uniform(1, 3))
+        resp = requests.get(url, headers=headers, timeout=15)
+        
+        if resp.status_code != 200:
+            return f"ERROR: Google 回傳狀態碼 {resp.status_code} (可能被擋了)"
+            
         soup = BeautifulSoup(resp.text, 'html.parser')
-        items = soup.select('div.tF2Cxc') 
+        
+        # Google 搜尋結果的標籤結構 (標題在 h3, 連結在 a)
+        items = soup.select('div.g') # 這是 Google 搜尋結果最外層的 div
         
         results = []
         for item in items:
-            title = item.select_one('h3').text if item.select_one('h3') else "無標題"
-            link = item.select_one('a')['href'] if item.select_one('a') else ""
-            desc = item.select_one('div.VwiC3b').text if item.select_one('div.VwiC3b') else ""
+            title_tag = item.select_one('h3')
+            link_tag = item.select_one('a')
+            desc_tag = item.select_one('div.VwiC3b') # 描述摘要
             
-            results.append({
-                "來源平台": domain,
-                "公司/標題": title,
-                "摘要內容": desc,
-                "連結": link
-            })
+            if title_tag and link_tag:
+                results.append({
+                    "來源平台": clean_domain,
+                    "公司名稱/標題": title_tag.text,
+                    "內容摘要": desc_tag.text if desc_tag else "無摘要",
+                    "連結": link_tag['href']
+                })
         return results
     except Exception as e:
-        return [f"搜尋出錯: {e}"]
+        return f"ERROR: {str(e)}"
 
-# --- 104 專用 API 邏輯 ---
+# --- 104 API 邏輯 (保持穩定) ---
 def scrape_104(keyword):
     safe_keyword = quote(keyword)
     headers = {'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest'}
@@ -52,54 +77,51 @@ def scrape_104(keyword):
         resp = requests.get(api_url, headers=headers, timeout=10)
         data = resp.json()
         job_list = data.get('data', {}).get('list', [])
-        return [{"來源平台": "104人力銀行", "公司/標題": j.get('custName'), "摘要內容": j.get('jobName') + " | " + j.get('description')[:50], "連結": f"https://www.104.com.tw/job/{j.get('jobNo')}"} for j in job_list]
+        return [{"來源平台": "104人力銀行", "公司名稱/標題": j.get('custName'), "內容摘要": f"{j.get('jobName')} | {j.get('description')[:50]}", "連結": f"https://www.104.com.tw/job/{j.get('jobNo')}"} for j in job_list]
     except: return []
 
 # --- UI 介面 ---
-st.title("🏗️ 萬用企業情報搜集器")
-st.info("您可以指定特定的網站（如 yes123.com.tw）來進行深度搜尋。")
+st.title("🚀 萬用企業情報搜集器")
 
 with st.sidebar:
     st.header("🔍 設定搜尋目標")
+    user_keywords = st.text_input("1. 輸入關鍵字 (如: Formlabs)", "Formlabs")
     
-    # 1. 關鍵字輸入
-    user_keywords = st.text_input("1. 輸入設備/關鍵字", "Formlabs")
+    base_sites = st.multiselect("2. 內建平台", ["104人力銀行", "Google 全域"], default=["104人力銀行"])
     
-    # 2. 平台選擇 (固定 + 自定義)
-    base_sites = st.multiselect("2. 選擇內建平台", ["104人力銀行", "Google 全域搜尋"], default=["104人力銀行"])
+    custom_domain = st.text_input("3. 自定義搜尋平台 (選填)", placeholder="例如: yes123.com.tw")
     
-    # 3. 自定義平台輸入 (這就是你要的功能！)
-    custom_domain = st.text_input("3. 想要額外搜尋的網址 (選填)", placeholder="例如: yes123.com.tw")
-    
-    start_btn = st.button("🚀 開始搜集資料")
+    start_btn = st.button("🚀 開始搜集")
 
 if start_btn:
     all_data = []
     
-    # 處理內建平台
-    for site in base_sites:
-        st.write(f"正在搜尋內建平台：**{site}**...")
-        if site == "104人力銀行":
-            all_data.extend(scrape_104(user_keywords))
-        elif site == "Google 全域搜尋":
-            all_data.extend(scrape_custom_site(user_keywords, "google.com"))
-        time.sleep(2)
+    # 處理 104
+    if "104人力銀行" in base_sites:
+        st.write("正在搜尋：**104人力銀行**...")
+        all_data.extend(scrape_104(user_keywords))
 
-    # 處理使用者自定義的平台 (利用 Google site: 語法)
+    # 處理 Google 全域
+    if "Google 全域" in base_sites:
+        st.write("正在搜尋：**Google 全域**...")
+        res = scrape_custom_site(user_keywords, "google.com")
+        if isinstance(res, list): all_data.extend(res)
+
+    # 處理自定義平台
     if custom_domain:
-        st.write(f"正在對指定網站 **{custom_domain}** 進行精確搜尋...")
+        st.write(f"正在搜尋自定義平台：**{custom_domain}**...")
         res = scrape_custom_site(user_keywords, custom_domain)
         if isinstance(res, list):
             all_data.extend(res)
-        time.sleep(2)
+        elif isinstance(res, str) and "ERROR" in res:
+            st.error(res)
 
-    # 顯示結果
     if all_data:
         df = pd.DataFrame(all_data)
-        st.success(f"搜集完成！共找到 {len(df)} 筆潛在資訊。")
+        st.success(f"完成！共找到 {len(df)} 筆資料。")
         st.dataframe(df, use_container_width=True)
         
         csv = df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button("📥 下載 Excel CSV 報表", csv, "leads_data.csv", "text/csv")
+        st.download_button("📥 下載 Excel CSV", csv, "search_results.csv", "text/csv")
     else:
-        st.warning("查無資料，請確認網址格式是否正確（例如只需要輸入 domain.com）。")
+        st.warning("查無資料。可能原因：關鍵字太冷門、網址輸入錯誤，或 Google 暫時封鎖了頻繁查詢。")

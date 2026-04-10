@@ -1,84 +1,44 @@
 import trimesh
 import numpy as np
-import os
 
-class FormlabsChecker:
-    def __init__(self, file_path):
-        self.file_path = file_path
-        try:
-            self.mesh = trimesh.load(file_path)
-        except Exception as e:
-            print(f"無法載入檔案: {e}")
-            self.mesh = None
+def formlabs_preflight_check(file_path):
+    # 1. 載入模型
+    try:
+        mesh = trimesh.load(file_path)
+    except Exception as e:
+        return f"讀取失敗: {e}"
 
-    def check_watertight(self):
-        """檢查模型是否封閉（水密）"""
-        return self.mesh.is_watertight
+    results = []
+    results.append(f"--- 檔案報告: {file_path} ---")
 
-    def check_suction_cups(self):
-        """
-        簡易檢查杯吸效應：
-        檢查模型是否存在凹陷空間且開口可能朝下。
-        這裡使用凸包體積比對來判斷是否有明顯凹陷。
-        """
-        if self.mesh.is_convex:
-            return False # 凸面體不會有杯吸問題
-        
-        # 如果凸包體積明顯大於原始體積，表示有深凹處
-        ratio = self.mesh.convex_hull.volume / self.mesh.volume
-        return ratio > 1.15
+    # 2. 結構檢查 (結構如果不完整，Formlabs 會跳出修復提示)
+    is_solid = mesh.is_watertight
+    results.append(f"【結構】水密性: {'✅ 正常' if is_solid else '❌ 破面 (建議先修復)'}")
 
-    def get_optimal_orientation(self):
-        """
-        計算建議擺放角度：
-        SLA 核心邏輯：將模型主軸與 Z 軸偏移，避免大截面積。
-        這裡使用 PCA (主成分分析) 找出長軸。
-        """
-        # 獲取主成分慣性張量
-        to_origin, extents = trimesh.bounds.oriented_bounds(self.mesh)
-        
-        # 建議角度：通常將最長邊旋轉至與平台成 35-45 度
-        # 我們回傳建議的操作步驟
-        advice = [
-            "1. 將模型最長的一面旋轉與底座成 45° 角。",
-            "2. 避免大平面直接平行於建構平台。",
-            "3. 如果模型有重要外觀，請將該面朝上遠離平台。"
-        ]
-        return advice
+    # 3. 尺寸與體積預估
+    size = mesh.extents
+    vol = mesh.volume / 1000  # 轉為 ml
+    results.append(f"【尺寸】{size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm")
+    results.append(f"【消耗】預估樹脂: {vol:.2f} ml")
 
-    def run_full_report(self):
-        if self.mesh is None: return
+    # 4. 杯吸效應檢測 (SLA 列印的大忌)
+    # 原理：若模型是非凸面體且體積與凸包體積差異過大，通常代表有深凹槽
+    if not mesh.is_convex:
+        caution_ratio = mesh.convex_hull.volume / mesh.volume
+        if caution_ratio > 1.2:
+            results.append("【風險】⚠️ 偵測到深凹結構：請確認開口未朝向平台，或已加上排氣孔。")
 
-        print(f"== Formlabs 列印前檢查報告: {os.path.basename(self.file_path)} ==")
-        
-        # 1. 幾何結構
-        is_ok = self.check_watertight()
-        status = "✅ 通過" if is_ok else "❌ 警告：模型有破面"
-        print(f"結構完整性: {status}")
+    # 5. 擺放建議 (Orientation Logic)
+    results.append("\n--- 擺放建議 (Orientation Strategy) ---")
+    
+    # 邏輯 A: 尋找最大平面
+    # 如果有很大的平面，應旋轉 35-45 度
+    results.append("- 建議旋轉角度：將主長軸與 Z 軸交角設為 45°，減少每層離型力。")
+    
+    # 邏輯 B: 支撐位置
+    results.append("- 表面品質：請將「重要細節面」朝上，讓支撐點留在背面或底部。")
 
-        # 2. 尺寸檢查
-        size = self.mesh.extents
-        print(f"模型尺寸: 寬 {size[0]:.1f}mm, 深 {size[1]:.1f}mm, 高 {size[2]:.1f}mm")
+    return "\n".join(results)
 
-        # 3. 體積與成本預估
-        vol = self.mesh.volume / 1000 # 換算成 ml
-        print(f"預估樹脂消耗: {vol:.2f} ml")
-
-        # 4. 風險偵測
-        has_suction = self.check_suction_cups()
-        if has_suction:
-            print("風險提示: [!] 偵測到潛在『杯吸效應』區域，請務必打孔或傾斜模型。")
-        else:
-            print("風險提示: 未偵測到明顯杯吸結構。")
-
-        # 5. 擺放建議
-        print("\n[擺放建議方向]")
-        for tip in self.get_optimal_orientation():
-            print(f" - {tip}")
-        
-        print("="*50)
-
-# --- 使用範例 ---
-# 替換成你的 STL 路徑
-# checker = FormlabsChecker("my_model.stl")
-# checker.run_full_report()
+# 測試運行 (請取消註解並替換檔名)
+# print(formlabs_preflight_check("your_file.stl"))

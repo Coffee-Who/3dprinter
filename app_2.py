@@ -1,11 +1,12 @@
 import streamlit as st
 import sqlite3
+import pandas as pd
 from datetime import date
 
 # =========================
-# 📦 樣品清單（唯一來源）
+# 📦 1. 樣品圖片清單（唯一來源）
 # =========================
-image_items = [
+image_names = [
     "sample1.jpg",
     "sample2.jpg",
     "sample3.jpg"
@@ -14,32 +15,12 @@ image_items = [
 BASE_URL = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/image/"
 
 # =========================
-# 🗄️ DB 安全連線（v3 核心）
+# 🗄️ 2. SQLite 資料庫
 # =========================
-DB_PATH = "sample.db"
+conn = sqlite3.connect("sample.db", check_same_thread=False)
+c = conn.cursor()
 
-def get_conn():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
-
-def execute_db(query, params=()):
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute(query, params)
-    conn.commit()
-    conn.close()
-
-def fetch_all(query, params=()):
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute(query, params)
-    rows = c.fetchall()
-    conn.close()
-    return rows
-
-# =========================
-# 🏗️ 建表（安全）
-# =========================
-execute_db("""
+c.execute("""
 CREATE TABLE IF NOT EXISTS records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sample_name TEXT,
@@ -49,54 +30,57 @@ CREATE TABLE IF NOT EXISTS records (
     status TEXT
 )
 """)
+conn.commit()
 
 # =========================
-# 🔍 是否借出
+# 🔍 3. 是否已借出
 # =========================
-def is_borrowed(name):
-    rows = fetch_all("""
-        SELECT COUNT(*) FROM records
+def is_borrowed(sample_name):
+    df = pd.read_sql("""
+        SELECT * FROM records
         WHERE sample_name=? AND status='borrowed'
-    """, (name,))
-    return rows[0][0] > 0
+    """, conn, params=(sample_name,))
+    return not df.empty
 
 # =========================
-# 🖥️ UI
+# 🖥️ 4. UI設定
 # =========================
-st.set_page_config(page_title="3D列印借出系統 v3", layout="wide")
-st.title("📦 3D列印樣品借出系統（企業 v3 穩定版）")
+st.set_page_config(page_title="3D列印樣品借出系統", layout="wide")
+st.title("📦 3D列印樣品借出系統（穩定版）")
 
+# =========================
+# 📦 5. 顯示樣品卡片
+# =========================
 cols = st.columns(4)
 
-# =========================
-# 📦 樣品卡片
-# =========================
-for i, name in enumerate(image_items):
+for i, name in enumerate(image_names):
     col = cols[i % 4]
 
     with col:
         img_url = BASE_URL + name
+
         st.image(img_url, caption=name, use_container_width=True)
 
-        # =====================
+        # =========================
         # 🔴 已借出
-        # =====================
+        # =========================
         if is_borrowed(name):
             st.error("🔴 已借出")
 
             if st.button(f"歸還_{i}"):
-                execute_db("""
+                c.execute("""
                     UPDATE records
                     SET return_date=?, status='returned'
                     WHERE sample_name=? AND status='borrowed'
                 """, (str(date.today()), name))
 
+                conn.commit()
                 st.success("已歸還")
                 st.rerun()
 
-        # =====================
+        # =========================
         # 🟢 可借出
-        # =====================
+        # =========================
         else:
             st.success("🟢 可借出")
 
@@ -111,25 +95,20 @@ for i, name in enumerate(image_items):
                     if user.strip() == "":
                         st.warning("請輸入借出人員")
                     else:
-                        execute_db("""
+                        c.execute("""
                             INSERT INTO records
                             (sample_name, user_name, borrow_date, return_date, status)
                             VALUES (?, ?, ?, ?, 'borrowed')
                         """, (name, user, str(borrow_date), str(return_date)))
 
+                        conn.commit()
                         st.success("借出成功")
                         st.rerun()
 
 # =========================
-# 📊 借出紀錄
+# 📊 6. 借出紀錄
 # =========================
-st.divider()
 st.subheader("📊 借出紀錄")
 
-rows = fetch_all("""
-    SELECT sample_name, user_name, borrow_date, return_date, status
-    FROM records
-    ORDER BY id DESC
-""")
-
-st.dataframe(rows, use_container_width=True)
+df = pd.read_sql("SELECT * FROM records ORDER BY id DESC", conn)
+st.dataframe(df, use_container_width=True)

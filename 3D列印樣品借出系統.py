@@ -3,23 +3,43 @@ import sqlite3
 from datetime import date
 
 # =========================
-# 📦 1. 樣品清單（企業版核心）
+# 📦 樣品清單（唯一來源）
 # =========================
 image_items = [
-    {"name": "sample1.jpg"},
-    {"name": "sample2.jpg"},
-    {"name": "sample3.jpg"}
+    "sample1.jpg",
+    "sample2.jpg",
+    "sample3.jpg"
 ]
 
 BASE_URL = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/image/"
 
 # =========================
-# 🗄️ 2. SQLite（穩定寫法）
+# 🗄️ DB 安全連線（v3 核心）
 # =========================
-conn = sqlite3.connect("sample.db", check_same_thread=False)
-c = conn.cursor()
+DB_PATH = "sample.db"
 
-c.execute("""
+def get_conn():
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
+
+def execute_db(query, params=()):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(query, params)
+    conn.commit()
+    conn.close()
+
+def fetch_all(query, params=()):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute(query, params)
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+# =========================
+# 🏗️ 建表（安全）
+# =========================
+execute_db("""
 CREATE TABLE IF NOT EXISTS records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sample_name TEXT,
@@ -29,36 +49,33 @@ CREATE TABLE IF NOT EXISTS records (
     status TEXT
 )
 """)
-conn.commit()
 
 # =========================
-# 🔍 3. 借出判斷（穩定版）
+# 🔍 是否借出
 # =========================
 def is_borrowed(name):
-    c.execute("""
+    rows = fetch_all("""
         SELECT COUNT(*) FROM records
         WHERE sample_name=? AND status='borrowed'
     """, (name,))
-    return c.fetchone()[0] > 0
+    return rows[0][0] > 0
 
 # =========================
-# 🖥️ 4. UI
+# 🖥️ UI
 # =========================
-st.set_page_config(page_title="3D列印借出系統 v2.0", layout="wide")
-st.title("📦 3D列印樣品借出系統（企業穩定版 v2.0）")
+st.set_page_config(page_title="3D列印借出系統 v3", layout="wide")
+st.title("📦 3D列印樣品借出系統（企業 v3 穩定版）")
 
 cols = st.columns(4)
 
 # =========================
-# 📦 5. 樣品卡片
+# 📦 樣品卡片
 # =========================
-for i, item in enumerate(image_items):
-    name = item["name"]
+for i, name in enumerate(image_items):
     col = cols[i % 4]
 
     with col:
         img_url = BASE_URL + name
-
         st.image(img_url, caption=name, use_container_width=True)
 
         # =====================
@@ -68,13 +85,12 @@ for i, item in enumerate(image_items):
             st.error("🔴 已借出")
 
             if st.button(f"歸還_{i}"):
-                c.execute("""
+                execute_db("""
                     UPDATE records
                     SET return_date=?, status='returned'
                     WHERE sample_name=? AND status='borrowed'
                 """, (str(date.today()), name))
 
-                conn.commit()
                 st.success("已歸還")
                 st.rerun()
 
@@ -95,31 +111,25 @@ for i, item in enumerate(image_items):
                     if user.strip() == "":
                         st.warning("請輸入借出人員")
                     else:
-                        c.execute("""
+                        execute_db("""
                             INSERT INTO records
                             (sample_name, user_name, borrow_date, return_date, status)
                             VALUES (?, ?, ?, ?, 'borrowed')
                         """, (name, user, str(borrow_date), str(return_date)))
 
-                        conn.commit()
                         st.success("借出成功")
                         st.rerun()
 
 # =========================
-# 📊 6. 借出紀錄（企業版）
+# 📊 借出紀錄
 # =========================
 st.divider()
 st.subheader("📊 借出紀錄")
 
-c.execute("""
+rows = fetch_all("""
     SELECT sample_name, user_name, borrow_date, return_date, status
     FROM records
     ORDER BY id DESC
 """)
 
-rows = c.fetchall()
-
-if rows:
-    st.dataframe(rows, use_container_width=True)
-else:
-    st.info("目前沒有紀錄")
+st.dataframe(rows, use_container_width=True)

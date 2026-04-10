@@ -3,63 +3,68 @@ import trimesh
 import numpy as np
 import io
 import base64
-from scipy.spatial import cKDTree
 
 # --- 網頁配置 ---
-st.set_page_config(page_title="SLA Expert Pre-Check", layout="wide")
+st.set_page_config(page_title="SLA Expert Analysis", layout="wide")
 
 st.title("🖨️ SLA 專業預檢：區域厚度視覺化系統")
 
 # --- 側邊欄參數 ---
 with st.sidebar:
-    st.header("🔧 厚度分析設定")
-    # 數值調整最大到 10mm
+    st.header("🔧 分析設定")
     min_wall_threshold = st.slider("最小壁厚警告門檻 (mm)", 0.1, 10.0, 0.6, 0.1)
-    st.info("💡 小於此門檻的區域將在 3D 預覽中顯示為紅色。")
     
     st.divider()
-    st.subheader("支撐架模擬")
+    st.subheader("支撐模擬設定")
     support_density = st.slider("支撐密度", 1.0, 5.0, 2.5)
     touchpoint_size = st.slider("接觸點直徑 (mm)", 0.3, 1.2, 0.6)
 
-# --- 核心邏輯：局部厚度著色演算法 ---
-def apply_thickness_coloring(mesh, threshold):
+# --- 核心邏輯：局部厚度分析 ---
+def analyze_thickness_to_color(mesh, threshold):
     """
-    計算每個頂點的局部厚度，並根據門檻賦予顏色
+    計算每個頂點的厚度：向內發射射線並偵測對面距離。
     """
-    # 建立顏色陣列 (預設灰色: R:200, G:200, B:200)
-    vertex_colors = np.full((len(mesh.vertices), 4), [200, 200, 200, 255], dtype=np.uint8)
+    # 複製一個模型來進行染色
+    color_mesh = mesh.copy()
     
-    # 使用簡化射線法估算局部厚度：
+    # 預設灰色 (RGBA)
+    base_color = [200, 200, 200, 255]
+    red_color = [255, 0, 0, 255]
+    
+    # 初始化顏色矩陣
+    vertex_colors = np.full((len(color_mesh.vertices), 4), base_color, dtype=np.uint8)
+    
     # 獲取頂點法向量並向內探測
-    ray_origins = mesh.vertices
-    ray_directions = -mesh.vertex_normals # 向內打射線
+    origins = color_mesh.vertices
+    directions = -color_mesh.vertex_normals 
     
-    # 執行射線碰撞偵測
-    locations, index_ray, index_tri = mesh.ray.intersects_location(
-        ray_origins=ray_origins,
-        ray_directions=ray_directions,
+    # 使用射線交叉檢測 (Ray Intersect)
+    # 此處邏輯：從頂點向內射，找到第一個交點即為厚度
+    locations, index_ray, _ = color_mesh.ray.intersects_location(
+        ray_origins=origins,
+        ray_directions=directions,
         multiple_hits=False
     )
     
-    # 計算距離
-    distances = np.full(len(mesh.vertices), 10.0) # 預設安全值
+    # 計算厚度距離
     if len(locations) > 0:
-        dist = np.linalg.norm(locations - ray_origins[index_ray], axis=1)
-        distances[index_ray] = dist
+        distances = np.linalg.norm(locations - origins[index_ray], axis=1)
         
-    # 將小於門檻的點染成紅色 (R:255, G:0, B:0)
-    too_thin_mask = distances < threshold
-    vertex_colors[too_thin_mask] = [255, 0, 0, 255]
-    
-    mesh.visual.vertex_colors = vertex_colors
-    return mesh, np.min(distances) if len(locations) > 0 else 0.0
+        # 建立索引遮罩
+        too_thin_ray_indices = index_ray[distances < threshold]
+        
+        # 將對應頂點染成紅色
+        vertex_colors[too_thin_ray_indices] = red_color
+        
+    color_mesh.visual.vertex_colors = vertex_colors
+    return color_mesh
 
 # --- 支撐生成邏輯 ---
 def generate_supports(mesh, density, touch_size):
     z_min = mesh.bounds[0][2]
     raft_z_top = z_min - 5
     overhang_indices = np.where(mesh.face_normals[:, 2] < -0.5)[0]
+    
     if len(overhang_indices) == 0: return None
     
     overhang_mesh = mesh.submesh([overhang_indices], append=True)
@@ -71,21 +76,21 @@ def generate_supports(mesh, density, touch_size):
         height = p[2] - raft_z_top
         cyl = trimesh.creation.cylinder(radius=touch_size/2, height=height)
         cyl.apply_translation([p[0], p[1], raft_z_top + height/2])
-        # 支撐架設為半透明藍色
-        cyl.visual.face_colors = [100, 149, 237, 150]
+        # 支撐架設為半透明藍色以方便辨識
+        cyl.visual.face_colors = [100, 149, 237, 100]
         supports.append(cyl)
             
     return trimesh.util.concatenate(supports) if supports else None
 
-# --- 3D 渲染器 ---
+# --- 3D 渲染器 (GLB 格式以支援頂點顏色) ---
 def render_3d(mesh):
-    # 注意：匯出 GLB 才能保留頂點顏色
     glb_data = mesh.export(file_type='glb')
     b64 = base64.b64encode(glb_data).decode()
     return f"""
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <model-viewer src="data:model/gltf-binary;base64,{b64}" 
-                  style="width: 100%; height: 600px;" camera-controls shadow-intensity="1">
+                  style="width: 100%; height: 600px; background-color: #f8f9fa;" 
+                  camera-controls shadow-intensity="1">
     </model-viewer>
     """
 
@@ -93,38 +98,49 @@ def render_3d(mesh):
 uploaded_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
 
 if uploaded_file:
-    try:
-        mesh = trimesh.load(io.BytesIO(uploaded_file.read()), file_type='stl')
-        
-        # 1. 旋轉 45 度
+    # 暫存原始模型以便多次分析
+    if 'current_mesh' not in st.session_state or st.session_state.file_name != uploaded_file.name:
+        mesh_raw = trimesh.load(io.BytesIO(uploaded_file.read()), file_type='stl')
+        # 統一執行 45 度預旋轉
         rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 0, 0])
-        mesh.apply_transform(rot)
+        mesh_raw.apply_transform(rot)
+        st.session_state.current_mesh = mesh_raw
+        st.session_state.file_name = uploaded_file.name
+        st.session_state.display_mesh = mesh_raw.copy()
 
-        # 2. 進行厚度計算與染色
-        with st.spinner("正在分析壁厚分布..."):
-            colored_mesh, min_detected = apply_thickness_coloring(mesh.copy(), min_wall_threshold)
+    mesh = st.session_state.current_mesh
 
-        # 3. 看板顯示
-        c1, c2, c3 = st.columns(3)
-        c1.metric("預估體積", f"{mesh.volume/1000:.2f} ml")
-        c2.metric("偵測最小厚度", f"{min_detected:.2f} mm", 
-                  delta="太薄" if min_detected < min_wall_threshold else "安全",
-                  delta_color="inverse" if min_detected < min_wall_threshold else "normal")
-        c3.metric("頂點數量", f"{len(mesh.vertices)}")
+    # 功能按鈕
+    col_btn, _ = st.columns([1, 2])
+    check_btn = col_btn.button("🔍 開始壁厚偵測 (紅色標示)")
 
-        # 4. 生成支撐並合併
-        support_mesh = generate_supports(mesh, support_density, touchpoint_size)
+    if check_btn:
+        with st.spinner("正在進行射線採樣分析..."):
+            st.session_state.display_mesh = analyze_thickness_to_color(mesh, min_wall_threshold)
+            st.success(f"分析完成！厚度低於 {min_wall_threshold}mm 的區域已染成紅色。")
+
+    # 儀表板
+    c1, c2, c3 = st.columns(3)
+    c1.metric("預估體積", f"{mesh.volume/1000:.2f} ml")
+    c2.metric("模型表面積", f"{mesh.area/100:.1f} cm²")
+    c3.metric("頂點數量", f"{len(mesh.vertices)}")
+
+    # 3D 展示區
+    with st.container():
+        st.subheader("📦 3D 預覽與分析畫面")
+        # 這裡不合併支撐，避免干擾厚度顏色判斷，改為選項
+        show_supports = st.checkbox("顯示模擬支撐架 (半透明藍)", value=True)
         
-        st.subheader("🔍 厚度視覺化預覽 (紅色 = 低於門檻)")
-        if support_mesh:
-            # 合併時保留各自顏色
-            scene = trimesh.util.concatenate([colored_mesh, support_mesh])
-            st.components.v1.html(render_3d(scene), height=620)
-        else:
-            st.components.v1.html(render_3d(colored_mesh), height=620)
+        preview_mesh = st.session_state.display_mesh.copy()
+        
+        if show_supports:
+            support_mesh = generate_supports(mesh, support_density, touchpoint_size)
+            if support_mesh:
+                preview_mesh = trimesh.util.concatenate([preview_mesh, support_mesh])
+        
+        st.components.v1.html(render_3d(preview_mesh), height=620)
 
-        if min_detected < min_wall_threshold:
-            st.error(f"⚠️ 偵測到厚度不足區域！請檢查畫面中的**紅色部位**。")
-
-    except Exception as e:
-        st.error(f"分析失敗: {e}")
+    if mesh.convex_hull.volume / mesh.volume > 1.25:
+        st.warning("⚠️ 偵測到模型內部有較大空腔，請確保已設計排氣孔防止吸盤效應。")
+else:
+    st.info("👋 請上傳 STL 檔案以啟動分析。建議檔案大小不超過 10MB。")

@@ -1,44 +1,53 @@
+import streamlit as st
 import trimesh
 import numpy as np
+import io
 
-def formlabs_preflight_check(file_path):
-    # 1. 載入模型
-    try:
-        mesh = trimesh.load(file_path)
-    except Exception as e:
-        return f"讀取失敗: {e}"
+st.set_page_config(page_title="3D 列印預檢工具", layout="wide")
+st.title("🖨️ Formlabs 列印前檢查與擺放建議")
 
-    results = []
-    results.append(f"--- 檔案報告: {file_path} ---")
+# 檔案上傳器
+uploaded_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
 
-    # 2. 結構檢查 (結構如果不完整，Formlabs 會跳出修復提示)
-    is_solid = mesh.is_watertight
-    results.append(f"【結構】水密性: {'✅ 正常' if is_solid else '❌ 破面 (建議先修復)'}")
+if uploaded_file is not None:
+    # 讀取檔案
+    file_bytes = uploaded_file.read()
+    mesh = trimesh.load(io.BytesIO(file_bytes), file_type='stl')
 
-    # 3. 尺寸與體積預估
-    size = mesh.extents
-    vol = mesh.volume / 1000  # 轉為 ml
-    results.append(f"【尺寸】{size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm")
-    results.append(f"【消耗】預估樹脂: {vol:.2f} ml")
+    # 建立兩欄佈局
+    col1, col2 = st.columns(2)
 
-    # 4. 杯吸效應檢測 (SLA 列印的大忌)
-    # 原理：若模型是非凸面體且體積與凸包體積差異過大，通常代表有深凹槽
-    if not mesh.is_convex:
-        caution_ratio = mesh.convex_hull.volume / mesh.volume
-        if caution_ratio > 1.2:
-            results.append("【風險】⚠️ 偵測到深凹結構：請確認開口未朝向平台，或已加上排氣孔。")
+    with col1:
+        st.subheader("✅ 模型基本檢查")
+        st.write(f"**模型名稱:** {uploaded_file.name}")
+        
+        # 檢查水密性
+        if mesh.is_watertight:
+            st.success("水密性檢查：通過 (無破面)")
+        else:
+            st.error("水密性檢查：失敗 (模型有破面，請修復)")
 
-    # 5. 擺放建議 (Orientation Logic)
-    results.append("\n--- 擺放建議 (Orientation Strategy) ---")
-    
-    # 邏輯 A: 尋找最大平面
-    # 如果有很大的平面，應旋轉 35-45 度
-    results.append("- 建議旋轉角度：將主長軸與 Z 軸交角設為 45°，減少每層離型力。")
-    
-    # 邏輯 B: 支撐位置
-    results.append("- 表面品質：請將「重要細節面」朝上，讓支撐點留在背面或底部。")
+        # 尺寸資訊
+        st.write(f"**模型尺寸:** {np.round(mesh.extents, 1)} mm")
+        st.write(f"**預估樹脂量:** {mesh.volume/1000:.2f} ml")
 
-    return "\n".join(results)
+    with col2:
+        st.subheader("📐 擺放與方向建議")
+        
+        # 杯吸效應檢查
+        suction_ratio = mesh.convex_hull.volume / mesh.volume
+        if suction_ratio > 1.15:
+            st.warning("⚠️ 偵測到杯吸風險！建議傾斜模型或增加排氣孔。")
+        else:
+            st.info("未偵測到明顯杯吸結構。")
 
-# 測試運行 (請取消註解並替換檔名)
-# print(formlabs_preflight_check("your_file.stl"))
+        # 擺放建議
+        st.markdown("""
+        **建議操作：**
+        1. **旋轉 35°-45°**：減少每層離型力，提高成功率。
+        2. **細節朝上**：確保支撐點不破壞重要表面。
+        3. **遠離平台**：大底面應與平台保持至少 5mm 距離。
+        """)
+
+else:
+    st.info("請在上方上傳一個 .stl 檔案以開始分析。")

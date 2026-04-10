@@ -4,123 +4,114 @@ from datetime import datetime
 import os
 
 # 設定網頁標題
-st.set_page_config(page_title="3D 列印樣品管理系統專業版", layout="wide")
+st.set_page_config(page_title="3D 列印樣品管理系統", layout="wide")
 
-# --- 1. 配置與初始化 ---
+# --- 1. 檔案路徑與初始化 ---
 IMAGE_FOLDER = "image"
 RECORD_FILE = "loan_records.csv"
 USER_FILE = "users.csv"
 
-# 確保資料夾存在
 if not os.path.exists(IMAGE_FOLDER):
     os.makedirs(IMAGE_FOLDER)
 
-# 初始化紀錄檔
-if not os.path.exists(RECORD_FILE):
-    pd.DataFrame(columns=["項次", "樣品名稱", "借出人員", "借出日期", "歸還日期", "備註", "狀態"]).to_csv(RECORD_FILE, index=False)
-
-# 初始化人員清單
-if not os.path.exists(USER_FILE):
-    pd.DataFrame({"姓名": ["管理員"]}).to_csv(USER_FILE, index=False)
-
-def load_data(file):
-    try:
+def load_data(file, columns):
+    if os.path.exists(file):
         return pd.read_csv(file).fillna("")
-    except:
-        return pd.DataFrame()
+    return pd.DataFrame(columns=columns)
 
 def save_data(df, file):
     df.to_csv(file, index=False)
 
-# --- 2. 側邊欄：進階管理功能 ---
+# 載入初始資料
+records = load_data(RECORD_FILE, ["項次", "樣品名稱", "借出人員", "借出日期", "歸還日期", "備註", "狀態"])
+user_df = load_data(USER_FILE, ["姓名"])
+if user_df.empty:
+    user_df = pd.DataFrame({"姓名": ["管理員"]})
+    save_data(user_df, USER_FILE)
+
+# --- 2. 側邊欄：管理功能 ---
 with st.sidebar:
-    st.title("⚙️ 系統管理面板")
+    st.title("⚙️ 系統管理")
     
-    # A. 新增樣品圖片
-    st.subheader("📷 新增樣品")
-    uploaded_file = st.file_uploader("上傳圖片檔", type=['png', 'jpg', 'jpeg'])
-    if uploaded_file is not None:
+    # A. 新增樣品
+    st.subheader("📷 新增樣品圖片")
+    uploaded_file = st.file_uploader("上傳新樣品", type=['png', 'jpg', 'jpeg'])
+    if uploaded_file:
         with open(os.path.join(IMAGE_FOLDER, uploaded_file.name), "wb") as f:
             f.write(uploaded_file.getbuffer())
-        st.success(f"樣品 {uploaded_file.name} 已新增")
+        st.success("上傳成功！")
         st.rerun()
 
     st.divider()
 
-    # B. 人員清單管理 (新增/修改/刪除)
-    st.subheader("👥 人員清單管理")
-    user_df = load_data(USER_FILE)
-    
-    # 新增人員
-    new_user = st.text_input("輸入新人員姓名")
-    if st.button("➕ 新增人員"):
+    # B. 人員管理 (新增/修改/刪除)
+    st.subheader("👥 人員名單管理")
+    new_user = st.text_input("輸入新姓名", placeholder="例如：王小明")
+    if st.button("➕ 新增人員", use_container_width=True):
         if new_user and new_user not in user_df["姓名"].values:
             user_df = pd.concat([user_df, pd.DataFrame({"姓名": [new_user]})], ignore_index=True)
             save_data(user_df, USER_FILE)
             st.rerun()
 
-    # 修改/刪除人員
     if not user_df.empty:
-        st.write("---")
-        target_user = st.selectbox("選擇管理對象", user_df["姓名"])
+        target_user = st.selectbox("選擇要編輯的人員", user_df["姓名"])
         edit_name = st.text_input("修改姓名為", value=target_user)
-        
-        col_edit, col_del = st.columns(2)
-        with col_edit:
-            if st.button("📝 修改"):
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("📝 修改", use_container_width=True):
                 user_df.loc[user_df["姓名"] == target_user, "姓名"] = edit_name
                 save_data(user_df, USER_FILE)
                 st.rerun()
-        with col_del:
-            if st.button("🗑️ 刪除"):
+        with c2:
+            if st.button("🗑️ 刪除", use_container_width=True):
                 user_df = user_df[user_df["姓名"] != target_user]
                 save_data(user_df, USER_FILE)
                 st.rerun()
 
-# --- 3. 主介面：登記清單 ---
-st.title("📦 3D 列印樣品借出系統")
+# --- 3. 主頁面：登記清單 ---
+st.title("📦 3D 列印樣品借出登記系統")
 
-records = load_data(RECORD_FILE)
-user_list = user_df["姓名"].tolist() if 'user_df' in locals() else []
 image_files = sorted([f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))])
+user_list = user_df["姓名"].tolist()
 
-# 標題列佈局
-h_col1, h_col2, h_col3, h_col4 = st.columns([0.5, 1.5, 2, 5])
-with h_col1: st.markdown("**項次**")
-with h_col2: st.markdown("**樣品圖片**")
-with h_col3: st.markdown("**狀態資訊**")
-with h_col4: st.markdown("**登記/歸還操作**")
+# 表頭
+h1, h2, h3, h4 = st.columns([0.5, 1.5, 2, 5])
+h1.markdown("**項次**")
+h2.markdown("**樣品圖片**")
+h3.markdown("**狀態資訊**")
+h4.markdown("**登記與歸還操作 (請直接輸入)**")
 st.write("---")
 
 if not image_files:
-    st.warning("目前無樣品，請從左側上傳圖片。")
+    st.info("目前沒有樣品，請由左側上傳圖片。")
 else:
     for i, img_name in enumerate(image_files, start=1):
-        col_num, col_img, col_info, col_form = st.columns([0.5, 1.5, 2, 5])
+        c_num, c_img, c_info, c_form = st.columns([0.5, 1.5, 2, 5])
         
-        with col_num:
-            st.write(f"### {i}")
+        # 1. 項次
+        c_num.write(f"### {i}")
         
-        with col_img:
-            st.image(os.path.join(IMAGE_FOLDER, img_name), width=150)
-            
-        with col_info:
+        # 2. 圖片 (150px)
+        c_img.image(os.path.join(IMAGE_FOLDER, img_name), width=150)
+        
+        # 3. 狀態
+        sample_history = records[records["樣品名稱"] == img_name]
+        is_loaned = False
+        if not sample_history.empty:
+            last_rec = sample_history.iloc[-1]
+            if last_rec["狀態"] == "借出中" and not last_rec["歸還日期"]:
+                is_loaned = True
+        
+        with c_info:
             st.write(f"**{img_name}**")
-            sample_history = records[records["樣品名稱"] == img_name]
-            is_loaned = False
-            if not sample_history.empty:
-                last_rec = sample_history.iloc[-1]
-                if last_rec["狀態"] == "借出中" and not last_rec["歸還日期"]:
-                    is_loaned = True
-            
             if is_loaned:
-                st.error(f"❌ 已借出\n\n借用人：{last_rec['借出人員']}")
+                st.error(f"🔴 已借出\n借用人：{last_rec['借出人員']}")
             else:
-                st.success("✅ 在庫可借")
+                st.success("🟢 在庫可借")
 
-        with col_form:
+        # 4. 操作表單 (直接顯示)
+        with c_form:
             if is_loaned:
-                st.write("") 
                 if st.button(f"確認歸還 (項次 {i})", key=f"ret_{i}", use_container_width=True):
                     idx = sample_history.index[-1]
                     records.at[idx, "歸還日期"] = datetime.now().strftime("%Y-%m-%d")
@@ -129,55 +120,57 @@ else:
                     st.rerun()
             else:
                 with st.form(key=f"form_{i}", clear_on_submit=True):
-                    f_c1, f_c2, f_c3 = st.columns([2, 2, 3])
-                    with f_c1:
-                        sel_user = st.selectbox("借用人", options=["請選擇"] + user_list, key=f"u_{i}")
-                    with f_c2:
-                        l_date = st.date_input("日期", datetime.now(), key=f"d_{i}")
-                    with f_c3:
-                        note = st.text_input("備註", key=f"n_{i}", placeholder="選填")
-                    
+                    f1, f2, f3 = st.columns([2, 2, 3])
+                    name = f1.selectbox("借用人", ["請選擇"] + user_list, key=f"sel_{i}")
+                    date = f2.date_input("借出日期", datetime.now(), key=f"date_{i}")
+                    note = f3.text_input("備註", key=f"note_{i}", placeholder="用途...")
                     if st.form_submit_button(f"登記借出 (項次 {i})", use_container_width=True):
-                        if sel_user == "請選擇":
-                            st.error("請選擇人員")
+                        if name == "請選擇":
+                            st.error("請選人員")
                         else:
-                            new_data = {
-                                "項次": i, "樣品名稱": img_name, "借出人員": sel_user,
-                                "借出日期": loan_date.strftime("%Y-%m-%d"), "歸還日期": "",
+                            new_row = {
+                                "項次": i, "樣品名稱": img_name, "借出人員": name,
+                                "借出日期": date.strftime("%Y-%m-%d"), "歸還日期": "",
                                 "備註": note, "狀態": "借出中"
                             }
-                            records = pd.concat([records, pd.DataFrame([new_data])], ignore_index=True)
+                            records = pd.concat([records, pd.DataFrame([new_row])], ignore_index=True)
                             save_data(records, RECORD_FILE)
                             st.rerun()
         st.write("---")
 
 # --- 4. 數據分析與匯出 ---
-st.header("📊 系統數據分析與紀錄")
-tab1, tab2 = st.tabs(["📋 流向紀錄表", "📈 借出數據分析"])
+st.header("📊 紀錄匯出與數據分析")
+col_table, col_analysis = st.columns([1, 1])
 
-with tab1:
-    st.dataframe(records, use_container_width=True)
+with col_table:
+    st.subheader("📋 流向紀錄總表")
+    st.dataframe(records, use_container_width=True, height=400)
     csv = records.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 匯出紀錄 (CSV)", csv, "3d_loan_records.csv", "text/csv")
+    st.download_button("📥 匯出 CSV 紀錄檔", csv, "history.csv", "text/csv")
 
-with tab2:
+with col_analysis:
+    st.subheader("📈 借出數據分析")
     if not records.empty:
-        col_a, col_b = st.columns(2)
+        # A. 樣品次數統計
+        s_counts = records["樣品名稱"].value_counts().reset_index()
+        s_counts.columns = ["樣品", "次數"]
         
-        with col_a:
-            st.subheader("a. 各樣品借出次數統計")
-            sample_counts = records["樣品名稱"].value_counts().reset_index()
-            sample_counts.columns = ["樣品名稱", "借出次數"]
-            # 強制整數並顯示顏色區分
-            st.bar_chart(sample_counts.set_index("樣品名稱"), color="#29b5e8")
-            st.table(sample_counts) # 輔助顯示整數表格
+        # B. 人員排行
+        u_counts = records["借出人員"].value_counts().reset_index()
+        u_counts.columns = ["人員", "次數"]
 
-        with col_b:
-            st.subheader("b. 熱門借用人員排行")
-            user_counts = records["借出人員"].value_counts().reset_index()
-            user_counts.columns = ["借出人員", "借出次數"]
-            # 使用不同顏色區分
-            st.bar_chart(user_counts.set_index("借出人員"), color="#ff4b4b")
-            st.table(user_counts)
+        ana1, ana2 = st.columns(2)
+        with ana1:
+            st.write("**樣品熱度**")
+            st.bar_chart(s_counts.set_index("樣品"), color="#29b5e8")
+            # 顯示整數統計
+            for _, row in s_counts.iterrows():
+                st.write(f"🔹 {row['樣品']}: {int(row['次數'])} 次")
+
+        with ana2:
+            st.write("**借用排行**")
+            st.bar_chart(u_counts.set_index("人員"), color="#ff4b4b")
+            for _, row in u_counts.iterrows():
+                st.write(f"🔸 {row['人員']}: {int(row['次數'])} 次")
     else:
-        st.info("尚無借還數據可供分析。")
+        st.info("尚無數據可分析")

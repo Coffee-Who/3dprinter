@@ -19,3 +19,4 @@ numpy
 rtree
 streamlit
 stpyvista
+streamlit-stl

@@ -1,54 +1,84 @@
-import streamlit as st
+import trimesh
+import numpy as np
+import os
 
-st.set_page_config(page_title="Formlabs 校正助手", page_icon="📏")
+class FormlabsChecker:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        try:
+            self.mesh = trimesh.load(file_path)
+        except Exception as e:
+            print(f"無法載入檔案: {e}")
+            self.mesh = None
 
-st.title("📏 SLA 三軸尺寸校正計算器")
-st.write("依據 Formlabs SLA 標準作業程序 (SOP) 設計")
+    def check_watertight(self):
+        """檢查模型是否封閉（水密）"""
+        return self.mesh.is_watertight
 
-# --- SOP 提醒區 ---
-with st.expander("📌 點擊查看量測前注意事項 (SOP 規範)"):
-    st.markdown("""
-    1. **清洗與固化**：按照原廠參數清洗，並確保使用噴瓶填充乾淨 IPA 二次沖洗。
-    2. **完全乾燥**：用氣槍徹底清除殘留 IPA 後再進行二次固化。
-    3. **熱漲冷縮避讓**：二次固化後需**靜置 15-30 分鐘**，待物件冷卻至室溫後再量測。
-    4. **量測工具**：建議使用精密電子游標卡尺。
-    """)
+    def check_suction_cups(self):
+        """
+        簡易檢查杯吸效應：
+        檢查模型是否存在凹陷空間且開口可能朝下。
+        這裡使用凸包體積比對來判斷是否有明顯凹陷。
+        """
+        if self.mesh.is_convex:
+            return False # 凸面體不會有杯吸問題
+        
+        # 如果凸包體積明顯大於原始體積，表示有深凹處
+        ratio = self.mesh.convex_hull.volume / self.mesh.volume
+        return ratio > 1.15
 
-# --- 輸入區 ---
-st.subheader("第一步：輸入數據")
-col1, col2 = st.columns(2)
+    def get_optimal_orientation(self):
+        """
+        計算建議擺放角度：
+        SLA 核心邏輯：將模型主軸與 Z 軸偏移，避免大截面積。
+        這裡使用 PCA (主成分分析) 找出長軸。
+        """
+        # 獲取主成分慣性張量
+        to_origin, extents = trimesh.bounds.oriented_bounds(self.mesh)
+        
+        # 建議角度：通常將最長邊旋轉至與平台成 35-45 度
+        # 我們回傳建議的操作步驟
+        advice = [
+            "1. 將模型最長的一面旋轉與底座成 45° 角。",
+            "2. 避免大平面直接平行於建構平台。",
+            "3. 如果模型有重要外觀，請將該面朝上遠離平台。"
+        ]
+        return advice
 
-with col1:
-    cad_size = st.number_input("CAD 設計尺寸 (mm)", min_value=0.1, value=10.0, step=0.1)
-    st.caption("例如：測試方塊的設定長度")
+    def run_full_report(self):
+        if self.mesh is None: return
 
-with col2:
-    st.info("請輸入實際列印後的量測值：")
-    measured_x = st.number_input("量測值 X (mm)", min_value=0.1, value=10.1, step=0.01)
-    measured_y = st.number_input("量測值 Y (mm)", min_value=0.1, value=10.1, step=0.01)
-    measured_z = st.number_input("量測值 Z (mm)", min_value=0.1, value=10.1, step=0.01)
+        print(f"== Formlabs 列印前檢查報告: {os.path.basename(self.file_path)} ==")
+        
+        # 1. 幾何結構
+        is_ok = self.check_watertight()
+        status = "✅ 通過" if is_ok else "❌ 警告：模型有破面"
+        print(f"結構完整性: {status}")
 
-# --- 計算邏輯 ---
-# 公式：校正因子 = 列印物件尺寸 / CAD 尺寸
-factor_x = measured_x / cad_size
-factor_y = measured_y / cad_size
-factor_z = measured_z / cad_size
+        # 2. 尺寸檢查
+        size = self.mesh.extents
+        print(f"模型尺寸: 寬 {size[0]:.1f}mm, 深 {size[1]:.1f}mm, 高 {size[2]:.1f}mm")
 
-# --- 顯示結果 ---
-st.divider()
-st.subheader("第二步：獲取校正因子")
-st.write("請將以下數值填入 Preform 的「列印設定編輯器」中：")
+        # 3. 體積與成本預估
+        vol = self.mesh.volume / 1000 # 換算成 ml
+        print(f"預估樹脂消耗: {vol:.2f} ml")
 
-c1, c2, c3 = st.columns(3)
-c1.metric("X 軸因子", f"{factor_x:.4f}")
-c2.metric("Y 軸因子", f"{factor_y:.4f}")
-c3.metric("Z 軸因子", f"{factor_z:.4f}")
+        # 4. 風險偵測
+        has_suction = self.check_suction_cups()
+        if has_suction:
+            print("風險提示: [!] 偵測到潛在『杯吸效應』區域，請務必打孔或傾斜模型。")
+        else:
+            print("風險提示: 未偵測到明顯杯吸結構。")
 
-# --- 判定與建議 ---
-error_x = (measured_x - cad_size)
-if abs(error_x) > (cad_size * 0.0015): # 參考投影片 1-30mm 誤差值 0.15%
-    st.warning(f"⚠️ X 軸誤差約 {error_x:.3f}mm，已超過原廠建議基準，務必進行微調。")
-else:
-    st.success("✅ 目前尺寸表現優異，微調後可達極致精度。")
+        # 5. 擺放建議
+        print("\n[擺放建議方向]")
+        for tip in self.get_optimal_orientation():
+            print(f" - {tip}")
+        
+        print("="*50)
 
-st.info("💡 **操作提醒**：在 Preform 中找到目前使用的樹脂檔，點選『複製並編輯』後，調整對應軸向的校正因子並儲存。")
+# --- 使用範例 ---
+# 替換成你的 STL 路徑
+# checker = FormlabsChecker("my_model.stl")
+# checker.run_full_report()

@@ -1,36 +1,22 @@
 import streamlit as st
-import requests
-
-st.title("📦 3D列印樣品借出系統")
-
-url = "https://api.github.com/repos/Coffee-Who/3dprinter/contents/image?ref=main"
-response = requests.get(url)
-
-st.write("API狀態:", response.status_code)
-st.write("回傳內容:", response.text)  # 👈 關鍵debug
-
-if response.status_code == 200:
-    data = response.json()
-
-    for file in data:import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import date
 
-# =====================
-# 🔥 1. 圖片清單（唯一來源）
-# =====================
+# =========================
+# 📦 1. 樣品圖片清單（唯一來源）
+# =========================
 image_names = [
-    "image/2026-04-08_16-08-46.png",
-    "image/2026-04-08_16-11-51.png",
-    "image/2026-04-08_16-14-13.png"
+    "sample1.jpg",
+    "sample2.jpg",
+    "sample3.jpg"
 ]
 
 BASE_URL = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/image/"
 
-# =====================
-# 2. DB
-# =====================
+# =========================
+# 🗄️ 2. SQLite 資料庫
+# =========================
 conn = sqlite3.connect("sample.db", check_same_thread=False)
 c = conn.cursor()
 
@@ -46,9 +32,9 @@ CREATE TABLE IF NOT EXISTS records (
 """)
 conn.commit()
 
-# =====================
-# 3. 判斷是否借出
-# =====================
+# =========================
+# 🔍 3. 是否已借出
+# =========================
 def is_borrowed(sample_name):
     df = pd.read_sql("""
         SELECT * FROM records
@@ -56,17 +42,17 @@ def is_borrowed(sample_name):
     """, conn, params=(sample_name,))
     return not df.empty
 
-# =====================
-# 4. UI
-# =====================
-st.set_page_config(layout="wide")
+# =========================
+# 🖥️ 4. UI設定
+# =========================
+st.set_page_config(page_title="3D列印樣品借出系統", layout="wide")
 st.title("📦 3D列印樣品借出系統（穩定版）")
 
+# =========================
+# 📦 5. 顯示樣品卡片
+# =========================
 cols = st.columns(4)
 
-# =====================
-# 5. 顯示樣品
-# =====================
 for i, name in enumerate(image_names):
     col = cols[i % 4]
 
@@ -75,6 +61,9 @@ for i, name in enumerate(image_names):
 
         st.image(img_url, caption=name, use_container_width=True)
 
+        # =========================
+        # 🔴 已借出
+        # =========================
         if is_borrowed(name):
             st.error("🔴 已借出")
 
@@ -89,6 +78,9 @@ for i, name in enumerate(image_names):
                 st.success("已歸還")
                 st.rerun()
 
+        # =========================
+        # 🟢 可借出
+        # =========================
         else:
             st.success("🟢 可借出")
 
@@ -113,14 +105,10 @@ for i, name in enumerate(image_names):
                         st.success("借出成功")
                         st.rerun()
 
-# =====================
-# 6. 紀錄
-# =====================
+# =========================
+# 📊 6. 借出紀錄
+# =========================
 st.subheader("📊 借出紀錄")
 
 df = pd.read_sql("SELECT * FROM records ORDER BY id DESC", conn)
 st.dataframe(df, use_container_width=True)
-        if file["name"].lower().endswith(("jpg", "png", "jpeg")):
-            st.image(file["download_url"], caption=file["name"])
-else:
-    st.error("抓不到 GitHub 圖片")

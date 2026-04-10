@@ -21,3 +21,4 @@ pandas
 requests
 beautifulsoup4
 pandas
+pip install trimesh numpy

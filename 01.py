@@ -2,122 +2,119 @@ import streamlit as st
 import trimesh
 import numpy as np
 import io
-from stl_viewer import stl_viewer # 導入 3D 預覽組件
+from stl_viewer import stl_viewer
 
-# 1. 網頁基本設定
-st.set_page_config(page_title="Formlabs 支撐模擬器", layout="wide")
-st.title("🖨️ 3D 列印「支撐架」生成與擺放模擬")
+# --- 1. 網頁配置與標題 ---
+st.set_page_config(page_title="Formlabs SLA 預檢工具", layout="wide")
 
-# --- 側邊欄設定 ---
-st.sidebar.header("支撐參數設定")
-support_density = st.sidebar.slider("支撐密度 (點/cm²)", 1.0, 5.0, 2.0, 0.5)
-touchpoint_size = st.sidebar.slider("接觸點直徑 (mm)", 0.3, 1.0, 0.6, 0.1)
-raft_thickness = st.sidebar.slider("底座厚度 (mm)", 1.0, 5.0, 2.0, 0.5)
+st.title("🖨️ Formlabs SLA 列印預檢與支撐模擬")
+st.markdown("""
+本工具會自動將模型旋轉 **45度** 以優化列印品質，並生成模擬支撐架供您預覽。
+""")
 
-# --- 核心邏輯：生成簡易支撐架 ---
-def generate_simple_supports(mesh, density, touch_size, raft_thick):
-    """
-    簡易支撐生成演算法：
-    1. 找出懸空面 (法向量向下)
-    2. 在這些面上採樣生成支撐點
-    3. 向上生成圓柱體，並加入基座
-    """
-    # 获取模型的邊界盒
-    bounds = mesh.bounds
-    min_z = bounds[0][2]
+# --- 2. 側邊欄：參數調整 ---
+st.sidebar.header("🔧 模擬參數設定")
+support_density = st.sidebar.slider("支撐密度 (點/cm²)", 1.0, 5.0, 2.0)
+touchpoint_size = st.sidebar.slider("接觸點直徑 (mm)", 0.3, 1.2, 0.6)
+raft_thick = st.sidebar.slider("底座厚度 (mm)", 1.0, 3.0, 2.0)
+
+# --- 3. 核心功能：生成模擬支撐架 ---
+def generate_support_visual(mesh, density, touch_size, raft_h):
+    """根據懸空面生成簡易支撐柱與底座"""
+    # 確保模型底部與底座有固定距離 (5mm)
+    z_min = mesh.bounds[0][2]
+    raft_z_top = z_min - 5
     
-    # a. 尋找懸空面 (Overhangs)
-    # 篩選出法向量 Z 分量小於 -0.7 的面 (約 45度角)
-    overhang_faces_indices = np.where(mesh.face_normals[:, 2] < -0.7)[0]
-    if len(overhang_faces_indices) == 0:
-        return None, None
+    # 找出懸空面 (法向量朝下)
+    overhang_indices = np.where(mesh.face_normals[:, 2] < -0.5)[0]
+    if len(overhang_indices) == 0:
+        return None
     
-    overhang_mesh = mesh.submesh([overhang_faces_indices], append=True)
+    overhang_mesh = mesh.submesh([overhang_indices], append=True)
     
-    # b. 在懸空面上採樣生成點 (按密度)
-    num_points = int(overhang_mesh.area * (density / 100)) # density is per cm2
-    if num_points < 10: num_points = 10
-    points, face_indices = overhang_mesh.sample(num_points, return_index=True)
+    # 採樣支撐點
+    num_points = int(overhang_mesh.area * (density / 100)) 
+    num_points = max(15, num_points) # 最少 15 根
+    points, _ = overhang_mesh.sample(num_points, return_index=True)
     
-    # c. 生成支撐柱 (Cylinders)
-    support_structure = []
-    
-    # 基座平面
-    raft_z = min_z - raft_thick - 5 # 讓模型與基座有 5mm 距離
-    
+    supports = []
     for p in points:
-        # 生成圓柱體：從基座到採樣點
-        height = p[2] - raft_z
+        height = p[2] - raft_z_top
         if height > 0:
-            cylinder = trimesh.creation.cylinder(radius=touch_size/2, height=height)
-            # 將圓柱體移到正確位置 (預設是中心在原點)
-            translation = [p[0], p[1], raft_z + height/2]
-            cylinder.apply_translation(translation)
-            support_structure.append(cylinder)
-
-    # d. 生成基座 (Raft)
-    if support_structure:
-        all_supports = trimesh.util.concatenate(support_structure)
-        
-        # 簡易矩形底座
-        extents = mesh.extents
-        raft = trimesh.creation.box(extents=[extents[0]*1.2, extents[1]*1.2, raft_thick])
-        raft.apply_translation([mesh.center_mass[0], mesh.center_mass[1], raft_z - raft_thick/2])
-        
-        return all_supports, raft
-    
-    return None, None
-
-# --- 網頁主流程 ---
-uploaded_file = st.file_uploader("上傳 STL 模型 (建議檔案小於 10MB)", type=["stl"])
-
-if uploaded_file is not None:
-    try:
-        # 1. 載入模型
-        file_bytes = uploaded_file.read()
-        mesh = trimesh.load(io.BytesIO(file_bytes), file_type='stl')
-        
-        # 2. 自動優化擺放：旋轉 45 度
-        st.info("💡 系統已自動將模型旋轉 45 度，以優化 SLA 列印成功率。")
-        rotation = trimesh.transformations.rotation_matrix(np.radians(45), [1, 0, 0])
-        mesh.apply_transform(rotation)
-        
-        # 3. 顯示分析
-        with st.expander("📊 模型分析與風險"):
-            col1, col2 = st.columns(2)
-            col1.write(f"模型尺寸: {np.round(mesh.extents, 1)} mm")
-            col2.write(f"預估樹脂量: {mesh.volume/1000:.2f} ml")
-            if not mesh.is_watertight:
-                st.warning("❌ 模型有破面，可能影響支撐生成，請在 PreForm 修復。")
-
-        # 4. 生成支撐與合併模型
-        with st.spinner("正在生成虛擬支撐架... (這可能需要幾秒鐘)"):
-            supports, raft = generate_simple_supports(mesh, support_density, touchpoint_size, raft_thickness)
+            # 生成支撐柱
+            cyl = trimesh.creation.cylinder(radius=touch_size/2, height=height)
+            cyl.apply_translation([p[0], p[1], raft_z_top + height/2])
+            supports.append(cyl)
             
-            if supports is not None:
-                # 將模型、支撐、基座合併成一個新物件
-                scene_meshes = [mesh, supports, raft]
-                combined_mesh = trimesh.util.concatenate(scene_meshes)
+    if not supports:
+        return None
+        
+    # 合併所有支撐柱
+    support_mesh = trimesh.util.concatenate(supports)
+    
+    # 生成底座 (Raft)
+    extents = mesh.extents
+    raft = trimesh.creation.box(extents=[extents[0]*1.2, extents[1]*1.2, raft_h])
+    raft.apply_translation([mesh.center_mass[0], mesh.center_mass[1], raft_z_top - raft_h/2])
+    
+    return trimesh.util.concatenate([support_mesh, raft])
+
+# --- 4. 檔案上傳與處理 ---
+uploaded_file = st.file_uploader("請上傳 STL 檔案", type=["stl"])
+
+if uploaded_file:
+    try:
+        # 讀取並旋轉模型 (SLA 最佳實踐：旋轉 45 度)
+        mesh = trimesh.load(io.BytesIO(uploaded_file.read()), file_type='stl')
+        
+        # 執行 45 度旋轉優化
+        rot_matrix = trimesh.transformations.rotation_matrix(np.radians(45), [1, 0, 0])
+        mesh.apply_transform(rot_matrix)
+
+        # 顯示分析數據
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("模型長度", f"{mesh.extents[0]:.1f} mm")
+        with col2:
+            st.metric("模型寬度", f"{mesh.extents[1]:.1f} mm")
+        with col3:
+            st.metric("預估體積", f"{mesh.volume/1000:.2f} ml")
+
+        # 生成支撐模擬
+        with st.spinner("計算支撐結構中..."):
+            support_mesh = generate_support_visual(mesh, support_density, touchpoint_size, raft_thick)
+            
+            if support_mesh:
+                # 合併模型與支撐供展示
+                final_scene = trimesh.util.concatenate([mesh, support_mesh])
                 
-                # 將合併後的模型存為 BytesIO 供預覽器使用
-                stl_io = io.BytesIO()
-                combined_mesh.export(stl_io, file_type='stl')
-                stl_io.seek(0)
+                # 匯出暫存 STL
+                tmp_stl = io.BytesIO()
+                final_scene.export(tmp_stl, file_type='stl')
+                tmp_stl.seek(0)
                 
-                # 5. 顯示 3D 互動預覽 (使用 streamlit-stl)
-                st.subheader("📦 3D 模擬預覽 (包含支撐架與基座)")
-                st.write("使用滑鼠旋轉、縮放，確認支撐位置。")
+                st.subheader("📦 3D 模擬預覽 (含支撐與 45° 擺放)")
+                st.info("💡 滑鼠左鍵旋轉、右鍵平移、滾輪縮放。")
                 
-                # 使用 stl_viewer 顯示合併後的模型
-                stl_viewer(stl_io)
+                # 呼叫 3D 預覽器
+                stl_viewer(tmp_stl)
                 
-                st.success("✅ 簡易支撐模擬完成！實際列印前請以 PreForm 的計算為準。")
+                # 提示檢查
+                if not mesh.is_watertight:
+                    st.error("⚠️ 偵測到模型有破面 (Non-watertight)，支撐可能不完全精準。")
+                
+                # 分析吸盤效應
+                if mesh.convex_hull.volume / mesh.volume > 1.25:
+                    st.warning("⚠️ 偵測到杯吸效應風險 (Suction Cup)，請檢查內部是否需要打孔。")
             else:
-                st.error("無法生成支撐，可能是模型結構過於簡單或非水密。")
-                stl_viewer(uploaded_file) # 顯示原始模型
+                st.warning("無法生成支撐，請確認模型是否過小或結構過於簡單。")
+                stl_viewer(uploaded_file)
 
     except Exception as e:
-        st.error(f"處理檔案時發生錯誤: {e}")
-
+        st.error(f"分析失敗: {e}")
 else:
-    st.info("請上傳一個 .stl 檔案以開始模擬。")
+    st.info("等待上傳檔案...")
+
+# --- 5. 腳註 ---
+st.divider()
+st.caption("註：本工具僅供預覽參考，最終切片請以 Formlabs PreForm 官方軟體結果為準。")

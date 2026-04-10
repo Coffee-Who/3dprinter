@@ -20,3 +20,7 @@ rtree
 streamlit
 stpyvista
 streamlit-stl
+streamlit
+streamlit-stl
+trimesh
+numpy

@@ -32,12 +32,7 @@ def load_materials():
             "BioMed Black Resin", "Custom Tray Resin", "IBT Resin", "Precision Model Resin",
             "Castable Wax 40 Resin", "Castable Wax Resin", "Silicone 40A Resin", "Alumina 4N Resin"
         ],
-        "單價": [
-            6900, 6900, 6900, 6900, 6900, 6900, 8500, 8500, 
-            8500, 8500, 12000, 8500, 9500, 9500, 11000, 12000, 
-            12000, 13500, 13500, 13500, 13500, 13500, 13500, 8500, 
-            15000, 15000, 18000, 25000
-        ]
+        "單價": [6900, 6900, 6900, 6900, 6900, 6900, 8500, 8500, 8500, 8500, 12000, 8500, 9500, 9500, 11000, 12000, 12000, 13500, 13500, 13500, 13500, 13500, 13500, 8500, 15000, 15000, 18000, 25000]
     }
     df = pd.DataFrame(data)
     df['每mm3成本'] = df['單價'] / 1000000 
@@ -56,52 +51,47 @@ def create_wireframe_box(w, d, h, color):
     box.visual.face_colors = color
     return box
 
-def analyze_thickness(mesh, threshold):
-    if threshold <= 0: return mesh
-    color_mesh = mesh.copy()
-    vertex_colors = np.full((len(color_mesh.vertices), 4), [220, 220, 220, 255], dtype=np.uint8)
-    tree = cKDTree(color_mesh.triangles_center)
-    for i, (vertex, v_normal) in enumerate(zip(color_mesh.vertices, color_mesh.vertex_normals)):
-        dist, idx = tree.query(vertex, k=5)
-        for d, f_idx in zip(dist, idx):
-            if np.dot(v_normal, color_mesh.face_normals[f_idx]) < -0.5:
-                if d < threshold: vertex_colors[i] = [255, 0, 0, 255]
-                break
-    color_mesh.visual.vertex_colors = vertex_colors
-    return color_mesh
-
-def render_preview(mesh, printer_box, qty):
+def render_preview(mesh, printer_box, qty, offset_x=0, offset_y=0, offset_z=0):
     w_l, d_l, h_l = printer_box['w'], printer_box['d'], printer_box['h']
     scene = trimesh.Scene()
     items = []
     cols = int(np.ceil(np.sqrt(qty)))
     spacing = mesh.extents[0] * 1.15
+    
     for i in range(qty):
         m_copy = mesh.copy()
         r, c = divmod(i, cols)
-        # 重新置中並確保在列印平台高度內 (Z對齊底部)
-        m_copy.apply_translation([(c - (cols-1)/2)*spacing, (r - (cols-1)/2)*spacing, -m_copy.bounds[0][2] - h_l/2])
+        # 預設放置於底部中間 (Z對齊 -h/2)，加上使用者微調量
+        base_x = (c - (cols-1)/2) * spacing + offset_x
+        base_y = (r - (cols-1)/2) * spacing + offset_y
+        base_z = -h_l/2 - m_copy.bounds[0][2] + offset_z
+        m_copy.apply_translation([base_x, base_y, base_z])
         items.append(m_copy)
+        
     final_mesh = trimesh.util.concatenate(items)
     scene.add_geometry(final_mesh)
-    is_over = any(final_mesh.extents[i] > [w_l, d_l, h_l][i] for i in range(3))
+    
+    # 空間檢查
+    is_over = (final_mesh.bounds[0][0] < -w_l/2 or final_mesh.bounds[1][0] > w_l/2 or
+               final_mesh.bounds[0][1] < -d_l/2 or final_mesh.bounds[1][1] > d_l/2 or
+               final_mesh.bounds[0][2] < -h_l/2 or final_mesh.bounds[1][2] > h_l/2)
+    
     box_color = [255, 0, 0, 255] if is_over else [150, 150, 150, 255]
     scene.add_geometry(create_wireframe_box(w_l, d_l, h_l, box_color))
-    glb = scene.export(file_type='glb')
-    return base64.b64encode(glb).decode(), is_over
+    return base64.b64encode(scene.export(file_type='glb')).decode(), is_over
 
 # --- 4. 左側側邊欄 ---
 with st.sidebar:
-    st.title("🛡️ SOLIDWIZARD 選單")
+    st.title("🛡️ SOLIDWIZARD 專家選單")
     
-    # 手動輸入
+    # 功能 4: 手動輸入體積
     st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
     st.subheader("⌨️ 手動輸入估價")
-    m_unit = st.radio("選擇體積單位", ["mm³", "cm³ (ml)"], horizontal=True)
+    m_unit = st.radio("單位", ["mm³", "cm³ (ml)"], horizontal=True)
     manual_v = st.number_input("輸入體積值", min_value=0.0, step=10.0)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 上傳檔案
+    # 功能 5: 上傳檔案估價
     st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
     st.subheader("📂 上傳檔案估價")
     up_file = st.file_uploader("選擇 STL 檔案", type=["stl"])
@@ -115,7 +105,7 @@ with st.sidebar:
     min_t = st.slider("最小薄度偵測 (mm)", 0.0, 5.0, 0.5, 0.5)
 
 # --- 5. 主頁面報價顯示 ---
-u_cost = df_m.loc[df_m["材料名稱"] == m_choice, "每mm3成本"].values[0]
+u_cost = df_m.loc[df_m["材料名稱"] == m_choice, "per_mm3_cost" if "per_mm3_cost" in df_m else "每mm3成本"].values[0]
 
 if manual_v > 0 or up_file:
     st.title("💰 SLA 智慧報價與預檢")
@@ -125,52 +115,64 @@ if manual_v > 0 or up_file:
         if 'mesh' not in st.session_state or st.session_state.get('fname') != up_file.name:
             st.session_state.mesh = trimesh.load(io.BytesIO(up_file.read()), file_type='stl')
             st.session_state.fname = up_file.name
+            st.session_state.offset = [0, 0, 0]
         calc_vol = st.session_state.mesh.volume
     else:
         calc_vol = manual_v if m_unit == "mm³" else manual_v * 1000
 
     total_price = (calc_vol * u_cost * markup * qty) + (200 * qty)
-    
-    # 價格與相關資料連動顯示 (Requirement 7)
     st.markdown(f"建議總報價：<span class='price-result'>NT$ {total_price:,.0f}</span>", unsafe_allow_html=True)
     
+    # 價格下方顯示細節
     data_c1, data_c2, data_c3 = st.columns(3)
-    with data_c1:
-        st.markdown(f'<div class="data-label">單件列印體積</div><div class="data-value">{calc_vol:,.1f} mm³</div>', unsafe_allow_html=True)
-    with data_c2:
-        st.markdown(f'<div class="data-label">使用材料名稱</div><div class="data-value">{m_choice}</div>', unsafe_allow_html=True)
-    with data_c3:
-        st.markdown(f'<div class="data-label">總消耗材料 (含數量)</div><div class="data-value">{calc_vol*qty/1000:,.2f} ml</div>', unsafe_allow_html=True)
+    with data_c1: st.markdown(f'<div class="data-label">單件體積</div><div class="data-value">{calc_vol:,.1f} mm³</div>', unsafe_allow_html=True)
+    with data_c2: st.markdown(f'<div class="data-label">使用材料</div><div class="data-value">{m_choice}</div>', unsafe_allow_html=True)
+    with data_c3: st.markdown(f'<div class="data-label">總消耗量</div><div class="data-value">{calc_vol*qty/1000:,.2f} ml</div>', unsafe_allow_html=True)
 
     if up_file:
         st.divider()
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
-            if st.button("✨ 擺放建議 (45° 斜角 & 置中)"):
-                # 執行 SLA 最佳擺放角度旋轉
+            if st.button("✨ 擺放建議 (45° 斜角)"):
                 rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 1, 0])
                 st.session_state.mesh.apply_transform(rot)
-                # 重新校正模型中心，確保旋轉後不會跑出框外
-                st.session_state.mesh.apply_translation(-st.session_state.mesh.centroid)
                 st.rerun()
         with col2:
-            if st.button("🔴 執行薄度偵測 (低於門檻標紅)"):
-                st.session_state.mesh = analyze_thickness(st.session_state.mesh, min_t)
-                st.success(f"已標示低於 {min_t}mm 之區域")
+            if st.button("🔴 執行薄度偵測"):
+                from scipy.spatial import cKDTree
+                mesh = st.session_state.mesh.copy()
+                vertex_colors = np.full((len(mesh.vertices), 4), [220, 220, 220, 255], dtype=np.uint8)
+                tree = cKDTree(mesh.triangles_center)
+                for i, (vertex, v_normal) in enumerate(zip(mesh.vertices, mesh.vertex_normals)):
+                    dist, idx = tree.query(vertex, k=5)
+                    for d, f_idx in zip(dist, idx):
+                        if np.dot(v_normal, mesh.face_normals[f_idx]) < -0.5:
+                            if d < min_t: vertex_colors[i] = [255, 0, 0, 255]
+                            break
+                mesh.visual.vertex_colors = vertex_colors
+                st.session_state.mesh = mesh
+                st.success("薄度分析完成")
 
-        # 3D 陣列同步預覽 (Requirement 2 & 3)
-        b64, over = render_preview(st.session_state.mesh, PRINTERS[p_choice], qty)
-        if over: 
-            st.error(f"❌ 警告：物件排列已超出 {p_choice} 可列印範圍！請減少數量或更換設備。")
+        with col3:
+            st.write("🕹️ 物件微調控制")
+            t_col1, t_col2, t_col3 = st.columns(3)
+            if t_col1.button("⬅️ 左移"): st.session_state.offset[0] -= 10; st.rerun()
+            if t_col2.button("➡️ 右移"): st.session_state.offset[0] += 10; st.rerun()
+            if t_col3.button("🔄 旋轉 90°"): 
+                rot = trimesh.transformations.rotation_matrix(np.radians(90), [0, 0, 1])
+                st.session_state.mesh.apply_transform(rot); st.rerun()
+
+        # 3D 渲染
+        b64, over = render_preview(st.session_state.mesh, PRINTERS[p_choice], qty, 
+                                   st.session_state.offset[0], st.session_state.offset[1], st.session_state.offset[2])
+        if over: st.error("❌ 警告：物件已超出列印範圍！框線變紅。")
         
         html_viewer = f"""
             <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-            <model-viewer src="data:model/gltf-binary;base64,{b64}" camera-controls auto-rotate shadow-intensity="1" 
-                exposure="1.3" environment-image="neutral" style="width:100%; height:600px; background-color: #f1f5f9; border-radius: 12px;">
+            <model-viewer src="data:model/gltf-binary;base64,{b64}" camera-controls auto-rotate 
+                style="width:100%; height:600px; background-color: #f1f5f9; border-radius: 12px;">
             </model-viewer>
         """
         st.components.v1.html(html_viewer, height=620)
-    else:
-        st.info("💡 手動輸入模式下不支援 3D 預覽。如需空間校驗與薄度偵測，請上傳 STL 檔案。")
 else:
-    st.info("⬅️ 請在左側選單選擇「手動輸入體積」或「上傳檔案」進行報價計算。")
+    st.info("⬅️ 請由左側選單輸入體積或上傳模型檔案以開始估價。")

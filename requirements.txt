@@ -17,3 +17,5 @@ reportlab
 trimesh
 numpy
 rtree
+streamlit
+stpyvista

@@ -49,7 +49,7 @@ PRINTERS = {
     "Form 4L": {"w": 353.0, "d": 196.0, "h": 350.0}
 }
 
-# --- 4. 核心邏輯 ---
+# --- 4. 核心邏輯：壁厚與 3D 渲染 ---
 def analyze_thickness_robust(mesh, threshold):
     color_mesh = mesh.copy()
     vertex_colors = np.full((len(color_mesh.vertices), 4), [225, 225, 225, 255], dtype=np.uint8)
@@ -64,54 +64,71 @@ def analyze_thickness_robust(mesh, threshold):
     color_mesh.visual.vertex_colors = vertex_colors
     return color_mesh
 
+def create_wireframe_box(w, d, h, color):
+    """手動建立線條構成的方框，避免 AttributeError"""
+    # 定義 8 個頂點
+    v = np.array([
+        [-w/2, -d/2, -h/2], [w/2, -d/2, -h/2], [w/2, d/2, -h/2], [-w/2, d/2, -h/2],
+        [-w/2, -d/2, h/2], [w/2, -d/2, h/2], [w/2, d/2, h/2], [-w/2, d/2, h/2]
+    ])
+    # 定義 12 條邊
+    e = np.array([
+        [0,1], [1,2], [2,3], [3,0], [4,5], [5,6], [6,7], [7,4], [0,4], [1,5], [2,6], [3,7]
+    ])
+    
+    # 將線段轉為細小的圓柱體（因為 GLB 對純線條支援度差，圓柱體渲染最穩定）
+    lines = []
+    for start, end in e:
+        line = trimesh.creation.cylinder(radius=0.5, segment=[v[start], v[end]])
+        line.visual.face_colors = color
+        lines.append(line)
+    return trimesh.util.concatenate(lines)
+
 def render_3d_pro(mesh, printer_box, is_over_limit=False):
-    # 建立設備空間線框
     w, d, h = printer_box['w'], printer_box['d'], printer_box['h']
     
-    # 建立透明度極高的 Box 作為邊框參考
-    box_color = [255, 0, 0, 40] if is_over_limit else [100, 100, 100, 30]
-    box_geom = trimesh.creation.box(extents=[w, d, h])
-    box_geom.visual.face_colors = box_color
+    # 建立純線條架構 (Wireframe)
+    box_color = [255, 0, 0, 255] if is_over_limit else [150, 150, 150, 255]
+    box_wire = create_wireframe_box(w, d, h, box_color)
     
     scene = trimesh.Scene()
     
-    # 模型處理：置中並對齊底部
+    # 模型處理：底部對齊框線底部 Z=0
     mesh_copy = mesh.copy()
     mesh_bottom = mesh_copy.bounds[0][2]
-    # 將模型移至 Box 的底平面中心 (Z 對齊 Box 底部)
+    # 置中並移至框線底部
     mesh_copy.apply_translation([-mesh_copy.centroid[0], -mesh_copy.centroid[1], -mesh_bottom - h/2])
     
     scene.add_geometry(mesh_copy)
-    scene.add_geometry(box_geom, geom_name="printer_volume")
+    scene.add_geometry(box_wire)
     
     glb_data = scene.export(file_type='glb')
     b64 = base64.b64encode(glb_data).decode()
     
     return f"""
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <style> model-viewer {{ width: 100%; height: 600px; background-color: #ffffff; border-radius: 12px; }} </style>
+    <style> model-viewer {{ width: 100%; height: 650px; background-color: #ffffff; border-radius: 12px; }} </style>
     <model-viewer src="data:model/gltf-binary;base64,{b64}" camera-controls auto-rotate shadow-intensity="1.5" exposure="1.3" environment-image="neutral" touch-action="pan-y"></model-viewer>
     """
 
-# --- 5. 主程式頁面 ---
+# --- 5. 主選單流程 ---
 with st.sidebar:
-    st.image("https://www.swtc.com/images/logo.png", width=180) # 示意用
-    st.header("⚙️ 設備與預檢")
-    p_choice = st.selectbox("切換列印空間確認", list(PRINTERS.keys()))
+    st.image("https://www.swtc.com/images/logo.png", width=180)
+    st.header("⚙️ 設備設定")
+    p_choice = st.selectbox("切換列印範圍框線", list(PRINTERS.keys()))
     min_wall_threshold = st.slider("最小壁厚警告門檻 (mm)", 0.1, 10.0, 0.6, 0.1)
     st.divider()
-    menu = st.radio("選單", ["💰 自動估價報價", "📏 比例補償"])
+    menu = st.radio("選單", ["💰 自動估價報價", "📏 比例補償計算"])
 
 if menu == "💰 自動估價報價":
     st.title(f"💰 {p_choice} 智慧報價系統")
-    
     up_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
     
     if up_file:
         if 'raw_mesh' not in st.session_state or st.session_state.get('last_file') != up_file.name:
             with st.spinner("模型載入中..."):
                 raw = trimesh.load(io.BytesIO(up_file.read()), file_type='stl')
-                # SLA 45度預設旋轉
+                # 45度 SLA 放置建議
                 rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 0, 0])
                 raw.apply_transform(rot)
                 st.session_state.raw_mesh = raw
@@ -122,7 +139,7 @@ if menu == "💰 自動估價報價":
         vol_mm3 = int(abs(mesh.volume))
         p_limit = PRINTERS[p_choice]
         
-        # 1. 報價輸入區
+        # --- 數量與價格計算 ---
         c1, c2, c3 = st.columns([2, 1, 1])
         with c1:
             m_selected = st.selectbox("1. 選擇 Formlabs 材料", df_m["材料名稱"].tolist())
@@ -131,37 +148,36 @@ if menu == "💰 自動估價報價":
         with c3:
             markup = st.number_input("3. 利潤倍率", min_value=0.1, value=2.0, step=0.1)
 
-        # 價格計算：(單件成本 * 數量 * 倍率) + (數量 * 處理費)
         u_cost = df_m.loc[df_m["材料名稱"] == m_selected, "每mm3成本"].values[0]
-        total_price = (vol_mm3 * u_cost * qty * markup) + (200 * qty)
+        # 總價 = (單件成本 * 倍率 * 數量) + (基本處理費 * 數量)
+        total_price = (vol_mm3 * u_cost * markup * qty) + (200 * qty)
         
         st.markdown(f'💸 建議總報價：NT$ <span class="price-result">{total_price:,.0f}</span>', unsafe_allow_html=True)
         st.divider()
 
-        # 2. 空間尺寸檢查
-        bounds = mesh.extents # 獲取模型的寬、深、高
+        # --- 空間尺寸檢查 ---
+        bounds = mesh.extents
         is_over = any(bounds[i] > list(p_limit.values())[i] for i in range(3))
         
-        st.subheader("📏 列印空間校驗")
+        st.subheader("📏 列印空間校驗 (細框線預覽)")
         dim_cols = st.columns(3)
-        dims = ['w', 'd', 'h']
-        labels = ['寬 (X)', '深 (Y)', '高 (Z)']
+        dims = ['w', 'd', 'h']; labels = ['寬 (X)', '深 (Y)', '高 (Z)']
         for i, d in enumerate(dims):
-            val = bounds[i]
-            limit = p_limit[d]
-            style = "over-limit" if val > limit else "safe-limit"
-            dim_cols[i].markdown(f"{labels[i]}: <span class='{style}'>{val:.1f} / {limit} mm</span>", unsafe_allow_html=True)
+            style = "over-limit" if bounds[i] > p_limit[d] else "safe-limit"
+            dim_cols[i].markdown(f"{labels[i]}: <span class='{style}'>{bounds[i]:.1f} / {p_limit[d]} mm</span>", unsafe_allow_html=True)
         
         if is_over:
-            st.error(f"❌ 警告：模型尺寸超出 {p_choice} 的列印包絡範圍！")
+            st.error(f"❌ 警告：物件已超出 {p_choice} 可列印範圍！")
 
-        # 3. 3D 渲染
-        if st.button("🔍 執行最小壁厚檢查"):
-            with st.spinner("分析中..."):
+        # --- 3D 渲染 ---
+        if st.button("🔍 執行最小壁厚檢查 (紅色區域)"):
+            with st.spinner("正在進行射線追蹤分析..."):
                 st.session_state.display_mesh = analyze_thickness_robust(mesh, min_wall_threshold)
         
-        st.components.v1.html(render_3d_pro(st.session_state.display_mesh, p_limit, is_over), height=620)
+        st.components.v1.html(render_3d_pro(st.session_state.display_mesh, p_limit, is_over), height=670)
 
 else:
     st.title("📏 尺寸補償計算")
-    # ... 比例補償代碼保持不變
+    d_size = st.number_input("設計尺寸 (mm)", min_value=0.1, value=20.0)
+    a_size = st.number_input("實測尺寸 (mm)", min_value=0.1, value=19.8)
+    st.markdown(f'建議縮放比例：<span class="price-result">{(d_size/a_size)*100:.2f}%</span>', unsafe_allow_html=True)

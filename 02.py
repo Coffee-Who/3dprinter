@@ -6,29 +6,31 @@ import io
 import base64
 from scipy.spatial import cKDTree
 
-# --- 1. PreForm 介面風格配置 ---
+# --- 1. PreForm 介面與操作邏輯樣式 ---
 st.set_page_config(page_title="SOLIDWIZARD | PreForm Mode", layout="wide")
 
 st.markdown("""
     <style>
+    /* 側邊欄風格 */
     [data-testid="stSidebar"] { background-color: #f3f4f6; border-right: 1px solid #d1d5db; }
-    .stButton>button { width: 100%; border-radius: 4px; font-weight: 600; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; transition: 0.2s; }
+    .stButton>button { width: 100%; border-radius: 4px; font-weight: 600; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; }
     .stButton>button:hover { background-color: #0081FF; color: white; border-color: #0081FF; }
+    
+    /* PreForm 報價面板 */
     .price-container { background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     .price-result { color: #E11D48; font-size: 36px; font-weight: 900; }
     .data-card { border-top: 1px solid #f3f4f6; padding-top: 10px; margin-top: 10px; }
     .data-label { color: #6b7280; font-size: 12px; font-weight: bold; text-transform: uppercase; }
     .data-value { color: #111827; font-size: 16px; font-weight: 700; }
-    .sidebar-box { background-color: #ffffff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e5e7eb; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. 初始化持久狀態 ---
+# --- 2. 初始化持久狀態 (State Management) ---
 if 'offset' not in st.session_state: st.session_state.offset = [0.0, 0.0]
 if 'mesh' not in st.session_state: st.session_state.mesh = None
 if 'fname' not in st.session_state: st.session_state.fname = ""
 
-# --- 3. 材料資料與設備 (GitHub 連動) ---
+# --- 3. 材料與設備資料 (GitHub 連動) ---
 @st.cache_data
 def load_materials():
     data = {
@@ -50,9 +52,8 @@ def load_materials():
 df_m = load_materials()
 PRINTERS = {"Form 4": {"w": 200.0, "d": 125.0, "h": 210.0}, "Form 4L": {"w": 353.0, "d": 196.0, "h": 350.0}}
 
-# --- 4. 核心 3D 渲染引擎 ---
+# --- 4. 核心 3D 渲染邏輯 ---
 def get_scene_glb(mesh, printer_box, qty, off_x, off_y):
-    # 修正：明確定義 w, d, h 供線框使用
     w, d, h = printer_box['w'], printer_box['d'], printer_box['h']
     scene = trimesh.Scene()
     cols = int(np.ceil(np.sqrt(qty)))
@@ -61,12 +62,13 @@ def get_scene_glb(mesh, printer_box, qty, off_x, off_y):
     instances = []
     for i in range(qty):
         m_inst = mesh.copy()
-        # PreForm Blue [0, 129, 255]
+        # PreForm 藍色呈現
         m_inst.visual.face_colors = [0, 129, 255, 255]
         r, c = divmod(i, cols)
         tx = (c - (cols-1)/2) * spacing + off_x
         ty = (r - (cols-1)/2) * spacing + off_y
-        tz = -h/2 - m_inst.bounds[0][2] # 對齊線框底部
+        # 底部對齊與置中
+        tz = -h/2 - m_inst.bounds[0][2] 
         m_inst.apply_translation([tx, ty, tz])
         instances.append(m_inst)
     
@@ -77,38 +79,40 @@ def get_scene_glb(mesh, printer_box, qty, off_x, off_y):
     b = combined.bounds
     is_over = (b[0][0] < -w/2 or b[1][0] > w/2 or b[0][1] < -d/2 or b[1][1] > d/2 or b[1][2] > h/2)
     
-    # 細線架構 Wireframe (修正點：變數引用正確)
+    # 細線網格與邊框 (Wireframe)
     v = np.array([[-w/2,-d/2,-h/2], [w/2,-d/2,-h/2], [w/2,d/2,-h/2], [-w/2,d/2,-h/2],
                   [-w/2,-d/2,h/2], [w/2,-d/2,h/2], [w/2,d/2,h/2], [-w/2,d/2,h/2]])
     edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]
-    box_color = [220, 38, 38, 255] if is_over else [156, 163, 175, 255]
+    box_color = [255, 0, 0, 255] if is_over else [200, 200, 200, 255]
     
     for s, e in edges:
-        line = trimesh.creation.cylinder(radius=0.25, segment=[v[s], v[e]])
+        line = trimesh.creation.cylinder(radius=0.2, segment=[v[s], v[e]])
         line.visual.face_colors = box_color
         scene.add_geometry(line)
         
     return base64.b64encode(scene.export(file_type='glb')).decode(), is_over
 
-# --- 5. 左側功能選單 ---
+# --- 5. 左側 PreForm 操作面板 ---
 with st.sidebar:
     st.title("PreForm 控制台")
     
-    with st.expander("⌨️ 手動輸入體積", expanded=False):
+    with st.container():
+        st.subheader("⌨️ 手動輸入估價")
         m_unit = st.radio("單位", ["mm³", "cm³"], horizontal=True)
         manual_v = st.number_input("輸入體積", min_value=0.0, step=100.0)
-    
-    with st.expander("📂 上傳檔案估價", expanded=True):
+
+    with st.container():
+        st.subheader("📂 上傳檔案估價")
         up_file = st.file_uploader("選擇 STL 檔案", type=["stl"])
     
     st.divider()
-    m_choice = st.selectbox("Formlabs 材料", df_m["材料名稱"].tolist())
-    p_choice = st.selectbox("印表機型號", list(PRINTERS.keys()))
-    qty = st.number_input("列印數量", min_value=1, value=1)
-    markup = st.number_input("價格倍率", min_value=1.0, value=2.0)
-    min_t_val = st.slider("薄度偵測 (mm)", 0.0, 5.0, 0.5, 0.5)
+    m_choice = st.selectbox("選擇材料 (Formlabs)", df_m["材料名稱"].tolist())
+    p_choice = st.selectbox("選擇設備 (機型範圍)", list(PRINTERS.keys()))
+    qty = st.number_input("增加數量", min_value=1, value=1)
+    markup = st.number_input("報價加成倍率", min_value=1.0, value=2.0)
+    min_t_val = st.slider("最小薄度偵測 (mm)", 0.0, 5.0, 0.5, 0.5)
 
-# --- 6. 主畫面報價與 3D 交互 ---
+# --- 6. 主頁面：價格顯示與 3D 交互 ---
 u_cost = df_m.loc[df_m["材料名稱"] == m_choice, "每mm3成本"].values[0]
 
 if manual_v > 0 or up_file:
@@ -126,13 +130,13 @@ if manual_v > 0 or up_file:
     
     st.markdown(f"""
     <div class="price-container">
-        <div style="font-size: 14px; color: #6b7280; font-weight: bold;">預估總報價 (含稅)</div>
+        <div style="font-size: 14px; color: #6b7280; font-weight: bold;">預估總成本 (含稅)</div>
         <div class="price-result">NT$ {total_price:,.0f}</div>
         <div class="data-card">
             <div style="display: flex; justify-content: space-between;">
                 <div><div class="data-label">使用材料</div><div class="data-value">{m_choice}</div></div>
                 <div><div class="data-label">單件體積</div><div class="data-value">{calc_vol:,.1f} mm³</div></div>
-                <div><div class="data-label">總消耗量</div><div class="data-value">{calc_vol*qty/1000:,.2f} mL</div></div>
+                <div><div class="data-label">總消耗 mL</div><div class="data-value">{calc_vol*qty/1000:,.2f}</div></div>
             </div>
         </div>
     </div>
@@ -143,13 +147,13 @@ if manual_v > 0 or up_file:
         col_ctrl, col_view = st.columns([1, 3])
         
         with col_ctrl:
-            st.subheader("操控工具")
-            if st.button("✨ 自動定位 (45° 斜角)"):
+            st.write("🕹️ 定向與偵測")
+            if st.button("✨ SLA 45° 擺放建議"):
                 rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 1, 0])
                 st.session_state.mesh.apply_transform(rot)
                 st.rerun()
             
-            if st.button("🔴 薄度偵測分析"):
+            if st.button("🔴 薄度偵測"):
                 tree = cKDTree(st.session_state.mesh.triangles_center)
                 v_colors = np.full((len(st.session_state.mesh.vertices), 4), [0, 129, 255, 255], dtype=np.uint8)
                 for i, (v, n) in enumerate(zip(st.session_state.mesh.vertices, st.session_state.mesh.vertex_normals)):
@@ -159,30 +163,35 @@ if manual_v > 0 or up_file:
                             v_colors[i] = [255, 0, 0, 255]
                             break
                 st.session_state.mesh.visual.vertex_colors = v_colors
-                st.success("分析完成：紅色為過薄區域")
+                st.success("低於門檻區域標紅完成")
 
-            st.write("🕹️ 平移微調 (mm)")
+            st.write("📐 手動微調位置")
             c1, c2 = st.columns(2)
             if c1.button("⬅️ X-"): st.session_state.offset[0] -= 10; st.rerun()
             if c2.button("➡️ X+"): st.session_state.offset[0] += 10; st.rerun()
             c3, c4 = st.columns(2)
             if c3.button("⬆️ Y+"): st.session_state.offset[1] += 10; st.rerun()
             if c4.button("⬇️ Y-"): st.session_state.offset[1] -= 10; st.rerun()
-            
-            if st.button("🔄 水平旋轉 90°"):
+            if st.button("🔄 旋轉 90°"):
                 st.session_state.mesh.apply_transform(trimesh.transformations.rotation_matrix(np.radians(90), [0,0,1]))
                 st.rerun()
 
         with col_view:
             glb_b64, over = get_scene_glb(st.session_state.mesh, PRINTERS[p_choice], qty, 
                                           st.session_state.offset[0], st.session_state.offset[1])
-            if over: st.error("⚠️ 物件超出範圍！框線已變紅。")
+            if over: st.error("⚠️ 超出列印範圍！框線變紅。")
             
+            # 使用 model-viewer 模擬 PreForm 的等角觀看與右鍵旋轉邏輯
+            # camera-orbit 設定初始方位角 (等角視圖)
             st.components.v1.html(f"""
                 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-                <model-viewer src="data:model/gltf-binary;base64,{glb_b64}" camera-controls auto-rotate 
+                <model-viewer src="data:model/gltf-binary;base64,{glb_b64}" 
+                    camera-controls 
+                    camera-orbit="45deg 75deg 105%" 
+                    min-camera-orbit="auto auto auto"
                     style="width:100%; height:600px; background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px;">
                 </model-viewer>
-            """, height=620)
+                <div style="font-size:12px; color:#94a3b8; text-align:right;">右鍵：旋轉視角 | 左鍵：縮放觀看 | 控制盤：調整位置</div>
+            """, height=630)
 else:
-    st.info("👋 歡迎使用 PreForm 報價系統。請上傳模型或輸入體積開始。")
+    st.info("💡 請上傳 STL 模型或輸入體積開始專業報價。")

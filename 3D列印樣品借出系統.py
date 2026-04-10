@@ -1,21 +1,20 @@
 import streamlit as st
 import sqlite3
-import pandas as pd
 from datetime import date
 
 # =========================
-# 📦 1. 樣品圖片清單（唯一來源）
+# 📦 1. 樣品清單（企業版核心）
 # =========================
-image_names = [
-    "sample1.jpg",
-    "sample2.jpg",
-    "sample3.jpg"
+image_items = [
+    {"name": "sample1.jpg"},
+    {"name": "sample2.jpg"},
+    {"name": "sample3.jpg"}
 ]
 
 BASE_URL = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/image/"
 
 # =========================
-# 🗄️ 2. SQLite 資料庫
+# 🗄️ 2. SQLite（穩定寫法）
 # =========================
 conn = sqlite3.connect("sample.db", check_same_thread=False)
 c = conn.cursor()
@@ -33,27 +32,28 @@ CREATE TABLE IF NOT EXISTS records (
 conn.commit()
 
 # =========================
-# 🔍 3. 是否已借出
+# 🔍 3. 借出判斷（穩定版）
 # =========================
-def is_borrowed(sample_name):
-    df = pd.read_sql("""
-        SELECT * FROM records
+def is_borrowed(name):
+    c.execute("""
+        SELECT COUNT(*) FROM records
         WHERE sample_name=? AND status='borrowed'
-    """, conn, params=(sample_name,))
-    return not df.empty
+    """, (name,))
+    return c.fetchone()[0] > 0
 
 # =========================
-# 🖥️ 4. UI設定
+# 🖥️ 4. UI
 # =========================
-st.set_page_config(page_title="3D列印樣品借出系統", layout="wide")
-st.title("📦 3D列印樣品借出系統（穩定版）")
+st.set_page_config(page_title="3D列印借出系統 v2.0", layout="wide")
+st.title("📦 3D列印樣品借出系統（企業穩定版 v2.0）")
 
-# =========================
-# 📦 5. 顯示樣品卡片
-# =========================
 cols = st.columns(4)
 
-for i, name in enumerate(image_names):
+# =========================
+# 📦 5. 樣品卡片
+# =========================
+for i, item in enumerate(image_items):
+    name = item["name"]
     col = cols[i % 4]
 
     with col:
@@ -61,9 +61,9 @@ for i, name in enumerate(image_names):
 
         st.image(img_url, caption=name, use_container_width=True)
 
-        # =========================
+        # =====================
         # 🔴 已借出
-        # =========================
+        # =====================
         if is_borrowed(name):
             st.error("🔴 已借出")
 
@@ -78,9 +78,9 @@ for i, name in enumerate(image_names):
                 st.success("已歸還")
                 st.rerun()
 
-        # =========================
+        # =====================
         # 🟢 可借出
-        # =========================
+        # =====================
         else:
             st.success("🟢 可借出")
 
@@ -106,9 +106,20 @@ for i, name in enumerate(image_names):
                         st.rerun()
 
 # =========================
-# 📊 6. 借出紀錄
+# 📊 6. 借出紀錄（企業版）
 # =========================
+st.divider()
 st.subheader("📊 借出紀錄")
 
-df = pd.read_sql("SELECT * FROM records ORDER BY id DESC", conn)
-st.dataframe(df, use_container_width=True)
+c.execute("""
+    SELECT sample_name, user_name, borrow_date, return_date, status
+    FROM records
+    ORDER BY id DESC
+""")
+
+rows = c.fetchall()
+
+if rows:
+    st.dataframe(rows, use_container_width=True)
+else:
+    st.info("目前沒有紀錄")

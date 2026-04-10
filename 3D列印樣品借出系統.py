@@ -1,30 +1,41 @@
+@st.cache_data(ttl=600)
 def get_images():
     try:
-        response = requests.get(GITHUB_API)
+        headers = {}  # 如果 private repo 就加 token
+
+        response = requests.get(GITHUB_API, headers=headers)
 
         if response.status_code != 200:
             st.error(f"GitHub API 錯誤：{response.status_code}")
+            st.write(response.text)
             return []
 
         data = response.json()
 
-        # 🔥 防呆：確保是 list
+        # Debug用（確認資料）
+        st.write("GitHub回傳：", data)
+
         if not isinstance(data, list):
-            st.error(f"GitHub 回傳格式錯誤：{data}")
+            st.error("回傳不是圖片列表")
             return []
 
         images = []
         for file in data:
-            # 🔥 防呆：確保 key 存在
-            if isinstance(file, dict) and "name" in file and "download_url" in file:
-                if file["name"].lower().endswith(("png", "jpg", "jpeg")):
+            if isinstance(file, dict):
+                name = file.get("name", "")
+                url = file.get("download_url", "")
+
+                if name.lower().endswith(("png", "jpg", "jpeg")):
                     images.append({
-                        "name": file["name"],
-                        "url": file["download_url"]
+                        "name": name,
+                        "url": url
                     })
+
+        if len(images) == 0:
+            st.warning("⚠️ 有抓到資料，但沒有圖片")
 
         return images
 
     except Exception as e:
-        st.error(f"讀取 GitHub 失敗：{e}")
+        st.error(f"錯誤：{e}")
         return []

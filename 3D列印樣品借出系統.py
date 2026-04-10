@@ -145,4 +145,8 @@ with tab2:
             counts = records["樣品名稱"].value_counts()
             st.bar_chart(counts)
         with c2:
-            st.write("**熱門
+            st.write("**熱門借用人員排行**")
+            user_counts = records["借出人員"].value_counts()
+            st.bar_chart(user_counts)
+    else:
+        st.write("尚無數據可分析")

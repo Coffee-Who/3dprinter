@@ -21,9 +21,9 @@ from datetime import date
 # 🔥 1. 圖片清單（唯一來源）
 # =====================
 image_names = [
-    "sample1.jpg",
-    "sample2.png",
-    "sample3.jpg"
+    "image/2026-04-08_16-08-46.png",
+    "image/2026-04-08_16-11-51.png",
+    "image/2026-04-08_16-14-13.png"
 ]
 
 BASE_URL = "https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/image/"

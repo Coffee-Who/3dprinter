@@ -9,41 +9,24 @@ from bs4 import BeautifulSoup
 # --- 頁面配置 ---
 st.set_page_config(page_title="跨平台企業情報搜集", layout="wide")
 
-# --- 104 API 邏輯 ---
-def scrape_104(keyword):
-    safe_keyword = quote(keyword)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Referer': f'https://www.104.com.tw/jobs/search/?kw={safe_keyword}',
-        'X-Requested-With': 'XMLHttpRequest',
-    }
-    api_url = f"https://www.104.com.tw/jobs/search/list?ro=0&kw={safe_keyword}&order=1&asc=0&page=1&mode=s"
-    try:
-        session = requests.Session()
-        session.get("https://www.104.com.tw/", headers={'User-Agent': headers['User-Agent']}, timeout=10)
-        time.sleep(random.uniform(1, 2))
-        resp = session.get(api_url, headers=headers, timeout=15)
-        if "application/json" not in resp.headers.get("Content-Type", ""):
-            return "BLOCKED"
-        data = resp.json()
-        job_list = data.get('data', {}).get('list', [])
-        return [{"來源": "104", "公司名稱": j.get('custName'), "職位名稱": j.get('jobName'), "地點": j.get('jobAddrNoDesc'), "工作內容": j.get('description')[:100], "連結": f"https://www.104.com.tw/job/{j.get('jobNo')}"} for j in job_list]
-    except: return []
-
-# --- Google 搜尋邏輯 (抓取標題與描述) ---
-def scrape_google(keyword):
-    """搜尋關鍵字並抓取 Google 搜尋結果，這能涵蓋所有小型人力銀行與公司官網"""
+# --- 通用 Google 站內搜尋邏輯 (核心新增功能) ---
+def scrape_custom_site(keyword, domain):
+    """
+    利用 Google 的 site: 指令去特定網站搜尋資料
+    這讓你可以輸入任何網站，如 518.com.tw 或 yes123.com.tw
+    """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
     }
-    # 搜尋技巧：加入 'site:com.tw' 或 '徵才' 讓結果更精準
-    search_url = f"https://www.google.com/search?q={quote(keyword + ' 3D列印 徵才')}"
+    # 組合 Google 指令，例如: "Formlabs site:518.com.tw"
+    search_query = f"{keyword} site:{domain.replace('https://', '').replace('http://', '').split('/')[0]}"
+    url = f"https://www.google.com/search?q={quote(search_query)}"
+    
     try:
-        resp = requests.get(search_url, headers=headers, timeout=10)
+        resp = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(resp.text, 'html.parser')
-        
-        # Google 搜尋結果的傳統區塊
         items = soup.select('div.tF2Cxc') 
+        
         results = []
         for item in items:
             title = item.select_one('h3').text if item.select_one('h3') else "無標題"
@@ -51,87 +34,72 @@ def scrape_google(keyword):
             desc = item.select_one('div.VwiC3b').text if item.select_one('div.VwiC3b') else ""
             
             results.append({
-                "來源": "Google 搜尋",
-                "公司名稱": title.split(' - ')[0], # 嘗試從標題拆分公司名
-                "職位名稱": title,
-                "地點": "搜尋結果顯示",
-                "工作內容": desc,
+                "來源平台": domain,
+                "公司/標題": title,
+                "摘要內容": desc,
                 "連結": link
             })
         return results
-    except: return []
+    except Exception as e:
+        return [f"搜尋出錯: {e}"]
 
-# --- 1111 爬蟲邏輯 ---
-def scrape_1111(keyword):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'}
-    url = f"https://www.1111.com.tw/search/job?ks={quote(keyword)}"
+# --- 104 專用 API 邏輯 ---
+def scrape_104(keyword):
+    safe_keyword = quote(keyword)
+    headers = {'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest'}
+    api_url = f"https://www.104.com.tw/jobs/search/list?ro=0&kw={safe_keyword}&order=1&asc=0&page=1&mode=s"
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        items = soup.select('.job_item_info') 
-        results = []
-        for item in items:
-            try:
-                results.append({
-                    "來源": "1111",
-                    "公司名稱": item.select_one('.job_item_company').text.strip(),
-                    "職位名稱": item.select_one('.job_item_title').text.strip(),
-                    "地點": "點擊連結確認",
-                    "工作內容": item.select_one('.job_item_description').text.strip() if item.select_one('.job_item_description') else "",
-                    "連結": "https://www.1111.com.tw" + item.select_one('a')['href'] if item.select_one('a') else ""
-                })
-            except: continue
-        return results
+        resp = requests.get(api_url, headers=headers, timeout=10)
+        data = resp.json()
+        job_list = data.get('data', {}).get('list', [])
+        return [{"來源平台": "104人力銀行", "公司/標題": j.get('custName'), "摘要內容": j.get('jobName') + " | " + j.get('description')[:50], "連結": f"https://www.104.com.tw/job/{j.get('jobNo')}"} for j in job_list]
     except: return []
 
 # --- UI 介面 ---
-st.title("🏗️ 跨平台 3D 列印企業搜集器 (含 Google 搜尋)")
+st.title("🏗️ 萬用企業情報搜集器")
+st.info("您可以指定特定的網站（如 yes123.com.tw）來進行深度搜尋。")
 
 with st.sidebar:
-    st.header("🔍 搜尋設定")
-    # 自行勾選平台
-    target_sites = st.multiselect(
-        "選擇要爬取的平台",
-        ["104 人力銀行", "1111 人力銀行", "Google 綜合搜尋"],
-        default=["104 人力銀行"]
-    )
-    user_keywords = st.text_area("輸入設備關鍵字 (多個請用英文逗號隔開)", "Formlabs, Phrozen")
-    start_btn = st.button("🚀 開始跨平台搜集")
+    st.header("🔍 設定搜尋目標")
+    
+    # 1. 關鍵字輸入
+    user_keywords = st.text_input("1. 輸入設備/關鍵字", "Formlabs")
+    
+    # 2. 平台選擇 (固定 + 自定義)
+    base_sites = st.multiselect("2. 選擇內建平台", ["104人力銀行", "Google 全域搜尋"], default=["104人力銀行"])
+    
+    # 3. 自定義平台輸入 (這就是你要的功能！)
+    custom_domain = st.text_input("3. 想要額外搜尋的網址 (選填)", placeholder="例如: yes123.com.tw")
+    
+    start_btn = st.button("🚀 開始搜集資料")
 
 if start_btn:
-    keywords = [k.strip() for k in user_keywords.split(',')]
     all_data = []
-    progress_bar = st.progress(0)
-    total_steps = len(target_sites) * len(keywords)
-    step = 0
+    
+    # 處理內建平台
+    for site in base_sites:
+        st.write(f"正在搜尋內建平台：**{site}**...")
+        if site == "104人力銀行":
+            all_data.extend(scrape_104(user_keywords))
+        elif site == "Google 全域搜尋":
+            all_data.extend(scrape_custom_site(user_keywords, "google.com"))
+        time.sleep(2)
 
-    for site in target_sites:
-        for kw in keywords:
-            step += 1
-            st.write(f"正在從 **{site}** 抓取 **{kw}**...")
-            
-            if site == "104 人力銀行":
-                res = scrape_104(kw)
-            elif site == "1111 人力銀行":
-                res = scrape_1111(kw)
-            elif site == "Google 綜合搜尋":
-                res = scrape_google(kw)
-            
-            if res == "BLOCKED":
-                st.error(f"❌ {site} 暫時封鎖了你的 IP。")
-            elif isinstance(res, list):
-                all_data.extend(res)
-            
-            progress_bar.progress(step / total_steps)
-            time.sleep(random.uniform(2, 4))
+    # 處理使用者自定義的平台 (利用 Google site: 語法)
+    if custom_domain:
+        st.write(f"正在對指定網站 **{custom_domain}** 進行精確搜尋...")
+        res = scrape_custom_site(user_keywords, custom_domain)
+        if isinstance(res, list):
+            all_data.extend(res)
+        time.sleep(2)
 
+    # 顯示結果
     if all_data:
         df = pd.DataFrame(all_data)
-        df_clean = df.drop_duplicates(subset=['公司名稱', '職位名稱']).reset_index(drop=True)
-        st.success(f"搜集完成！共找到 {len(df_clean)} 筆資訊。")
-        st.dataframe(df_clean, use_container_width=True)
+        st.success(f"搜集完成！共找到 {len(df)} 筆潛在資訊。")
+        st.dataframe(df, use_container_width=True)
         
-        csv = df_clean.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button("📥 下載完整 CSV 報表", csv, "leads_full_report.csv", "text/csv")
+        csv = df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button("📥 下載 Excel CSV 報表", csv, "leads_data.csv", "text/csv")
     else:
-        st.warning("⚠️ 查無資料，請檢查關鍵字或換個平台試試。")
+        st.warning("查無資料，請確認網址格式是否正確（例如只需要輸入 domain.com）。")

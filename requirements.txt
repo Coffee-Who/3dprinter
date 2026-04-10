@@ -14,10 +14,3 @@ cascadio
 streamlit
 numpy-stl
 reportlab
-webdriver-manager
-selenium
-webdriver-manager
-pandas
-requests
-beautifulsoup4
-pandas

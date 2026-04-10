@@ -6,20 +6,21 @@ import io
 import base64
 from scipy.spatial import cKDTree
 
-# --- 1. 網頁配置 ---
-st.set_page_config(page_title="實威國際 Pro SLA 整合系統", layout="wide")
+# --- 1. 網頁配置與風格 ---
+st.set_page_config(page_title="SOLIDWIZARD Pro SLA 專家系統", layout="wide")
 
 st.markdown("""
     <style>
-    .stButton>button { width: 100%; border-radius: 8px; height: 3em; background-color: #1E40AF; color: white; }
-    .price-result { background-color: #FFFF00; color: #E11D48; padding: 10px; border-radius: 8px; font-size: 28px; font-weight: 900; border: 2px solid #E11D48; }
-    .over-limit { color: #FF0000; font-weight: bold; }
+    .stButton>button { width: 100%; border-radius: 8px; height: 3.5em; background-color: #1E40AF; color: white; font-weight: bold; }
+    .price-result { display: inline-block; background-color: #FFFF00; color: #E11D48; padding: 10px 20px; border-radius: 8px; font-size: 30px; font-weight: 900; border: 3px solid #E11D48; }
+    .metric-box { background-color: #F1F5F9; padding: 15px; border-radius: 10px; border-left: 5px solid #1E40AF; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. 材料資料 (根據 GitHub 檔案整理) ---
+# --- 2. 材料資料 (連動 GitHub 資料庫內容) ---
 @st.cache_data
 def load_materials():
+    # 根據提供之 GitHub 內容整合
     data = {
         "材料名稱": [
             "Clear Resin V4", "Grey Resin V4", "White Resin V4", "Black Resin V4",
@@ -34,15 +35,16 @@ def load_materials():
 
 df_m = load_materials()
 
-# --- 3. 設備規格 ---
+# --- 3. 設備與空間規格 ---
 PRINTERS = {
     "Form 4": {"w": 200.0, "d": 125.0, "h": 210.0},
     "Form 4L": {"w": 353.0, "d": 196.0, "h": 350.0}
 }
 
-# --- 4. 工具函數 ---
+# --- 4. 核心邏輯函數 ---
+
 def create_wireframe_box(w, d, h, color):
-    """建立細圓柱構成的線框 (Wireframe)"""
+    """建立精細線構框線，不遮擋物件"""
     v = np.array([
         [-w/2, -d/2, -h/2], [w/2, -d/2, -h/2], [w/2, d/2, -h/2], [-w/2, d/2, -h/2],
         [-w/2, -d/2, h/2], [w/2, -d/2, h/2], [w/2, d/2, h/2], [-w/2, d/2, h/2]
@@ -50,101 +52,130 @@ def create_wireframe_box(w, d, h, color):
     edges = [[0,1], [1,2], [2,3], [3,0], [4,5], [5,6], [6,7], [7,4], [0,4], [1,5], [2,6], [3,7]]
     lines = []
     for s, e in edges:
-        line = trimesh.creation.cylinder(radius=0.4, segment=[v[s], v[e]])
+        line = trimesh.creation.cylinder(radius=0.3, segment=[v[s], v[e]])
         line.visual.face_colors = color
         lines.append(line)
     return trimesh.util.concatenate(lines)
 
-def render_3d_pro(mesh, printer_box, qty=1):
-    w_limit, d_limit, h_limit = printer_box['w'], printer_box['d'], printer_box['h']
+def analyze_thickness(mesh, threshold):
+    """最小薄度偵測邏輯"""
+    if threshold <= 0: return mesh
+    color_mesh = mesh.copy()
+    vertex_colors = np.full((len(color_mesh.vertices), 4), [220, 220, 220, 255], dtype=np.uint8)
+    # 使用 KDTree 進行距離搜尋
+    tree = cKDTree(color_mesh.triangles_center)
+    for i, (vertex, v_normal) in enumerate(zip(color_mesh.vertices, color_mesh.vertex_normals)):
+        dist, idx = tree.query(vertex, k=5)
+        for d, f_idx in zip(dist, idx):
+            if np.dot(v_normal, color_mesh.face_normals[f_idx]) < -0.4: # 對向面
+                if d < threshold:
+                    vertex_colors[i] = [255, 0, 0, 255] # 標示紅色
+                break
+    color_mesh.visual.vertex_colors = vertex_colors
+    return color_mesh
+
+def render_scene(mesh, printer_box, qty):
+    """整合數量預覽與線構框線"""
+    w_l, d_l, h_l = printer_box['w'], printer_box['d'], printer_box['h']
     scene = trimesh.Scene()
     
-    # 複製並排列模型
-    combined_mesh = []
-    spacing = mesh.extents[0] + 10 # 模型間距
-    
+    # 數量排列邏輯 (矩陣排列)
+    spacing = mesh.extents[0] * 1.2
+    combined = []
     for i in range(qty):
         m_copy = mesh.copy()
-        # 簡單橫向排列
-        m_copy.apply_translation([(i - (qty-1)/2) * spacing, 0, -m_copy.bounds[0][2] - h_limit/2])
-        combined_mesh.append(m_copy)
+        # 簡單橫向排列展示
+        offset = (i - (qty - 1) / 2) * spacing
+        m_copy.apply_translation([offset, 0, -m_copy.bounds[0][2] - h_l/2])
+        combined.append(m_copy)
     
-    final_model = trimesh.util.concatenate(combined_mesh)
+    final_model = trimesh.util.concatenate(combined)
     scene.add_geometry(final_model)
     
-    # 檢查是否超出範圍
-    is_over = any(final_model.extents[i] > [w_limit, d_limit, h_limit][i] for i in range(3))
-    box_color = [255, 0, 0, 255] if is_over else [150, 150, 150, 255]
+    # 超限偵測
+    is_over = any(final_model.extents[i] > [w_l, d_l, h_l][i] for i in range(3))
+    box_color = [255, 0, 0, 255] if is_over else [100, 100, 100, 255]
     
-    box_wire = create_wireframe_box(w_limit, d_limit, h_limit, box_color)
+    box_wire = create_wireframe_box(w_l, d_l, h_l, box_color)
     scene.add_geometry(box_wire)
     
     glb = scene.export(file_type='glb')
     return base64.b64encode(glb).decode(), is_over
 
-# --- 5. 主介面 ---
+# --- 5. 側邊欄 UI ---
 with st.sidebar:
-    st.title("SOLIDWIZARD")
-    menu = st.radio("功能選單", ["💰 模型上傳估價", "✏️ 手動輸入尺寸估價", "📏 尺寸補償"])
+    st.image("https://www.swtc.com/images/logo.png", width=180) # 請換成實威 Logo
+    st.header("⚙️ 全域設定")
+    p_choice = st.selectbox("切換列印設備", list(PRINTERS.keys()))
+    m_choice = st.selectbox("選擇 Formlabs 材料", df_m["材料名稱"].tolist())
+    qty = st.number_input("列印數量", min_value=1, value=1)
+    markup = st.number_input("利潤倍率", min_value=1.0, value=2.0, step=0.1)
     st.divider()
-    p_choice = st.selectbox("切換列印設備 (框線確認)", list(PRINTERS.keys()))
-    m_choice = st.selectbox("選擇列印材料", df_m["材料名稱"].tolist())
-    qty = st.number_input("數量", min_value=1, value=1)
-    markup = st.number_input("利潤倍率", min_value=1.0, value=2.0, step=0.5)
+    st.subheader("📏 薄度偵測設定")
+    min_thickness = st.slider("最小薄度門檻 (mm)", 0.0, 5.0, 0.5, 0.5)
+    st.info("低於此數值之區域將在 3D 預覽中顯示為紅色。")
 
-# 獲取材料成本
+# --- 6. 主程式選單 ---
+menu = st.tabs(["💰 模型上傳估價", "⌨️ 手動輸入估價", "📏 尺寸補償"])
+
 u_cost = df_m.loc[df_m["材料名稱"] == m_choice, "每mm3成本"].values[0]
 
-if menu == "💰 模型上傳估價":
-    st.title("📤 3D模型自動估價預檢")
+with menu[0]:
+    st.title("📤 SLA 專家預檢報價")
     up_file = st.file_uploader("上傳 STL 檔案", type=["stl"])
     
     if up_file:
-        if 'raw_mesh' not in st.session_state or st.session_state.get('last_file') != up_file.name:
-            st.session_state.raw_mesh = trimesh.load(io.BytesIO(up_file.read()), file_type='stl')
-            st.session_state.last_file = up_file.name
-        
-        mesh = st.session_state.raw_mesh
-        
-        # 擺放方向功能按鈕
-        if st.button("✨ 建議列印擺放方向 (自動旋轉 45°)"):
-            rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 1, 0])
-            st.session_state.raw_mesh.apply_transform(rot)
-            st.rerun()
+        if 'mesh' not in st.session_state or st.session_state.get('fname') != up_file.name:
+            st.session_state.mesh = trimesh.load(io.BytesIO(up_file.read()), file_type='stl')
+            st.session_state.fname = up_file.name
 
-        # 計算價格
-        vol = mesh.volume
+        c1, c2 = st.columns([1, 1])
+        if c1.button("✨ 建議最佳擺放方向 (45° SLA)"):
+            rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 1, 0])
+            st.session_state.mesh.apply_transform(rot)
+            st.rerun()
+        
+        if c2.button("🔍 執行最小薄度偵測"):
+            st.session_state.mesh = analyze_thickness(st.session_state.mesh, min_thickness)
+            st.success(f"薄度分析完成！(門檻: {min_thickness}mm)")
+
+        # 報價與數據
+        vol = st.session_state.mesh.volume
         total_price = (vol * u_cost * markup * qty) + (200 * qty)
+        
         st.markdown(f"建議總報價：<span class='price-result'>NT$ {total_price:,.0f}</span>", unsafe_allow_html=True)
         
         # 3D 預覽
-        b64_data, over = render_3d_pro(mesh, PRINTERS[p_choice], qty)
-        if over: st.error(f"❌ 警告：模型排列已超出 {p_choice} 可列印空間！")
+        b64, over = render_scene(st.session_state.mesh, PRINTERS[p_choice], qty)
+        if over: st.error(f"⚠️ 警告：物件排列已超出 {p_choice} 空間！")
         
-        html = f"""<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-                   <model-viewer src="data:model/gltf-binary;base64,{b64_data}" camera-controls auto-rotate style="width:100%; height:500px;"></model-viewer>"""
-        st.components.v1.html(html, height=520)
+        html_code = f"""
+            <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+            <model-viewer src="data:model/gltf-binary;base64,{b64}" camera-controls auto-rotate shadow-intensity="1" exposure="1.2" style="width:100%; height:600px;"></model-viewer>
+        """
+        st.components.v1.html(html_code, height=620)
 
-elif menu == "✏️ 手動輸入尺寸估價":
-    st.title("✏️ 手動尺寸快速估價")
-    c1, c2, c3 = st.columns(3)
-    x = c1.number_input("長 (X) mm", 1.0)
-    y = c2.number_input("寬 (Y) mm", 1.0)
-    z = c3.number_input("高 (Z) mm", 1.0)
+with menu[1]:
+    st.title("⌨️ 尺寸快速估價")
+    col_in = st.columns(3)
+    dim_x = col_in[0].number_input("長 (X) mm", 1.0)
+    dim_y = col_in[1].number_input("寬 (Y) mm", 1.0)
+    dim_z = col_in[2].number_input("高 (Z) mm", 1.0)
     
-    vol = x * y * z
-    total_price = (vol * u_cost * markup * qty) + (200 * qty)
+    manual_vol = dim_x * dim_y * dim_z
+    manual_price = (manual_vol * u_cost * markup * qty) + (200 * qty)
     
-    st.info(f"計算體積：{vol:,.0f} mm³")
-    st.markdown(f"建議總報價：<span class='price-result'>NT$ {total_price:,.0f}</span>", unsafe_allow_html=True)
+    st.markdown(f"手動估算總報價：<span class='price-result'>NT$ {manual_price:,.0f}</span>", unsafe_allow_html=True)
     
-    # 空間檢查
+    # 簡單空間檢核
     p = PRINTERS[p_choice]
-    if x > p['w'] or y > p['d'] or z > p['h']:
-        st.error(f"⚠️ 尺寸超過 {p_choice} 限制！")
+    if dim_x > p['w'] or dim_y > p['d'] or dim_z > p['h']:
+        st.error(f"❌ 尺寸超過 {p_choice} 單次列印極限！")
 
-else:
+with menu[2]:
     st.title("📏 尺寸補償計算")
-    d_size = st.number_input("設計尺寸", value=20.0)
-    a_size = st.number_input("實測尺寸", value=19.8)
-    st.success(f"建議縮放比例：{(d_size/a_size)*100:.2f} %")
+    d_size = st.number_input("設計標稱尺寸 (mm)", value=20.0)
+    a_size = st.number_input("實測列印尺寸 (mm)", value=19.8)
+    if a_size > 0:
+        ratio = (d_size / a_size) * 100
+        st.success(f"建議縮放比例：{ratio:.2f} %")

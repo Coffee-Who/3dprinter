@@ -14,8 +14,11 @@ st.markdown("""
     <style>
     [data-testid="stSidebar"] { background-color: #f8fafc; border-right: 1px solid #e2e8f0; }
     .stButton>button { width: 100%; border-radius: 4px; font-weight: 600; background-color: #ffffff;
-        border: 1px solid #cbd5e1; height: 38px; font-size: 13px; }
+        border: 1px solid #cbd5e1; height: 36px; font-size: 12px; transition: all .15s; }
     .stButton>button:hover { background-color: #0081FF; color: white; border-color: #0081FF; }
+    /* 主要動作按鈕 */
+    div[data-testid="stButton"]:has(button[kind="primary"]) button {
+        background:#0081FF; color:#fff; border-color:#0059b3; }
     .price-container { background-color: #ffffff; padding: 20px; border-radius: 8px;
         border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .price-result { color: #1e293b; font-size: 32px; font-weight: 800;
@@ -31,6 +34,11 @@ st.markdown("""
         margin-top: 6px; padding-top: 6px; font-size: 13px; }
     .priority-note { background: #eff6ff; color: #1d4ed8; border-left: 3px solid #3b82f6;
         padding: 8px 12px; font-size: 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px; }
+    /* 工具面板區塊標題 */
+    h4 { font-size: 13px !important; margin: 4px 0 6px !important; color: #1e293b !important; }
+    /* 方向鍵中間欄空白 */
+    div[data-testid="column"]:nth-child(2) .stButton button { background: transparent !important;
+        border-color: transparent !important; cursor: default !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -588,25 +596,84 @@ if up_file:
     file_bytes = up_file.read()
     file_hash = hashlib.md5(file_bytes).hexdigest()
     if st.session_state.mesh_hash != file_hash:
-        raw = trimesh.load(io.BytesIO(file_bytes), file_type='stl')
-        # 將模型移到 trimesh 原點：底部貼齊 Z=0，XY 置中到框線中心
-        raw.apply_translation(-raw.bounds[0])           # 底部到 Z=0
-        raw.apply_translation([
-            -raw.extents[0] / 2,                        # X 置中
-            -raw.extents[1] / 2,                        # Y 置中
-            0
-        ])
-        st.session_state.mesh = raw
-        st.session_state.mesh_hash = file_hash
-        st.session_state.offset = [0.0, 0.0]
-        st.session_state.thin_faces = None
+        load_error = None
+        raw = None
+        try:
+            # 嘗試載入（同時支援 binary 與 ASCII STL）
+            loaded = trimesh.load(io.BytesIO(file_bytes), file_type='stl')
+
+            # trimesh 有時回傳 Scene（多物件）而非單一 Mesh
+            if isinstance(loaded, trimesh.Scene):
+                meshes = [g for g in loaded.geometry.values()
+                          if isinstance(g, trimesh.Trimesh) and len(g.faces) > 0]
+                if not meshes:
+                    raise ValueError("STL 內沒有有效的 mesh 物件")
+                raw = trimesh.util.concatenate(meshes)
+            elif isinstance(loaded, trimesh.Trimesh):
+                raw = loaded
+            else:
+                raise ValueError(f"不支援的物件類型：{type(loaded)}")
+
+            # 檢查基本有效性
+            if len(raw.faces) == 0:
+                raise ValueError("模型沒有任何面（可能是空的 STL）")
+            if np.any(np.isnan(raw.vertices)) or np.any(np.isinf(raw.vertices)):
+                raise ValueError("模型頂點含有 NaN 或 Inf，檔案可能損毀")
+
+            # 自動修復：修正法線方向、填補破面
+            raw.fix_normals()
+            trimesh.repair.fill_holes(raw)
+            trimesh.repair.fix_winding(raw)
+
+            # 若體積仍為負（法線全部反轉），強制翻轉
+            try:
+                if raw.volume < 0:
+                    raw.invert()
+            except Exception:
+                pass  # 非 watertight mesh 的 volume 可能拋出例外，忽略
+
+            # 尺寸保護：避免 extents=0 導致除以零
+            if np.any(raw.extents < 1e-6):
+                raise ValueError(
+                    f"模型尺寸過小或為零（extents: {raw.extents}），"
+                    "請確認單位是否正確（應為 mm）"
+                )
+
+            # 置中：底部貼齊 Z=0，XY 置中
+            raw.apply_translation(-raw.bounds[0])
+            raw.apply_translation([-raw.extents[0] / 2, -raw.extents[1] / 2, 0])
+
+        except Exception as e:
+            load_error = str(e)
+            raw = None
+
+        if load_error:
+            st.error(f"❌ 無法載入此 STL 檔案：{load_error}")
+            st.info("💡 建議：用 Meshmixer 或 PrusaSlicer 的「修復」功能先處理此檔案，再重新上傳。")
+            st.session_state.mesh = None
+            st.session_state.mesh_hash = ""
+        else:
+            st.session_state.mesh = raw
+            st.session_state.mesh_hash = file_hash
+            st.session_state.offset = [0.0, 0.0]
+            st.session_state.thin_faces = None
 
 use_stl = up_file and st.session_state.mesh is not None
 use_manual = not use_stl and manual_v > 0
 
 if use_stl or use_manual:
-    model_vol = st.session_state.mesh.volume if use_stl else \
-                (manual_v if m_unit == "mm³" else manual_v * 1000)
+    if use_stl:
+        try:
+            vol = st.session_state.mesh.volume
+            if not np.isfinite(vol) or vol <= 0:
+                vol = st.session_state.mesh.convex_hull.volume
+                st.caption("⚠️ 模型非封閉（非 watertight），體積以凸包近似計算。")
+        except Exception:
+            vol = st.session_state.mesh.convex_hull.volume
+            st.caption("⚠️ 體積計算失敗，以凸包近似。")
+        model_vol = abs(vol)
+    else:
+        model_vol = manual_v if m_unit == "mm³" else manual_v * 1000
 
     # 成本計算
     support_vol = model_vol * (support_ratio / 100)
@@ -655,59 +722,209 @@ if use_stl or use_manual:
         col_tool, col_view = st.columns([1, 3])
 
         with col_tool:
-            st.write("🕹️ 零件操作")
+            # ── 區塊 1：擺放優化 ──────────────────────────
+            st.markdown("#### 🎯 擺放優化")
 
-            if st.button("✨ SLA 45° 擺放建議"):
-                rot = trimesh.transformations.rotation_matrix(np.radians(45), [1, 1, 0])
-                st.session_state.mesh.apply_transform(rot)
-                # 重新貼齊底部並 XY 置中
+            if st.button("⚡ 最佳列印位置", use_container_width=True,
+                         help="綜合評估支撐面積、截面積、列印高度，自動找出最佳擺放方向"):
+                with st.spinner("正在計算最佳方向..."):
+                    mesh_orig = st.session_state.mesh.copy()
+
+                    # ── SLA 最佳方向演算法 ──────────────────
+                    # 取樣方向：均勻分布在上半球（法線朝上的方向作為底面朝向）
+                    # 使用 Fibonacci sphere 取樣
+                    def fibonacci_directions(n=120):
+                        """均勻分布在球面的方向向量"""
+                        indices = np.arange(n)
+                        phi = np.pi * (3 - np.sqrt(5))  # 黃金角
+                        y = 1 - (indices / (n - 1)) * 2
+                        radius = np.sqrt(1 - y * y)
+                        theta = phi * indices
+                        x = np.cos(theta) * radius
+                        z = np.sin(theta) * radius
+                        dirs = np.column_stack([x, y, z])
+                        # 只取上半球（底面朝上方向 = 零件朝下旋轉）
+                        return dirs[dirs[:, 2] >= -0.1]
+
+                    directions = fibonacci_directions(160)
+                    face_areas = mesh_orig.area_faces
+                    face_normals = mesh_orig.face_normals
+                    total_area = mesh_orig.area
+
+                    best_score = np.inf
+                    best_rot = None
+                    best_meta = {}
+
+                    for up_dir in directions:
+                        up_dir = up_dir / np.linalg.norm(up_dir)
+
+                        # 旋轉矩陣：讓 up_dir 對齊 +Z（trimesh Z = 高度向上）
+                        z = np.array([0, 0, 1.0])
+                        axis = np.cross(up_dir, z)
+                        axis_len = np.linalg.norm(axis)
+                        if axis_len < 1e-8:
+                            # 已經對齊或完全相反
+                            if np.dot(up_dir, z) > 0:
+                                rot_mat = np.eye(4)
+                            else:
+                                rot_mat = trimesh.transformations.rotation_matrix(
+                                    np.pi, [1, 0, 0])
+                        else:
+                            angle = np.arctan2(axis_len, np.dot(up_dir, z))
+                            rot_mat = trimesh.transformations.rotation_matrix(
+                                angle, axis / axis_len)
+
+                        # 旋轉後的法線
+                        rot3 = rot_mat[:3, :3]
+                        rotated_normals = face_normals @ rot3.T
+
+                        # ① 支撐面積分數：朝下的面積（法線 Z < -cos45°）越少越好
+                        down_mask = rotated_normals[:, 2] < -0.707
+                        support_area = np.sum(face_areas[down_mask])
+                        score_support = support_area / total_area  # 0~1
+
+                        # ② 截面積分數：底面朝下時的 XY 截面積越小越好
+                        #    用旋轉後的頂點估算底部 10% 高度的截面積
+                        rotated_verts = (mesh_orig.vertices @ rot3.T)
+                        z_min = rotated_verts[:, 2].min()
+                        z_range = rotated_verts[:, 2].max() - z_min
+                        bottom_mask = rotated_verts[:, 2] < z_min + z_range * 0.1
+                        if bottom_mask.sum() > 0:
+                            bv = rotated_verts[bottom_mask]
+                            cross_area = (bv[:, 0].max() - bv[:, 0].min()) * \
+                                         (bv[:, 1].max() - bv[:, 1].min())
+                            bbox_xy = (rotated_verts[:, 0].max() - rotated_verts[:, 0].min()) * \
+                                      (rotated_verts[:, 1].max() - rotated_verts[:, 1].min())
+                            score_cross = cross_area / (bbox_xy + 1e-6)
+                        else:
+                            score_cross = 1.0
+
+                        # ③ 高度分數：Z 方向高度越低，層數越少，列印越快
+                        height = z_range
+                        bbox_diag = np.sqrt(
+                            (rotated_verts[:, 0].ptp()**2) +
+                            (rotated_verts[:, 1].ptp()**2) +
+                            (rotated_verts[:, 2].ptp()**2)
+                        )
+                        score_height = height / (bbox_diag + 1e-6)
+
+                        # 綜合評分（權重：支撐面積 50%、截面積 30%、高度 20%）
+                        score = 0.50 * score_support + 0.30 * score_cross + 0.20 * score_height
+
+                        if score < best_score:
+                            best_score = score
+                            best_rot = rot_mat
+                            best_meta = {
+                                "support_pct": score_support * 100,
+                                "height": height,
+                                "score": score
+                            }
+
+                    # 套用最佳旋轉
+                    if best_rot is not None:
+                        m = st.session_state.mesh
+                        m.apply_transform(best_rot)
+                        m.apply_translation(-m.bounds[0])
+                        m.apply_translation([-m.extents[0]/2, -m.extents[1]/2, 0])
+                        st.session_state.thin_faces = None
+                        pct = best_meta['support_pct']
+                        ht  = best_meta['height']
+                        st.success(
+                            f"✅ 最佳方向已套用｜"
+                            f"支撐面積 {pct:.1f}%｜"
+                            f"列印高度 {ht:.1f} mm"
+                        )
+                        st.rerun()
+
+            # 快速旋轉
+            st.markdown("<div style='font-size:11px;color:#64748b;margin:6px 0 2px;font-weight:600;'>快速旋轉</div>",
+                        unsafe_allow_html=True)
+            rca, rcb, rcc = st.columns(3)
+            if rca.button("X 90°", use_container_width=True):
                 m = st.session_state.mesh
-                m.apply_translation(-m.bounds[0])
-                m.apply_translation([-m.extents[0]/2, -m.extents[1]/2, 0])
+                m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(90), [1,0,0]))
+                m.apply_translation(-m.bounds[0]); m.apply_translation([-m.extents[0]/2,-m.extents[1]/2,0])
+                st.session_state.thin_faces = None; st.rerun()
+            if rcb.button("Y 90°", use_container_width=True):
+                m = st.session_state.mesh
+                m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(90), [0,1,0]))
+                m.apply_translation(-m.bounds[0]); m.apply_translation([-m.extents[0]/2,-m.extents[1]/2,0])
+                st.session_state.thin_faces = None; st.rerun()
+            if rcc.button("Z 90°", use_container_width=True):
+                m = st.session_state.mesh
+                m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(90), [0,0,1]))
+                m.apply_translation(-m.bounds[0]); m.apply_translation([-m.extents[0]/2,-m.extents[1]/2,0])
+                st.session_state.thin_faces = None; st.rerun()
+
+            if st.button("↩ 重置旋轉＋位置", use_container_width=True):
+                # 重新從原始 hash 載入
+                st.session_state.offset = [0.0, 0.0]
+                st.session_state.mesh_hash = ""   # 強制下次重新載入
                 st.session_state.thin_faces = None
                 st.rerun()
 
-            if st.button("🔴 薄度偵測分析"):
-                mesh = st.session_state.mesh
-                tree = cKDTree(mesh.triangles_center)
+            st.divider()
+
+            # ── 區塊 2：位置微調 ──────────────────────────
+            st.markdown("#### 📏 位置微調")
+            step_mm = st.select_slider("步距 (mm)", options=[1, 5, 10, 20], value=10)
+
+            # 方向鍵佈局
+            _, mc, _ = st.columns([1, 2, 1])
+            mc.button("▲ Y+", use_container_width=True, key="y_plus",
+                      on_click=lambda: st.session_state.update({"offset": [st.session_state.offset[0], st.session_state.offset[1]+step_mm]}))
+            lc, _, rc = st.columns([1, 1, 1])
+            lc.button("◀ X-", use_container_width=True, key="x_minus",
+                      on_click=lambda: st.session_state.update({"offset": [st.session_state.offset[0]-step_mm, st.session_state.offset[1]]}))
+            rc.button("▶ X+", use_container_width=True, key="x_plus",
+                      on_click=lambda: st.session_state.update({"offset": [st.session_state.offset[0]+step_mm, st.session_state.offset[1]]}))
+            _, mc2, _ = st.columns([1, 2, 1])
+            mc2.button("▼ Y-", use_container_width=True, key="y_minus",
+                       on_click=lambda: st.session_state.update({"offset": [st.session_state.offset[0], st.session_state.offset[1]-step_mm]}))
+
+            ox, oy = st.session_state.offset
+            st.markdown(
+                f"<div style='text-align:center;font-size:11px;color:#64748b;margin-top:4px'>"
+                f"偏移　X: <b>{ox:+.0f}</b> mm　Y: <b>{oy:+.0f}</b> mm</div>",
+                unsafe_allow_html=True
+            )
+            if st.button("⊙ 歸零", use_container_width=True):
+                st.session_state.offset = [0.0, 0.0]; st.rerun()
+
+            st.divider()
+
+            # ── 區塊 3：薄度偵測 ──────────────────────────
+            st.markdown("#### 🔍 品質檢測")
+            if st.button("🔴 薄壁偵測", use_container_width=True,
+                         help=f"標記厚度 < {min_t_val} mm 的區域"):
+                mesh_q = st.session_state.mesh
+                tree = cKDTree(mesh_q.triangles_center)
                 thin_set = set()
-                for fi, (center, normal) in enumerate(zip(mesh.triangles_center, mesh.face_normals)):
+                for fi, (center, normal) in enumerate(zip(mesh_q.triangles_center, mesh_q.face_normals)):
                     dists, idxs = tree.query(center, k=6)
                     for dist, nfi in zip(dists[1:], idxs[1:]):
-                        if dist < min_t_val and np.dot(normal, mesh.face_normals[nfi]) < -0.5:
-                            thin_set.add(fi)
-                            break
+                        if dist < min_t_val and np.dot(normal, mesh_q.face_normals[nfi]) < -0.5:
+                            thin_set.add(fi); break
                 st.session_state.thin_faces = thin_set
                 if thin_set:
-                    st.warning(f"⚠️ 偵測到 {len(thin_set)} 個薄壁面（< {min_t_val}mm）")
+                    st.warning(f"⚠️ {len(thin_set)} 個薄壁面（< {min_t_val} mm）")
                 else:
-                    st.success(f"✅ 無薄壁問題（閾值 {min_t_val}mm）")
+                    st.success("✅ 無薄壁問題")
 
-            if st.button("🔵 清除薄度標記"):
-                st.session_state.thin_faces = None
-                st.rerun()
+            if st.button("✕ 清除標記", use_container_width=True):
+                st.session_state.thin_faces = None; st.rerun()
 
-            st.write("📏 X/Y 位置微調")
-            c1, c2 = st.columns(2)
-            if c1.button("⬅️ X-"): st.session_state.offset[0] -= 10; st.rerun()
-            if c2.button("➡️ X+"): st.session_state.offset[0] += 10; st.rerun()
-            c3, c4 = st.columns(2)
-            if c3.button("⬆️ Y+"): st.session_state.offset[1] += 10; st.rerun()
-            if c4.button("⬇️ Y-"): st.session_state.offset[1] -= 10; st.rerun()
-
-            if st.button("🔄 旋轉 90°（Z 軸）"):
-                m = st.session_state.mesh
-                m.apply_transform(
-                    trimesh.transformations.rotation_matrix(np.radians(90), [0, 0, 1])
-                )
-                m.apply_translation(-m.bounds[0])
-                m.apply_translation([-m.extents[0]/2, -m.extents[1]/2, 0])
-                st.session_state.thin_faces = None
-                st.rerun()
-
-            if st.button("🏠 重置位置"):
-                st.session_state.offset = [0.0, 0.0]
-                st.rerun()
+            # 模型資訊
+            m = st.session_state.mesh
+            st.markdown(
+                f"""<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+                padding:8px 10px;margin-top:8px;font-size:11px;color:#475569;line-height:1.9'>
+                <b style='color:#0f172a'>模型資訊</b><br>
+                尺寸：{m.extents[0]:.1f} × {m.extents[1]:.1f} × {m.extents[2]:.1f} mm<br>
+                面數：{len(m.faces):,}<br>
+                封閉：{'✅ 是' if m.is_watertight else '⚠️ 否'}</div>""",
+                unsafe_allow_html=True
+            )
 
         with col_view:
             geo_json = mesh_to_threejs_json(
@@ -721,7 +938,7 @@ if use_stl or use_manual:
                 st.error("⚠️ 零件超出設備列印範圍！請調整位置或數量。")
 
             html_code = preform_viewer_html(geo_json)
-            st.components.v1.html(html_code, height=600, scrolling=False)
+            st.components.v1.html(html_code, height=620, scrolling=False)
 
 else:
     st.info("💡 請上傳 STL 模型（左側），或手動輸入體積，開始 PreForm 專業模擬。")

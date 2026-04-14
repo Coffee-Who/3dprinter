@@ -161,56 +161,65 @@ def preform_viewer_html(geo_json: dict) -> str:
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-body {{ background:#1a2235; font-family:'Segoe UI',sans-serif; overflow:hidden; }}
+body {{ background:#1a2235; font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; }}
 #wrap {{ position:relative; width:100%; height:580px; }}
-canvas {{ display:block; width:100%!important; height:100%!important; }}
+canvas {{ display:block; width:100%!important; height:100%!important; touch-action:none; }}
 
 /* 頂部視角工具列 */
 #viewbar {{
-  position:absolute; top:10px; left:50%; transform:translateX(-50%);
-  display:flex; gap:3px; background:rgba(10,18,35,0.90);
+  position:absolute; top:8px; left:50%; transform:translateX(-50%);
+  display:flex; gap:3px; background:rgba(10,18,35,0.92);
   border:1px solid #2d3f5a; border-radius:6px; padding:4px 6px;
   backdrop-filter:blur(6px); z-index:10; white-space:nowrap;
+  max-width:calc(100% - 16px); overflow-x:auto;
 }}
 .vbtn {{
   background:transparent; border:1px solid transparent;
-  color:#7a9cc0; font-size:11px; font-weight:600;
-  padding:3px 10px; border-radius:4px; cursor:pointer; transition:all .15s;
+  color:#7a9cc0; font-size:clamp(10px,2.5vw,12px); font-weight:600;
+  padding:4px 8px; border-radius:4px; cursor:pointer; transition:all .15s;
+  min-height:28px; touch-action:manipulation;
 }}
 .vbtn:hover  {{ background:#1e3a6e; color:#fff; border-color:#3b82f6; }}
 .vbtn.active {{ background:#0081FF; color:#fff; border-color:#0081FF; }}
-.sep {{ width:1px; background:#2d3f5a; margin:2px 2px; }}
+.sep {{ width:1px; background:#2d3f5a; margin:2px 2px; flex-shrink:0; }}
 
 /* 左上資訊面板 */
 #info {{
-  position:absolute; top:10px; left:10px;
+  position:absolute; top:8px; left:8px;
   background:rgba(10,18,35,0.88); border:1px solid #1e3a5f;
-  border-radius:6px; padding:8px 12px; font-size:11px;
-  color:#7dd3fc; line-height:1.9; pointer-events:none;
+  border-radius:6px; padding:7px 10px; font-size:clamp(10px,2.5vw,12px);
+  color:#7dd3fc; line-height:1.8; pointer-events:none;
   backdrop-filter:blur(4px);
 }}
-#info .lbl {{ color:#3d5a7a; font-size:9px; text-transform:uppercase; letter-spacing:.06em; }}
+#info .lbl {{
+  color:#3d5a7a; font-size:clamp(9px,2vw,10px);
+  text-transform:uppercase; letter-spacing:.06em;
+}}
 
-/* 右下操作提示 */
+/* 右下操作提示（手機隱藏以節省空間）*/
 #hint {{
-  position:absolute; bottom:10px; right:12px;
-  font-size:10px; color:#3d5a7a; line-height:1.8;
+  position:absolute; bottom:8px; right:10px;
+  font-size:clamp(9px,2vw,11px); color:#3d5a7a; line-height:1.8;
   text-align:right; pointer-events:none;
 }}
 #hint b {{ color:#6b8fb5; }}
+@media (max-width: 500px) {{ #hint {{ display:none; }} }}
 
 /* 超出範圍警示 */
 #over-badge {{
-  display:none; position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  display:none; position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
   background:rgba(220,38,38,0.15); border:1px solid #f87171; border-radius:5px;
-  color:#fca5a5; font-size:11px; font-weight:700; padding:5px 16px;
+  color:#fca5a5; font-size:clamp(10px,2.5vw,12px); font-weight:700;
+  padding:5px 14px; white-space:nowrap;
 }}
 #thin-badge {{
   display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%);
   background:rgba(234,88,12,0.15); border:1px solid #fb923c; border-radius:5px;
-  color:#fdba74; font-size:11px; font-weight:600; padding:4px 14px;
+  color:#fdba74; font-size:clamp(10px,2.5vw,12px); font-weight:600;
+  padding:4px 12px; white-space:nowrap;
 }}
 </style>
 </head>
@@ -219,15 +228,15 @@ canvas {{ display:block; width:100%!important; height:100%!important; }}
   <canvas id="c"></canvas>
 
   <div id="viewbar">
-    <button class="vbtn" onclick="resetView()" title="重置 (F)">⌂ Home</button>
+    <button class="vbtn" onclick="resetView()" title="重置 (F)">⌂</button>
     <div class="sep"></div>
     <button class="vbtn" id="b-iso"   onclick="setView('iso')">等角</button>
-    <button class="vbtn" id="b-top"   onclick="setView('top')">俯視</button>
-    <button class="vbtn" id="b-front" onclick="setView('front')">正視</button>
-    <button class="vbtn" id="b-right" onclick="setView('right')">右視</button>
+    <button class="vbtn" id="b-top"   onclick="setView('top')">俯</button>
+    <button class="vbtn" id="b-front" onclick="setView('front')">前</button>
+    <button class="vbtn" id="b-right" onclick="setView('right')">右</button>
     <div class="sep"></div>
     <button class="vbtn" id="b-wire"  onclick="toggleWire()">線框</button>
-    <button class="vbtn" onclick="fitAll()">⊡ Fit</button>
+    <button class="vbtn" onclick="fitAll()">Fit</button>
   </div>
 
   <div id="info">
@@ -518,6 +527,74 @@ canvas.addEventListener('wheel', e => {{
   updateCam();
 }}, {{ passive:false }});
 
+// ── 觸控操作（手機）──────────────────────────────
+let touches = {{}};
+let lastPinchDist = 0;
+let lastTouchX = 0, lastTouchY = 0;
+let lastMidX = 0, lastMidY = 0;
+
+canvas.addEventListener('touchstart', e => {{
+  e.preventDefault();
+  for(const t of e.changedTouches) touches[t.identifier] = t;
+  const pts = Object.values(touches);
+  if(pts.length === 1) {{
+    lastTouchX = pts[0].clientX;
+    lastTouchY = pts[0].clientY;
+  }} else if(pts.length === 2) {{
+    lastPinchDist = Math.hypot(pts[1].clientX - pts[0].clientX,
+                               pts[1].clientY - pts[0].clientY);
+    lastMidX = (pts[0].clientX + pts[1].clientX) / 2;
+    lastMidY = (pts[0].clientY + pts[1].clientY) / 2;
+  }}
+}}, {{ passive:false }});
+
+canvas.addEventListener('touchmove', e => {{
+  e.preventDefault();
+  for(const t of e.changedTouches) touches[t.identifier] = t;
+  const pts = Object.values(touches);
+
+  if(pts.length === 1) {{
+    // 單指：旋轉（等同右鍵拖曳）
+    const dx = pts[0].clientX - lastTouchX;
+    const dy = pts[0].clientY - lastTouchY;
+    lastTouchX = pts[0].clientX;
+    lastTouchY = pts[0].clientY;
+    sph.theta += dx * 0.007;
+    sph.phi   -= dy * 0.007;
+    sph.phi = Math.max(0.02, Math.min(Math.PI - 0.02, sph.phi));
+    updateCam();
+  }} else if(pts.length === 2) {{
+    // 雙指縮放
+    const dist = Math.hypot(pts[1].clientX - pts[0].clientX,
+                            pts[1].clientY - pts[0].clientY);
+    if(lastPinchDist > 0) {{
+      const factor = lastPinchDist / dist;
+      sph.radius = Math.max(10, Math.min(sph.radius * factor, 200000));
+    }}
+    lastPinchDist = dist;
+
+    // 雙指平移（中心點移動）
+    const midX = (pts[0].clientX + pts[1].clientX) / 2;
+    const midY = (pts[0].clientY + pts[1].clientY) / 2;
+    const dx = midX - lastMidX;
+    const dy = midY - lastMidY;
+    lastMidX = midX; lastMidY = midY;
+    const speed = sph.radius * 0.0012;
+    const right = new THREE.Vector3();
+    right.crossVectors(
+      camera.getWorldDirection(new THREE.Vector3()), camera.up
+    ).normalize();
+    panOff.addScaledVector(right, -dx * speed);
+    panOff.addScaledVector(camera.up, dy * speed);
+    updateCam();
+  }}
+}}, {{ passive:false }});
+
+canvas.addEventListener('touchend', e => {{
+  for(const t of e.changedTouches) delete touches[t.identifier];
+  lastPinchDist = 0;
+}}, {{ passive:false }});
+
 // 鍵盤快捷鍵
 window.addEventListener('keydown', e => {{
   const k = e.key.toLowerCase();
@@ -683,6 +760,9 @@ if use_stl or use_manual:
     subtotal = material_cost_total + handling_total
     final_price = subtotal * markup
 
+    # 材料每公升成本（原始未加成）
+    mat_price_per_liter = df_m.loc[df_m["材料名稱"] == m_choice, "單價"].values[0]  # NT$/L
+
     # 列印時間估算
     model_h = st.session_state.mesh.extents[2] if use_stl else model_vol ** (1 / 3)
     n_layers = int(np.ceil(model_h / layer_thickness))
@@ -696,14 +776,16 @@ if use_stl or use_manual:
         <div class="data-grid">
             <div class="data-item"><div class="data-label">模型體積</div><div class="data-value">{model_vol:,.1f} mm³</div></div>
             <div class="data-item"><div class="data-label">使用材料</div><div class="data-value">{m_choice}</div></div>
-            <div class="data-item"><div class="data-label">含支撐消耗 (mL)</div><div class="data-value">{total_vol_per_unit * qty / 1000:,.2f}</div></div>
+            <div class="data-item"><div class="data-label">含支撐消耗 (mL)</div><div class="data-value">{total_vol_per_unit * qty / 1000:,.2f} mL</div></div>
             <div class="data-item"><div class="data-label">列印機型</div><div class="data-value">{p_choice}</div></div>
             <div class="data-item"><div class="data-label">預估列印時間</div><div class="data-value">≈ {print_time:.0f} 分鐘</div></div>
             <div class="data-item"><div class="data-label">層數（{layer_thickness}mm）</div><div class="data-value">{n_layers:,} 層</div></div>
+            <div class="data-item"><div class="data-label">材料單價</div><div class="data-value">NT$ {mat_price_per_liter:,} / L</div></div>
+            <div class="data-item"><div class="data-label">材料單價換算</div><div class="data-value">NT$ {mat_price_per_liter/1000:.2f} / mL</div></div>
         </div>
         <div class="cost-breakdown">
             <div class="cost-row">
-                <span>材料費（含支撐 {support_ratio}%，{total_vol_per_unit / 1000:.2f} mL/件）× {qty} 件</span>
+                <span>材料費（含支撐 {support_ratio}%，{total_vol_per_unit / 1000:.2f} mL/件 × NT${mat_price_per_liter/1000:.2f}/mL）× {qty} 件</span>
                 <span>NT$ {material_cost_total:,.0f}</span>
             </div>
             <div class="cost-row">
@@ -802,9 +884,9 @@ if use_stl or use_manual:
                         # ③ 高度分數：Z 方向高度越低，層數越少，列印越快
                         height = z_range
                         bbox_diag = np.sqrt(
-                            (rotated_verts[:, 0].ptp()**2) +
-                            (rotated_verts[:, 1].ptp()**2) +
-                            (rotated_verts[:, 2].ptp()**2)
+                            (rotated_verts[:, 0].max() - rotated_verts[:, 0].min())**2 +
+                            (rotated_verts[:, 1].max() - rotated_verts[:, 1].min())**2 +
+                            (rotated_verts[:, 2].max() - rotated_verts[:, 2].min())**2
                         )
                         score_height = height / (bbox_diag + 1e-6)
 

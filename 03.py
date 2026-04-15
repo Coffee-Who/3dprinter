@@ -1,4 +1,12 @@
-st.markdown("""
+import streamlit as st
+
+st.set_page_config(
+    page_title="SOLIDWIZARD | PreForm AI",
+    layout="wide"
+)
+
+# UI CSS
+st.markdown("""...""", unsafe_allow_html=True)
 <style>
 
 /* ==============================

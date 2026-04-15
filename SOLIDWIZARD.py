@@ -4,7 +4,7 @@ import base64
 from datetime import datetime
 
 # =========================
-# 1. 頁面配置與極簡 CSS
+# 1. 頁面配置與 Awwwards 極簡 CSS
 # =========================
 st.set_page_config(page_title="實威國際入口網", layout="wide", page_icon="🏢")
 
@@ -12,27 +12,30 @@ st.markdown("""
 <style>
     .stApp { background:#F7F8FA; color:#111; }
     .hero { text-align:center; padding:30px 0; }
-    .hero h1 { font-size:42px; font-weight:800; color: #1A1A1A; margin-bottom: 10px; }
+    .hero h1 { font-size:40px; font-weight:800; color: #1A1A1A; margin-bottom: 5px; }
+    .hero p { color: #666; letter-spacing: 1px; }
+    
     .card {
         background:#fff; border-radius:16px; overflow:hidden;
         box-shadow:0 8px 25px rgba(0,0,0,0.05); transition:0.3s;
         margin-bottom: 12px; border: 1px solid #F0F0F0;
+        height: 240px; /* 固定高度減少捲動抖動 */
+        will-change: transform;
     }
     .card:hover { transform:translateY(-5px); box-shadow:0 12px 35px rgba(0,0,0,0.1); }
     .card img { width:100%; height:160px; object-fit:cover; }
     .card-title { padding:12px; font-weight:700; text-align:center; color: #333; font-size: 15px; }
+    
     a { text-decoration: none; }
+    
+    /* 優化管理按鈕樣式 */
+    .admin-btn-container { padding: 0 10px 10px 10px; display: flex; gap: 5px; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# 2. Session State 初始化資料
+# 2. 初始化資料 (實威國際分類)
 # =========================
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
-if "edit_info" not in st.session_state:
-    st.session_state.edit_info = None
-
 if "cards" not in st.session_state:
     st.session_state.cards = {
         "內部系統": [
@@ -44,8 +47,8 @@ if "cards" not in st.session_state:
         "官方系統": [
             {"title":"實威國際官網", "img":"https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url":"https://www.swtc.com/zh-tw/"},
             {"title":"實威國際 YT", "img":"https://images.unsplash.com/photo-1611162616475-46b635cb6868", "url":"https://www.youtube.com/@solidwizard"},
-            {"title":"實威國際 智慧製造 YT", "img":"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url":"https://www.youtube.com/@SWTCIM"},
-            {"title":"實威知識+", "img":"https://images.unsplash.com/photo-1532012197267-da84d127e765", "url":"https://www.youtube.com/@實威知識"}
+            {"title":"智慧製造 YT", "img":"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url":"https://www.youtube.com/@SWTCIM"},
+            {"title":"實威知識+", "img":"https://images.unsplash.com/photo-1532012197267-da84d127e765", "url":"https://www.youtube.com/@%E5%AF%A6%E5%A8%81%E7%9F%A5%E8%AD%98"}
         ],
         "軟體": [
             {"title":"SOLIDWORKS", "img":"https://images.unsplash.com/photo-1581092335397-9fa1f9a2d2a1", "url":"https://www.solidworks.com/"}
@@ -56,81 +59,83 @@ if "cards" not in st.session_state:
         ]
     }
 
+if "is_admin" not in st.session_state: st.session_state.is_admin = False
+if "edit_info" not in st.session_state: st.session_state.edit_info = None
 ADMIN_PASSWORD = "0000"
 
 # =========================
-# 3. GitHub API 上傳邏輯
+# 3. GitHub API 圖片上傳功能
 # =========================
 def upload_to_github(uploaded_file):
     try:
-        conf = st.secrets["github"]
-        encoded = base64.b64encode(uploaded_file.getvalue()).decode()
+        gh = st.secrets["github"]
+        content = base64.b64encode(uploaded_file.getvalue()).decode()
+        # 存放在 assets/images/ 資料夾
         filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uploaded_file.name}"
-        path = f"assets/portal_images/{filename}"
+        path = f"assets/images/{filename}"
         
-        url = f"https://api.github.com/repos/{conf['owner']}/{conf['repo']}/contents/{path}"
-        headers = {"Authorization": f"token {conf['token']}"}
-        payload = {"message": f"Upload {filename}", "content": encoded, "branch": conf.get("branch", "main")}
+        url = f"https://api.github.com/repos/{gh['owner']}/{gh['repo']}/contents/{path}"
+        headers = {"Authorization": f"token {gh['token']}"}
+        data = {"message": f"Upload {filename}", "content": content, "branch": gh.get("branch", "main")}
         
-        res = requests.put(url, headers=headers, json=payload)
+        res = requests.put(url, headers=headers, json=data)
         if res.status_code == 201:
-            return f"https://raw.githubusercontent.com/{conf['owner']}/{conf['repo']}/{conf.get('branch', 'main')}/{path}"
+            return f"https://raw.githubusercontent.com/{gh['owner']}/{gh['repo']}/{gh.get('branch', 'main')}/{path}"
     except Exception as e:
-        st.error(f"GitHub 上傳失敗: {e}")
+        st.error(f"GitHub 上傳失敗，請檢查 Secrets 設定: {e}")
     return None
 
 # =========================
-# 4. 頂部導航與登入
+# 4. 頂部導航
 # =========================
-t_col1, t_col2 = st.columns([8, 2])
-with t_col2:
+c_login, _ = st.columns([2, 8])
+with c_login:
     if not st.session_state.is_admin:
-        if st.button("🔑 管理員登入"):
-            st.session_state.show_login = True
+        if st.button("🔑 管理登入"): st.session_state.show_login = True
     else:
         if st.button("🚪 登出系統"):
             st.session_state.is_admin = False
             st.rerun()
 
 if st.session_state.get("show_login") and not st.session_state.is_admin:
-    with st.form("login_panel"):
-        pwd = st.text_input("請輸入管理密碼", type="password")
+    with st.form("login_f"):
+        p = st.text_input("密碼", type="password")
         if st.form_submit_button("登入"):
-            if pwd == ADMIN_PASSWORD:
+            if p == ADMIN_PASSWORD:
                 st.session_state.is_admin = True
                 st.session_state.show_login = False
                 st.rerun()
-            else:
-                st.error("密碼不正確")
+            else: st.error("密碼錯誤")
 
-st.markdown('<div class="hero"><h1>實威國際入口網</h1><p>Modern Service Portal</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="hero"><h1>實威國際數位入口</h1><p>Awwwards Style Portal</p></div>', unsafe_allow_html=True)
 
 # =========================
-# 5. 編輯表單 (懸浮展開)
+# 5. 編輯面板 (僅管理員可見)
 # =========================
 if st.session_state.is_admin and st.session_state.edit_info:
     info = st.session_state.edit_info
     item = st.session_state.cards[info['cat']][info['idx']]
-    with st.expander("🛠️ 正在編輯項目", expanded=True):
-        with st.form("edit_item_form"):
-            et = st.text_input("標題", value=item['title'])
-            eu = st.text_input("網址", value=item['url'])
-            ei = st.text_input("圖片連結", value=item['img'])
-            c1, c2 = st.columns(2)
-            if c1.form_submit_button("💾 儲存修改"):
-                st.session_state.cards[info['cat']][info['idx']] = {"title": et, "img": ei, "url": eu}
+    with st.expander("🛠️ 編輯項目資料", expanded=True):
+        with st.form("edit_form"):
+            new_t = st.text_input("標題", value=item['title'])
+            new_u = st.text_input("網址", value=item['url'])
+            new_i = st.text_input("圖片連結", value=item['img'])
+            col_eb1, col_eb2 = st.columns(2)
+            if col_eb1.form_submit_button("💾 儲存修改"):
+                st.session_state.cards[info['cat']][info['idx']] = {"title": new_t, "img": new_i, "url": new_u}
                 st.session_state.edit_info = None
                 st.rerun()
-            if c2.form_submit_button("取消"):
+            if col_eb2.form_submit_button("取消"):
                 st.session_state.edit_info = None
                 st.rerun()
 
 # =========================
-# 6. 分類渲染 (Fragment 優化)
+# 6. 分類渲染 (使用 Fragment 優化效能)
 # =========================
 @st.fragment
-def render_section(cat_name):
+def render_category(cat_name):
     items = st.session_state.cards.get(cat_name, [])
+    # 每行 5 個
     for i in range(0, len(items), 5):
         cols = st.columns(5)
         chunk = items[i:i+5]
@@ -148,40 +153,34 @@ def render_section(cat_name):
                 
                 if st.session_state.is_admin:
                     b1, b2 = st.columns(2)
-                    if b1.button("✎", key=f"e_{cat_name}_{real_idx}"):
+                    if b1.button("✎", key=f"e_{cat_name}_{real_idx}", help="編輯"):
                         st.session_state.edit_info = {"cat": cat_name, "idx": real_idx}
                         st.rerun()
-                    if b2.button("✘", key=f"d_{cat_name}_{real_idx}"):
+                    if b2.button("✘", key=f"d_{cat_name}_{real_idx}", help="刪除"):
                         st.session_state.cards[cat_name].pop(real_idx)
                         st.rerun()
 
 # =========================
-# 7. 主迴圈
+# 7. 主迴圈渲染與新增功能
 # =========================
 for cat in list(st.session_state.cards.keys()):
     st.subheader(f"📂 {cat}")
-    render_section(cat)
+    render_category(cat)
     
     if st.session_state.is_admin:
-        with st.expander(f"➕ 新增項目到 {cat}"):
-            up_file = st.file_uploader("上傳圖片到 GitHub (選填)", type=["jpg","png"], key=f"up_{cat}")
-            if up_file and st.button("確認上傳", key=f"btn_up_{cat}"):
-                with st.spinner("上傳至 GitHub..."):
-                    res_url = upload_to_github(up_file)
-                    if res_url: 
-                        st.session_state[f"tmp_{cat}"] = res_url
-                        st.success("上傳成功！")
+        with st.expander(f"➕ 在「{cat}」新增項目"):
+            # 選項：上傳圖片到 GitHub
+            up_img = st.file_uploader("上傳圖片到 GitHub (選填)", type=["jpg","png"], key=f"up_{cat}")
+            if up_img and st.button("確認上傳", key=f"up_btn_{cat}"):
+                with st.spinner("上傳中..."):
+                    github_url = upload_to_github(up_img)
+                    if github_url:
+                        st.session_state[f"tmp_{cat}"] = github_url
+                        st.success("GitHub 上傳成功！")
             
-            with st.form(f"add_form_{cat}"):
-                new_title = st.text_input("名稱")
-                new_url = st.text_input("連結", value="https://")
-                img_default = st.session_state.get(f"tmp_{cat}", "")
-                new_img = st.text_input("圖片網址", value=img_default)
-                if st.form_submit_button("加入系統"):
-                    if new_title and new_img:
-                        st.session_state.cards[cat].append({"title": new_title, "img": new_img, "url": new_url})
-                        if f"tmp_{cat}" in st.session_state: del st.session_state[f"tmp_{cat}"]
-                        st.rerun()
-
-st.markdown("---")
-st.markdown("<div style='text-align:center; opacity:0.3;'>Portal © 2026</div>", unsafe_allow_html=True)
+            with st.form(f"add_{cat}"):
+                t = st.text_input("標題")
+                u = st.text_input("網址", value="https://")
+                # 若有上傳 GitHub 則自動帶入連結
+                default_i = st.session_state.get(f"tmp_{cat}", "")
+                i = st.text_input("圖片連結", value=default_i)

@@ -10,34 +10,13 @@ st.set_page_config(
 )
 
 # ---------------------------
-# State
+# 預設 Theme（可改這裡）
 # ---------------------------
-if "dark" not in st.session_state:
-    st.session_state.dark = True
+DARK_MODE = True
 
-if "mobile" not in st.session_state:
-    st.session_state.mobile = False
-
-# ---------------------------
-# Sidebar 控制
-# ---------------------------
-st.sidebar.title("⚙️ 控制面板")
-
-if st.sidebar.button("🌗 深色 / 淺色"):
-    st.session_state.dark = not st.session_state.dark
-
-if st.sidebar.button("📱 手機 / 電腦"):
-    st.session_state.mobile = not st.session_state.mobile
-
-dark = st.session_state.dark
-mobile = st.session_state.mobile
-
-# ---------------------------
-# Theme
-# ---------------------------
-bg = "#0E1117" if dark else "#FFFFFF"
-text = "white" if dark else "black"
-card = "#1f1f1f" if dark else "#f2f2f2"
+bg = "#0E1117" if DARK_MODE else "#FFFFFF"
+text = "white" if DARK_MODE else "black"
+card = "#1f1f1f" if DARK_MODE else "#f2f2f2"
 
 # ---------------------------
 # CSS
@@ -47,6 +26,13 @@ st.markdown(f"""
 .stApp {{
     background-color: {bg};
     color: {text};
+}}
+
+.title {{
+    text-align:center;
+    font-size:34px;
+    font-weight:bold;
+    margin-bottom:20px;
 }}
 
 .card {{
@@ -62,13 +48,6 @@ st.markdown(f"""
 .card:hover {{
     transform: scale(1.02);
     opacity: 0.9;
-}}
-
-.title {{
-    text-align:center;
-    font-size:32px;
-    font-weight:bold;
-    margin-bottom:20px;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -89,20 +68,17 @@ def card(title, url):
     """, unsafe_allow_html=True)
 
 # ---------------------------
-# Grid
+# 自動 RWD 判斷
+# Streamlit 會自動調整 columns → 手機=1欄 / 電腦=多欄
 # ---------------------------
-def show(items, cols=3):
-    if mobile:
-        for t, u in items:
+def show(items):
+    cols = st.columns(3)
+    for i, (t, u) in enumerate(items):
+        with cols[i % 3]:
             card(t, u)
-    else:
-        c = st.columns(cols)
-        for i, (t, u) in enumerate(items):
-            with c[i % cols]:
-                card(t, u)
 
 # ---------------------------
-# Internal
+# 內部系統
 # ---------------------------
 st.subheader("🔧 內部系統")
 
@@ -113,39 +89,43 @@ internal = [
     ("📝 請假系統", "http://192.168.2.251/MotorWeb/CHIPage/Login.asp"),
 ]
 
-show(internal, 2)
+show(internal)
 
 # ---------------------------
-# Official
+# 官方系統
 # ---------------------------
 st.subheader("🌐 官方資源")
 
 official = [
-    ("🏢 官網", "https://www.swtc.com/zh-tw/"),
-    ("🎬 YouTube", "https://www.youtube.com/@solidwizard"),
+    ("🏢 實威官網", "https://www.swtc.com/zh-tw/"),
+    ("🎬 YouTube 官方", "https://www.youtube.com/@solidwizard"),
     ("🏭 智慧製造", "https://www.youtube.com/@SWTCIM"),
-    ("📚 知識+", "https://www.youtube.com/@實威知識"),
+    ("📚 實威知識+", "https://www.youtube.com/@實威知識"),
 ]
 
-show(official, 2)
+show(official)
 
 # ---------------------------
-# Products
+# 產品入口（收合）
 # ---------------------------
 st.subheader("🧩 產品入口")
 
-with st.expander("SOLIDWORKS", expanded=False):
+with st.expander("SOLIDWORKS"):
     show([
         ("SOLIDWORKS 官網", "https://www.solidworks.com/")
-    ], 1)
+    ])
 
-with st.expander("Formlabs", expanded=False):
+with st.expander("Formlabs"):
     show([
         ("Formlabs 官網", "https://formlabs.com/"),
         ("Support", "https://support.formlabs.com/s/?language=zh_CN")
-    ], 1)
+    ])
 
 # ---------------------------
 # Footer
 # ---------------------------
-st.markdown("<div style='text-align:center;opacity:0.5;margin-top:30px'>SWTC Internal Portal © 2026</div>", unsafe_allow_html=True)
+st.markdown("""
+<br><div style='text-align:center;opacity:0.5'>
+SWTC Internal Portal © 2026
+</div>
+""", unsafe_allow_html=True)

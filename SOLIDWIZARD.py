@@ -18,7 +18,7 @@ if "editing" not in st.session_state:
 ADMIN_PASSWORD = "0000"
 
 # ---------------------------
-# WHITE THEME (Awwwards style)
+# WHITE AWWARDS THEME
 # ---------------------------
 bg = "#F7F8FA"
 text = "#111111"
@@ -39,15 +39,17 @@ if "cards" not in st.session_state:
             {"title": "請假系統", "img": "https://images.unsplash.com/photo-1508385082359-f38ae991e8f2", "url": "http://192.168.2.251/MotorWeb/CHIPage/Login.asp"}
         ],
         "official": [
-            {"title": "實威官網", "img": "https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url": "https://www.swtc.com/zh-tw/"},
+            {"title": "實威國際官網", "img": "https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url": "https://www.swtc.com/zh-tw/"},
             {"title": "實威 YouTube", "img": "https://images.unsplash.com/photo-1611162616475-46b635cb6868", "url": "https://www.youtube.com/@solidwizard"},
-            {"title": "智慧製造", "img": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5", "url": "https://www.youtube.com/@SWTCIM"},
+            {"title": "智慧製造 YouTube", "img": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5", "url": "https://www.youtube.com/@SWTCIM"},
             {"title": "實威知識+", "img": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f", "url": "https://www.youtube.com/@實威知識"}
         ],
-        "products": [
-            {"title": "SOLIDWORKS", "img": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url": "https://www.solidworks.com/"},
-            {"title": "Formlabs", "img": "https://images.unsplash.com/photo-1581090700227-1e37b190418e", "url": "https://formlabs.com/"},
-            {"title": "Support", "img": "https://images.unsplash.com/photo-1555949963-aa79dcee981c", "url": "https://support.formlabs.com/s/?language=zh_CN"}
+        "software": [
+            {"title": "SOLIDWORKS", "img": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url": "https://www.solidworks.com/"}
+        ],
+        "formlabs": [
+            {"title": "Formlabs 原廠", "img": "https://images.unsplash.com/photo-1581090700227-1e37b190418e", "url": "https://formlabs.com/"},
+            {"title": "Formlabs Support", "img": "https://images.unsplash.com/photo-1555949963-aa79dcee981c", "url": "https://support.formlabs.com/s/?language=zh_CN"}
         ]
     }
 
@@ -65,7 +67,7 @@ st.markdown(f"""
 .section {{ margin-top:40px; font-size:13px; letter-spacing:2px; color:{muted}; text-transform:uppercase; }}
 
 .card {{
-    border-radius:20px;
+    border-radius:18px;
     overflow:hidden;
     background:{card_bg};
     border:1px solid {border};
@@ -75,13 +77,13 @@ st.markdown(f"""
 
 .card:hover {{ transform:translateY(-6px); border:1px solid {accent}; }}
 
-.card img {{ width:100%; height:230px; object-fit:cover; }}
+.card img {{ width:100%; height:220px; object-fit:cover; }}
 
 .card-title {{ padding:10px; font-weight:700; text-align:center; }}
 
 .admin-actions {{ display:flex; justify-content:space-between; padding:0 10px 10px 10px; font-size:12px; }}
 
-.btn {{ color:{accent}; cursor:pointer; font-weight:600; }}
+.btn {{ color:{accent}; cursor:pointer; font-weight:700; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -161,9 +163,11 @@ render("internal")
 st.markdown("<div class='section'>官方系統</div>", unsafe_allow_html=True)
 render("official")
 
-st.markdown("<div class='section'>產品入口（收合）</div>", unsafe_allow_html=True)
-with st.expander("產品分類", expanded=False):
-    render("products")
+st.markdown("<div class='section'>軟體</div>", unsafe_allow_html=True)
+render("software")
+
+st.markdown("<div class='section'>Formlabs</div>", unsafe_allow_html=True)
+render("formlabs")
 
 # ---------------------------
 # EDIT MODE

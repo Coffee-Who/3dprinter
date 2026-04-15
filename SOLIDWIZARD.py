@@ -1,105 +1,151 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Moon, Sun, Menu } from "lucide-react";
+import streamlit as st
 
-export default function Portal() {
-  const [dark, setDark] = useState(true);
-  const [mobile, setMobile] = useState(false);
-  const [openProduct, setOpenProduct] = useState(false);
+# ---------------------------
+# Page Config
+# ---------------------------
+st.set_page_config(
+    page_title="實威國際員工入口網站",
+    layout="wide",
+    page_icon="🏢"
+)
 
-  const theme = dark
-    ? "bg-gray-950 text-white"
-    : "bg-white text-gray-900";
+# ---------------------------
+# State
+# ---------------------------
+if "dark" not in st.session_state:
+    st.session_state.dark = True
 
-  const cardStyle = dark
-    ? "bg-gray-900 hover:bg-gray-800"
-    : "bg-gray-100 hover:bg-gray-200";
+if "mobile" not in st.session_state:
+    st.session_state.mobile = False
 
-  const LinkCard = ({ title, url }) => (
-    <a href={url} target="_blank" rel="noreferrer">
-      <Card className={`cursor-pointer transition-all rounded-2xl shadow-md p-2 ${cardStyle}`}>
-        <CardContent className="text-center py-6 font-semibold text-lg">
-          {title}
-        </CardContent>
-      </Card>
+# ---------------------------
+# Sidebar 控制
+# ---------------------------
+st.sidebar.title("⚙️ 控制面板")
+
+if st.sidebar.button("🌗 深色 / 淺色"):
+    st.session_state.dark = not st.session_state.dark
+
+if st.sidebar.button("📱 手機 / 電腦"):
+    st.session_state.mobile = not st.session_state.mobile
+
+dark = st.session_state.dark
+mobile = st.session_state.mobile
+
+# ---------------------------
+# Theme
+# ---------------------------
+bg = "#0E1117" if dark else "#FFFFFF"
+text = "white" if dark else "black"
+card = "#1f1f1f" if dark else "#f2f2f2"
+
+# ---------------------------
+# CSS
+# ---------------------------
+st.markdown(f"""
+<style>
+.stApp {{
+    background-color: {bg};
+    color: {text};
+}}
+
+.card {{
+    background-color: {card};
+    padding: 18px;
+    border-radius: 14px;
+    text-align: center;
+    font-weight: 600;
+    margin: 8px 0;
+    transition: 0.2s;
+}}
+
+.card:hover {{
+    transform: scale(1.02);
+    opacity: 0.9;
+}}
+
+.title {{
+    text-align:center;
+    font-size:32px;
+    font-weight:bold;
+    margin-bottom:20px;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------
+# Title
+# ---------------------------
+st.markdown("<div class='title'>🏢 實威國際員工入口網站</div>", unsafe_allow_html=True)
+
+# ---------------------------
+# Card Function
+# ---------------------------
+def card(title, url):
+    st.markdown(f"""
+    <a href="{url}" target="_blank" style="text-decoration:none;">
+        <div class="card">{title}</div>
     </a>
-  );
+    """, unsafe_allow_html=True)
 
-  const Grid = ({ children }) => (
-    <div className={mobile ? "grid grid-cols-1 gap-3" : "grid grid-cols-3 gap-4"}>
-      {children}
-    </div>
-  );
+# ---------------------------
+# Grid
+# ---------------------------
+def show(items, cols=3):
+    if mobile:
+        for t, u in items:
+            card(t, u)
+    else:
+        c = st.columns(cols)
+        for i, (t, u) in enumerate(items):
+            with c[i % cols]:
+                card(t, u)
 
-  return (
-    <div className={`min-h-screen transition-all p-6 ${theme}`}>
-      {/* Top Bar */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-2xl font-bold">🏢 實威國際入口網站</div>
+# ---------------------------
+# Internal
+# ---------------------------
+st.subheader("🔧 內部系統")
 
-        <div className="flex gap-2">
-          <Button onClick={() => setMobile(!mobile)}>
-            <Menu className="w-4 h-4 mr-1" /> {mobile ? "電腦版" : "手機版"}
-          </Button>
+internal = [
+    ("📊 CRM", "http://192.168.100.85/WebCRM/src/_Common/AppUtil/FrameSet/NewLogin.aspx"),
+    ("📁 EIP", "http://192.168.100.89/SWTCweb4.0/production/ADLoginPage.aspx"),
+    ("🔄 EASYFLOW", "http://192.168.100.85/efnet/"),
+    ("📝 請假系統", "http://192.168.2.251/MotorWeb/CHIPage/Login.asp"),
+]
 
-          <Button onClick={() => setDark(!dark)}>
-            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
-        </div>
-      </div>
+show(internal, 2)
 
-      {/* Internal Systems */}
-      <h2 className="text-xl font-bold mb-3">🔧 內部系統</h2>
-      <Grid>
-        <LinkCard title="CRM 客戶管理" url="http://192.168.100.85/WebCRM/src/_Common/AppUtil/FrameSet/NewLogin.aspx" />
-        <LinkCard title="EIP 企業入口" url="http://192.168.100.89/SWTCweb4.0/production/ADLoginPage.aspx" />
-        <LinkCard title="EASYFLOW 簽核" url="http://192.168.100.85/efnet/" />
-        <LinkCard title="請假系統" url="http://192.168.2.251/MotorWeb/CHIPage/Login.asp" />
-      </Grid>
+# ---------------------------
+# Official
+# ---------------------------
+st.subheader("🌐 官方資源")
 
-      {/* Official */}
-      <h2 className="text-xl font-bold mt-8 mb-3">🌐 官方資源</h2>
-      <Grid>
-        <LinkCard title="實威官網" url="https://www.swtc.com/zh-tw/" />
-        <LinkCard title="YouTube 官方" url="https://www.youtube.com/@solidwizard" />
-        <LinkCard title="智慧製造 YouTube" url="https://www.youtube.com/@SWTCIM" />
-        <LinkCard title="實威知識+" url="https://www.youtube.com/@實威知識" />
-      </Grid>
+official = [
+    ("🏢 官網", "https://www.swtc.com/zh-tw/"),
+    ("🎬 YouTube", "https://www.youtube.com/@solidwizard"),
+    ("🏭 智慧製造", "https://www.youtube.com/@SWTCIM"),
+    ("📚 知識+", "https://www.youtube.com/@實威知識"),
+]
 
-      {/* Products */}
-      <div className="mt-10">
-        <button
-          onClick={() => setOpenProduct(!openProduct)}
-          className="text-xl font-bold mb-3"
-        >
-          🧩 產品入口 {openProduct ? "▲" : "▼"}
-        </button>
+show(official, 2)
 
-        {openProduct && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2">SOLIDWORKS</h3>
-              <Grid>
-                <LinkCard title="官方網站" url="https://www.solidworks.com/" />
-              </Grid>
-            </div>
+# ---------------------------
+# Products
+# ---------------------------
+st.subheader("🧩 產品入口")
 
-            <div>
-              <h3 className="font-semibold mb-2">Formlabs</h3>
-              <Grid>
-                <LinkCard title="Formlabs 官網" url="https://formlabs.com/" />
-                <LinkCard title="Support" url="https://support.formlabs.com/s/?language=zh_CN" />
-              </Grid>
-            </div>
-          </div>
-        )}
-      </div>
+with st.expander("SOLIDWORKS", expanded=False):
+    show([
+        ("SOLIDWORKS 官網", "https://www.solidworks.com/")
+    ], 1)
 
-      {/* Footer */}
-      <div className="text-center text-sm opacity-50 mt-10">
-        SWTC Internal Portal © 2026
-      </div>
-    </div>
-  );
-}
+with st.expander("Formlabs", expanded=False):
+    show([
+        ("Formlabs 官網", "https://formlabs.com/"),
+        ("Support", "https://support.formlabs.com/s/?language=zh_CN")
+    ], 1)
+
+# ---------------------------
+# Footer
+# ---------------------------
+st.markdown("<div style='text-align:center;opacity:0.5;margin-top:30px'>SWTC Internal Portal © 2026</div>", unsafe_allow_html=True)

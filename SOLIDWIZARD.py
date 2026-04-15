@@ -6,34 +6,29 @@ import streamlit as st
 st.set_page_config(page_title="實威國際員工入口網站", layout="wide", page_icon="🏢")
 
 # ---------------------------
-# Session State Init
+# Session State
 # ---------------------------
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 if "show_login" not in st.session_state:
     st.session_state.show_login = False
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
+if "editing" not in st.session_state:
+    st.session_state.editing = None
 
 ADMIN_PASSWORD = "0000"
 
 # ---------------------------
-# Theme Switch
+# WHITE THEME (Awwwards style)
 # ---------------------------
-def toggle_theme():
-    st.session_state.dark_mode = not st.session_state.dark_mode
-
-DARK = st.session_state.dark_mode
-
-bg = "#050713" if DARK else "#F6F7FB"
-text = "#FFFFFF" if DARK else "#111111"
-muted = "rgba(255,255,255,0.65)" if DARK else "rgba(0,0,0,0.55)"
-accent = "#6C8CFF"
-card_bg = "rgba(255,255,255,0.04)" if DARK else "#FFFFFF"
-border = "rgba(255,255,255,0.10)" if DARK else "rgba(0,0,0,0.08)"
+bg = "#F7F8FA"
+text = "#111111"
+muted = "rgba(0,0,0,0.55)"
+accent = "#2F6BFF"
+border = "rgba(0,0,0,0.08)"
+card_bg = "#FFFFFF"
 
 # ---------------------------
-# Data
+# DATA
 # ---------------------------
 if "cards" not in st.session_state:
     st.session_state.cards = {
@@ -57,53 +52,48 @@ if "cards" not in st.session_state:
     }
 
 # ---------------------------
-# CSS (Awwwards)
+# CSS
 # ---------------------------
 st.markdown(f"""
 <style>
 .stApp {{ background:{bg}; color:{text}; }}
 
-.hero {{ text-align:center; padding:60px 20px 25px 20px; }}
+.hero {{ text-align:center; padding:50px 20px 10px 20px; }}
 .hero h1 {{ font-size:48px; font-weight:800; }}
 .hero p {{ color:{muted}; }}
 
 .section {{ margin-top:40px; font-size:13px; letter-spacing:2px; color:{muted}; text-transform:uppercase; }}
 
 .card {{
-    border-radius:22px;
+    border-radius:20px;
     overflow:hidden;
     background:{card_bg};
     border:1px solid {border};
-    box-shadow:0 18px 50px rgba(0,0,0,0.35);
-    transition:0.3s;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+    transition:0.25s;
 }}
 
-.card:hover {{ transform:translateY(-10px); border:1px solid {accent}; }}
+.card:hover {{ transform:translateY(-6px); border:1px solid {accent}; }}
 
-.card img {{ width:100%; height:240px; object-fit:cover; display:block; }}
+.card img {{ width:100%; height:230px; object-fit:cover; }}
 
-.card-title {{ padding:12px; text-align:center; font-weight:700; }}
+.card-title {{ padding:10px; font-weight:700; text-align:center; }}
 
-.topbar {{ display:flex; justify-content:space-between; align-items:center; padding:5px 0; }}
+.admin-actions {{ display:flex; justify-content:space-between; padding:0 10px 10px 10px; font-size:12px; }}
 
-.btn {{ cursor:pointer; color:{accent}; font-weight:700; }}
-
+.btn {{ color:{accent}; cursor:pointer; font-weight:600; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------
 # TOP BAR
 # ---------------------------
-col1, col2, col3, col4 = st.columns([3,4,2,2])
+col1, col2, col3 = st.columns([3,6,2])
 
 with col1:
     st.markdown("<div style='font-size:18px;font-weight:800'>🏢 SWTC Portal</div>", unsafe_allow_html=True)
 
 with col3:
-    if st.button("🌗 切換模式"):
-        toggle_theme()
-
-with col4:
     if not st.session_state.is_admin:
         if st.button("管理員登入"):
             st.session_state.show_login = True
@@ -116,8 +106,7 @@ with col4:
 # ---------------------------
 if st.session_state.show_login and not st.session_state.is_admin:
     st.subheader("管理員登入")
-    pwd = st.text_input("請輸入密碼", type="password")
-
+    pwd = st.text_input("輸入密碼", type="password")
     if st.button("登入"):
         if pwd == ADMIN_PASSWORD:
             st.session_state.is_admin = True
@@ -129,28 +118,39 @@ if st.session_state.show_login and not st.session_state.is_admin:
 # ---------------------------
 # HERO
 # ---------------------------
-st.markdown("""
-<div class='hero'>
-<h1>實威國際數位入口</h1>
-<p>Awwwards Style Image Portal</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown("<div class='hero'><h1>實威國際數位入口</h1><p>Awwwards Style Portal</p></div>", unsafe_allow_html=True)
 
 # ---------------------------
-# RENDER GRID (5 columns)
+# CARD RENDER
+# ---------------------------
+def render_card(section, idx, item):
+    st.markdown(f"""
+    <a href=\"{item['url']}\" target=\"_blank\">
+        <div class='card'>
+            <img src=\"{item['img']}\">
+            <div class='card-title'>{item['title']}</div>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
+
+    if st.session_state.is_admin:
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(f"編輯-{section}-{idx}"):
+                st.session_state.editing = (section, idx)
+        with col2:
+            if st.button(f"刪除-{section}-{idx}"):
+                st.session_state.cards[section].pop(idx)
+                st.rerun()
+
+# ---------------------------
+# GRID (5 columns)
 # ---------------------------
 def render(section):
     cols = st.columns(5)
     for i, item in enumerate(st.session_state.cards[section]):
         with cols[i % 5]:
-            st.markdown(f"""
-            <a href=\"{item['url']}\" target=\"_blank\">
-                <div class='card'>
-                    <img src=\"{item['img']}\">
-                    <div class='card-title'>{item['title']}</div>
-                </div>
-            </a>
-            """, unsafe_allow_html=True)
+            render_card(section, i, item)
 
 # ---------------------------
 # SECTIONS
@@ -161,39 +161,34 @@ render("internal")
 st.markdown("<div class='section'>官方系統</div>", unsafe_allow_html=True)
 render("official")
 
-st.markdown("<div class='section'>產品入口（點擊展開）</div>", unsafe_allow_html=True)
+st.markdown("<div class='section'>產品入口（收合）</div>", unsafe_allow_html=True)
 with st.expander("產品分類", expanded=False):
     render("products")
 
 # ---------------------------
-# ADMIN PANEL
+# EDIT MODE
 # ---------------------------
-if st.session_state.is_admin:
+if st.session_state.editing:
+    section, idx = st.session_state.editing
+    item = st.session_state.cards[section][idx]
+
     st.markdown("---")
-    st.subheader("管理員控制台")
+    st.subheader("編輯項目")
 
-    section = st.selectbox("分類", ["internal", "official", "products"])
+    new_title = st.text_input("標題", item['title'])
+    new_img = st.text_input("圖片", item['img'])
+    new_url = st.text_input("連結", item['url'])
 
-    title = st.text_input("標題")
-    img = st.text_input("圖片URL")
-    url = st.text_input("連結URL")
-
-    if st.button("新增項目"):
-        st.session_state.cards[section].append({"title": title, "img": img, "url": url})
-        st.success("新增成功")
+    if st.button("儲存修改"):
+        st.session_state.cards[section][idx] = {
+            "title": new_title,
+            "img": new_img,
+            "url": new_url
+        }
+        st.session_state.editing = None
         st.rerun()
-
-    st.markdown("### 管理現有項目")
-    for i, item in enumerate(st.session_state.cards[section]):
-        col1, col2 = st.columns([5,1])
-        with col1:
-            st.write(item["title"])
-        with col2:
-            if st.button(f"刪除 {i}"):
-                st.session_state.cards[section].pop(i)
-                st.rerun()
 
 # ---------------------------
 # FOOTER
 # ---------------------------
-st.markdown("<div style='text-align:center;margin-top:60px;opacity:0.5'>SWTC Internal Portal © 2026</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;margin-top:50px;opacity:0.5'>SWTC Portal © 2026</div>", unsafe_allow_html=True)

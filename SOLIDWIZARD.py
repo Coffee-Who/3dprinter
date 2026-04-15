@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 # ---------------------------
-# Awwwards + 圖像化 Portal（含管理員權限）
+# Awwwards + 圖像化 Portal（企業正式版）
 # ---------------------------
 
 DARK_MODE = True
@@ -23,30 +23,52 @@ border = "rgba(255,255,255,0.12)" if DARK_MODE else "rgba(0,0,0,0.08)"
 accent = "#6C8CFF"
 
 # ---------------------------
-# Admin Login（簡易版）
+# Admin State
 # ---------------------------
-ADMIN_PASSWORD = "swtc123"
-
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
-with st.sidebar:
-    st.markdown("### ⚙️ 管理模式")
-    pwd = st.text_input("管理員密碼", type="password")
+if "show_login" not in st.session_state:
+    st.session_state.show_login = False
 
-    if st.button("登入管理員"):
+ADMIN_PASSWORD = "0000"
+
+# ---------------------------
+# Top Bar
+# ---------------------------
+col1, col2, col3 = st.columns([2, 6, 2])
+
+with col1:
+    st.markdown("<h3>🏢 實威入口</h3>", unsafe_allow_html=True)
+
+with col3:
+    if not st.session_state.is_admin:
+        if st.button("管理員登入"):
+            st.session_state.show_login = not st.session_state.show_login
+    else:
+        if st.button("登出管理員"):
+            st.session_state.is_admin = False
+            st.success("已登出")
+
+# ---------------------------
+# Login Panel (Top Area)
+# ---------------------------
+if st.session_state.show_login and not st.session_state.is_admin:
+    st.markdown("---")
+    st.subheader("🔐 管理員登入")
+
+    pwd = st.text_input("請輸入密碼", type="password")
+
+    if st.button("確認登入"):
         if pwd == ADMIN_PASSWORD:
             st.session_state.is_admin = True
-            st.success("已進入管理模式")
+            st.session_state.show_login = False
+            st.success("登入成功")
         else:
             st.error("密碼錯誤")
 
-    if st.session_state.is_admin:
-        if st.button("登出管理員"):
-            st.session_state.is_admin = False
-
 # ---------------------------
-# 初始資料（圖像入口）
+# Initial Data
 # ---------------------------
 if "cards" not in st.session_state:
     st.session_state.cards = {
@@ -66,25 +88,15 @@ if "cards" not in st.session_state:
     }
 
 # ---------------------------
-# Theme
+# Theme Style
 # ---------------------------
 st.markdown(f"""
 <style>
 .stApp {{ background:{bg}; color:{text}; }}
 
-.hero {{
-    text-align:center;
-    padding:50px 20px;
-}}
-
-.hero h1 {{
-    font-size:44px;
-    font-weight:800;
-}}
-
-.hero p {{
-    color:{muted};
-}}
+.hero {{ text-align:center; padding:50px 20px; }}
+.hero h1 {{ font-size:44px; font-weight:800; }}
+.hero p {{ color:{muted}; }}
 
 .section {{
     margin-top:40px;
@@ -131,7 +143,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Image Card
+# Card Function
 # ---------------------------
 def image_card(item):
     st.markdown(f"""
@@ -173,13 +185,11 @@ if st.session_state.is_admin:
 
     section = st.selectbox("選擇區塊", ["internal", "official", "products"])
 
-    st.write("新增卡片")
-
     new_title = st.text_input("標題")
     new_img = st.text_input("圖片URL")
     new_url = st.text_input("連結URL")
 
-    if st.button("新增"):
+    if st.button("新增卡片"):
         st.session_state.cards[section].append({
             "title": new_title,
             "img": new_img,
@@ -195,7 +205,7 @@ if st.session_state.is_admin:
         with col2:
             if st.button(f"刪除 {i}"):
                 st.session_state.cards[section].pop(i)
-                st.experimental_rerun()
+                st.rerun()
 
 # ---------------------------
 # Footer

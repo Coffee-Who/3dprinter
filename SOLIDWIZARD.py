@@ -1,70 +1,122 @@
 import streamlit as st
 
-st.set_page_config(page_title="SWTC Portal", layout="wide")
+# =========================
+# Page Config
+# =========================
+st.set_page_config(page_title="實威國際入口 Portal", layout="wide", page_icon="🏢")
 
-# =====================
-# State
-# =====================
+# =========================
+# Session State
+# =========================
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 if "show_login" not in st.session_state:
     st.session_state.show_login = False
 
-if "edit" not in st.session_state:
-    st.session_state.edit = None
+if "edit_target" not in st.session_state:
+    st.session_state.edit_target = None
 
 ADMIN_PASSWORD = "0000"
 
-# =====================
-# UI
-# =====================
+# =========================
+# Awwwards 白底風格
+# =========================
 st.markdown("""
 <style>
 .stApp { background:#F7F8FA; color:#111; }
 
+.hero {
+    text-align:center;
+    padding:40px;
+}
+
+.hero h1 {
+    font-size:44px;
+    font-weight:800;
+}
+
+.section {
+    margin-top:40px;
+    font-weight:600;
+    color:rgba(0,0,0,0.6);
+    letter-spacing:2px;
+}
+
 .card {
-    background:white;
-    border-radius:16px;
+    background:#fff;
+    border-radius:18px;
     overflow:hidden;
-    box-shadow:0 10px 25px rgba(0,0,0,0.08);
-    margin-bottom:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
+
+.card:hover {
+    transform:translateY(-6px);
 }
 
 .card img {
     width:100%;
-    height:180px;
+    height:200px;
     object-fit:cover;
 }
 
 .card-title {
-    text-align:center;
+    padding:10px;
     font-weight:700;
-    padding:8px;
+    text-align:center;
 }
 
-.btn { color:#2F6BFF; cursor:pointer; font-size:12px; }
+.btn {
+    color:#2F6BFF;
+    cursor:pointer;
+    font-size:12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# =====================
-# DATA
-# =====================
+# =========================
+# 初始化資料（完整分類）
+# =========================
 if "cards" not in st.session_state:
     st.session_state.cards = {
         "內部系統": [
-            {"title":"CRM","img":"https://images.unsplash.com/photo-1551288049-bebda4e38f71","url":"#"},
-            {"title":"EIP","img":"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40","url":"#"},
+            {"title":"CRM", "img":"https://images.unsplash.com/photo-1551288049-bebda4e38f71", "url":"#"},
+            {"title":"EIP", "img":"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40", "url":"#"},
+            {"title":"EASYFLOW", "img":"https://images.unsplash.com/photo-1551836022-d5d88e9218df", "url":"#"},
+            {"title":"請假系統", "img":"https://images.unsplash.com/photo-1508385082359-f38ae991e8f2", "url":"#"}
         ],
+
+        "官方系統": [
+            {"title":"官網", "img":"https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url":"#"},
+            {"title":"YouTube", "img":"https://images.unsplash.com/photo-1611162616475-46b635cb6868", "url":"#"}
+        ],
+
         "軟體": [
-            {"title":"SOLIDWORKS","img":"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158","url":"https://www.solidworks.com/"}
+            {"title":"SOLIDWORKS", "img":"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158",
+             "url":"https://www.solidworks.com/"}
+        ],
+
+        "Formlabs": [
+            {"title":"Formlabs 原廠", "img":"https://images.unsplash.com/photo-1581090700227-1e37b190418e",
+             "url":"https://formlabs.com/"},
+            {"title":"Formlabs Support", "img":"https://images.unsplash.com/photo-1555949963-aa79dcee981c",
+             "url":"https://support.formlabs.com/s/?language=zh_CN"}
+        ],
+
+        "Scanology": [
+            {"title":"Scanology 官網", "img":"https://images.unsplash.com/photo-1581092335397-9fa1f9a2d2a1", "url":"#"}
         ]
     }
 
-# =====================
-# LOGIN
-# =====================
+# =========================
+# 登入
+# =========================
 col1, col2, col3 = st.columns([3,6,2])
+
+with col1:
+    st.markdown("## 🏢 SWTC Portal")
+
 with col3:
     if not st.session_state.is_admin:
         if st.button("管理員登入"):
@@ -74,57 +126,28 @@ with col3:
             st.session_state.is_admin = False
 
 if st.session_state.show_login:
-    pwd = st.text_input("密碼", type="password")
+    pwd = st.text_input("輸入密碼", type="password")
     if st.button("登入"):
         if pwd == ADMIN_PASSWORD:
             st.session_state.is_admin = True
             st.session_state.show_login = False
+            st.success("登入成功")
         else:
             st.error("錯誤")
 
-# =====================
+# =========================
 # HERO
-# =====================
-st.title("實威國際 Portal")
+# =========================
+st.markdown("""
+<div class="hero">
+<h1>實威國際數位入口</h1>
+<p>Awwwards Portal</p>
+</div>
+""", unsafe_allow_html=True)
 
-# =====================
-# RENDER
-# =====================
-def render(category):
-
-    items = st.session_state.cards.get(category, [])
-
-    cols = st.columns(5)
-
-    for i, item in enumerate(items):
-        with cols[i % 5]:
-
-            st.markdown(f"""
-            <a href="{item['url']}" target="_blank">
-                <div class="card">
-                    <img src="{item['img']}">
-                    <div class="card-title">{item['title']}</div>
-                </div>
-            </a>
-            """, unsafe_allow_html=True)
-
-            if st.session_state.is_admin:
-                c1, c2 = st.columns(2)
-
-                # ================= EDIT =================
-                with c1:
-                    if st.button(f"編輯-{category}-{i}"):
-                        st.session_state.edit = (category, i)
-
-                # ================= DELETE =================
-                with c2:
-                    if st.button(f"刪-{category}-{i}"):
-                        st.session_state.cards[category].pop(i)
-                        st.rerun()
-
-# =====================
-# ADD ITEM
-# =====================
+# =========================
+# 新增 + 編輯
+# =========================
 def add_item(category):
     if st.session_state.is_admin:
         st.markdown(f"### ➕ 新增 {category}")
@@ -134,42 +157,38 @@ def add_item(category):
         u = st.text_input("連結", key=f"u_{category}")
 
         if st.button(f"新增-{category}"):
-            st.session_state.cards[category].append(
-                {"title": t, "img": i, "url": u}
-            )
+            st.session_state.cards[category].append({"title": t, "img": i, "url": u})
             st.rerun()
 
-# =====================
-# EDIT PANEL（重點🔥）
-# =====================
-if st.session_state.edit:
-    cat, idx = st.session_state.edit
-    item = st.session_state.cards[cat][idx]
+# =========================
+# render（安全版）
+# =========================
+def render(category):
+    items = st.session_state.cards.get(category, [])
+    cols = st.columns(5)
 
-    st.markdown("## ✏️ 編輯項目")
+    for i, item in enumerate(items):
+        with cols[i % 5]:
+            st.markdown(f"""
+            <a href="{item['url']}" target="_blank">
+                <div class="card">
+                    <img src="{item['img']}">
+                    <div class="card-title">{item['title']}</div>
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
 
-    new_t = st.text_input("標題", item["title"])
-    new_i = st.text_input("圖片", item["img"])
-    new_u = st.text_input("連結", item["url"])
-
-    if st.button("儲存修改"):
-        st.session_state.cards[cat][idx] = {
-            "title": new_t,
-            "img": new_i,
-            "url": new_u
-        }
-        st.session_state.edit = None
-        st.rerun()
-
-# =====================
-# SECTIONS
-# =====================
+# =========================
+# UI 主體
+# =========================
 for category in st.session_state.cards.keys():
+
     st.markdown(f"## {category}")
+
     render(category)
     add_item(category)
 
-# =====================
+# =========================
 # FOOTER
-# =====================
+# =========================
 st.markdown("<div style='text-align:center;opacity:0.5;margin-top:40px'>SWTC Portal © 2026</div>", unsafe_allow_html=True)

@@ -3,24 +3,20 @@ import streamlit as st
 # ---------------------------
 # Page Config
 # ---------------------------
-st.set_page_config(
-    page_title="實威國際員工入口網站",
-    layout="wide",
-    page_icon="🏢"
-)
+st.set_page_config(page_title="實威國際員工入口網站", layout="wide", page_icon="🏢")
 
 # ---------------------------
-# Awwwards + 圖像化 Portal（企業正式版）
+# Awwwards 圖像式 Portal（企業正式版）
 # ---------------------------
 
 DARK_MODE = True
 
-bg = "#070A12" if DARK_MODE else "#F6F7FB"
-text = "#FFFFFF" if DARK_MODE else "#111111"
-muted = "rgba(255,255,255,0.6)" if DARK_MODE else "rgba(0,0,0,0.6)"
-card_bg = "rgba(255,255,255,0.06)" if DARK_MODE else "rgba(255,255,255,0.9)"
-border = "rgba(255,255,255,0.12)" if DARK_MODE else "rgba(0,0,0,0.08)"
+bg = "#050713"
+text = "#FFFFFF"
+muted = "rgba(255,255,255,0.65)"
 accent = "#6C8CFF"
+card_bg = "rgba(255,255,255,0.04)"
+border = "rgba(255,255,255,0.10)"
 
 # ---------------------------
 # Admin State
@@ -34,12 +30,75 @@ if "show_login" not in st.session_state:
 ADMIN_PASSWORD = "0000"
 
 # ---------------------------
-# Top Bar
+# Data
 # ---------------------------
-col1, col2, col3 = st.columns([2, 6, 2])
+if "cards" not in st.session_state:
+    st.session_state.cards = {
+        "internal": [
+            {"title": "CRM 客戶管理", "img": "https://images.unsplash.com/photo-1551288049-bebda4e38f71", "url": "http://192.168.100.85"},
+            {"title": "EIP 企業入口", "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40", "url": "http://192.168.100.89"},
+            {"title": "EASYFLOW 簽核", "img": "https://images.unsplash.com/photo-1551836022-d5d88e9218df", "url": "http://192.168.100.85/efnet/"}
+        ],
+        "official": [
+            {"title": "實威官網", "img": "https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url": "https://www.swtc.com/zh-tw/"},
+            {"title": "YouTube 官方", "img": "https://images.unsplash.com/photo-1611162616475-46b635cb6868", "url": "https://www.youtube.com/@solidwizard"}
+        ],
+        "products": [
+            {"title": "SOLIDWORKS", "img": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url": "https://www.solidworks.com/"},
+            {"title": "Formlabs", "img": "https://images.unsplash.com/photo-1581090700227-1e37b190418e", "url": "https://formlabs.com/"}
+        ]
+    }
+
+# ---------------------------
+# CSS
+# ---------------------------
+st.markdown(f"""
+<style>
+.stApp {{ background:{bg}; color:{text}; }}
+
+.hero {{ text-align:center; padding:60px 20px 30px 20px; }}
+.hero h1 {{ font-size:46px; font-weight:800; }}
+.hero p {{ color:{muted}; }}
+
+.section {{ margin-top:40px; font-size:13px; letter-spacing:2px; color:{muted}; text-transform:uppercase; }}
+
+.card {{
+    border-radius:20px;
+    overflow:hidden;
+    background:{card_bg};
+    border:1px solid {border};
+    box-shadow:0 15px 40px rgba(0,0,0,0.35);
+    transition:0.3s;
+    margin-bottom:18px;
+}}
+
+.card:hover {{
+    transform:translateY(-8px);
+    border:1px solid {accent};
+}}
+
+.card img {{ width:100%; height:260px; object-fit:cover; }}
+
+.card-title {{
+    padding:14px;
+    text-align:center;
+    font-weight:700;
+    font-size:15px;
+}}
+
+.topbar {{ display:flex; justify-content:space-between; align-items:center; }}
+
+.footer {{ text-align:center; margin-top:50px; opacity:0.5; font-size:12px; }}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------
+# TOP BAR
+# ---------------------------
+col1, col2, col3 = st.columns([2,6,2])
 
 with col1:
-    st.markdown("<h3>🏢 實威入口</h3>", unsafe_allow_html=True)
+    st.markdown("<div style='font-weight:800;font-size:18px'>SWTC Portal</div>", unsafe_allow_html=True)
 
 with col3:
     if not st.session_state.is_admin:
@@ -48,18 +107,15 @@ with col3:
     else:
         if st.button("登出管理員"):
             st.session_state.is_admin = False
-            st.success("已登出")
 
 # ---------------------------
-# Login Panel (Top Area)
+# LOGIN
 # ---------------------------
 if st.session_state.show_login and not st.session_state.is_admin:
-    st.markdown("---")
-    st.subheader("🔐 管理員登入")
+    st.subheader("管理員登入")
+    pwd = st.text_input("輸入密碼", type="password")
 
-    pwd = st.text_input("請輸入密碼", type="password")
-
-    if st.button("確認登入"):
+    if st.button("登入"):
         if pwd == ADMIN_PASSWORD:
             st.session_state.is_admin = True
             st.session_state.show_login = False
@@ -68,104 +124,27 @@ if st.session_state.show_login and not st.session_state.is_admin:
             st.error("密碼錯誤")
 
 # ---------------------------
-# Initial Data
+# HERO
 # ---------------------------
-if "cards" not in st.session_state:
-    st.session_state.cards = {
-        "internal": [
-            {"title": "CRM 客戶管理", "img": "https://images.unsplash.com/photo-1551288049-bebda4e38f71", "url": "http://192.168.100.85"},
-            {"title": "EIP 企業入口", "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40", "url": "http://192.168.100.89"},
-            {"title": "EASYFLOW 簽核", "img": "https://images.unsplash.com/photo-1551836022-d5d88e9218df", "url": "http://192.168.100.85/efnet/"},
-        ],
-        "official": [
-            {"title": "實威官網", "img": "https://images.unsplash.com/photo-1522071820081-009f0129c71c", "url": "https://www.swtc.com/zh-tw/"},
-            {"title": "YouTube 官方", "img": "https://images.unsplash.com/photo-1611162616475-46b635cb6868", "url": "https://www.youtube.com/@solidwizard"},
-        ],
-        "products": [
-            {"title": "SOLIDWORKS", "img": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", "url": "https://www.solidworks.com/"},
-            {"title": "Formlabs", "img": "https://images.unsplash.com/photo-1581090700227-1e37b190418e", "url": "https://formlabs.com/"},
-        ]
-    }
+st.markdown("<div class='hero'><h1>實威國際數位入口</h1><p>Awwwards Style Image Portal</p></div>", unsafe_allow_html=True)
 
 # ---------------------------
-# Theme Style
+# CARD
 # ---------------------------
-st.markdown(f"""
-<style>
-.stApp {{ background:{bg}; color:{text}; }}
-
-.hero {{ text-align:center; padding:50px 20px; }}
-.hero h1 {{ font-size:44px; font-weight:800; }}
-.hero p {{ color:{muted}; }}
-
-.section {{
-    margin-top:40px;
-    font-size:14px;
-    letter-spacing:2px;
-    text-transform:uppercase;
-    color:{muted};
-}}
-
-.card {{
-    border-radius:18px;
-    overflow:hidden;
-    background:{card_bg};
-    border:1px solid {border};
-    box-shadow:0 10px 30px rgba(0,0,0,0.25);
-    transition:0.3s;
-    margin-bottom:15px;
-}}
-
-.card:hover {{
-    transform:translateY(-6px);
-    border:1px solid {accent};
-}}
-
-.card-title {{
-    padding:12px;
-    text-align:center;
-    font-weight:600;
-}}
-
-img {{ width:100%; height:160px; object-fit:cover; }}
-
-</style>
-""", unsafe_allow_html=True)
+def card(item):
+    st.markdown(f"<a href=\"{item['url']}\" target=\"_blank\"><div class='card'><img src=\"{item['img']}\"><div class='card-title'>{item['title']}</div></div></a>", unsafe_allow_html=True)
 
 # ---------------------------
-# Hero
-# ---------------------------
-st.markdown("""
-<div class='hero'>
-<h1>實威國際數位入口</h1>
-<p>Awwwards Style Image Portal ｜ Internal Workspace</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ---------------------------
-# Card Function
-# ---------------------------
-def image_card(item):
-    st.markdown(f"""
-    <a href=\"{item['url']}\" target=\"_blank\">
-        <div class='card'>
-            <img src=\"{item['img']}\">
-            <div class='card-title'>{item['title']}</div>
-        </div>
-    </a>
-    """, unsafe_allow_html=True)
-
-# ---------------------------
-# Grid
+# GRID
 # ---------------------------
 def render(section):
     cols = st.columns(3)
     for i, item in enumerate(st.session_state.cards[section]):
         with cols[i % 3]:
-            image_card(item)
+            card(item)
 
 # ---------------------------
-# Sections
+# SECTIONS
 # ---------------------------
 st.markdown("<div class='section'>Internal Systems</div>", unsafe_allow_html=True)
 render("internal")
@@ -177,37 +156,33 @@ st.markdown("<div class='section'>Products</div>", unsafe_allow_html=True)
 render("products")
 
 # ---------------------------
-# Admin Panel
+# ADMIN PANEL
 # ---------------------------
 if st.session_state.is_admin:
     st.markdown("---")
-    st.subheader("🛠 管理員編輯模式")
+    st.subheader("管理員控制台")
 
-    section = st.selectbox("選擇區塊", ["internal", "official", "products"])
+    section = st.selectbox("區塊", ["internal", "official", "products"])
 
-    new_title = st.text_input("標題")
-    new_img = st.text_input("圖片URL")
-    new_url = st.text_input("連結URL")
+    title = st.text_input("標題")
+    img = st.text_input("圖片URL")
+    url = st.text_input("連結URL")
 
-    if st.button("新增卡片"):
-        st.session_state.cards[section].append({
-            "title": new_title,
-            "img": new_img,
-            "url": new_url
-        })
-        st.success("已新增卡片")
+    if st.button("新增"):
+        st.session_state.cards[section].append({"title": title, "img": img, "url": url})
+        st.success("已新增")
+        st.rerun()
 
-    st.write("現有卡片")
     for i, item in enumerate(st.session_state.cards[section]):
-        col1, col2 = st.columns([4,1])
+        col1, col2 = st.columns([5,1])
         with col1:
             st.write(item["title"])
         with col2:
-            if st.button(f"刪除 {i}"):
+            if st.button(f"刪除{i}"):
                 st.session_state.cards[section].pop(i)
                 st.rerun()
 
 # ---------------------------
-# Footer
+# FOOTER
 # ---------------------------
-st.markdown("<div style='text-align:center;margin-top:50px;opacity:0.5'>SWTC Internal Portal © 2026</div>", unsafe_allow_html=True)
+st.markdown("<div class='footer'>SWTC Internal Portal © 2026</div>", unsafe_allow_html=True)

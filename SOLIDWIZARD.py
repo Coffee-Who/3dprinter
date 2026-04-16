@@ -1,9 +1,27 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+st.set_page_config(
+    page_title="實威國際入口網",
+    layout="wide"
+)
+
+# 隱藏 Streamlit UI（讓畫面更像內部系統）
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
+# ✅ 所有 HTML / CSS / JS 都包在字串（關鍵：不會再報錯）
+html_code = """
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SWTC Portal</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -45,6 +63,11 @@ h1{
   border-radius:var(--radius);
   overflow:hidden;
   cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:translateY(-4px);
 }
 
 .card img{
@@ -109,9 +132,7 @@ input{
     <h3>新增 / 編輯</h3>
     <input id="name" placeholder="名稱">
     <input id="url" placeholder="網址">
-
     <input type="file" onchange="uploadImg(event)">
-
     <button class="btn" onclick="save()">儲存</button>
     <button onclick="closeModal()">取消</button>
   </div>
@@ -135,8 +156,8 @@ function render(){
       <div class="card-body">
         <b>${item.name}</b><br>
         <small>${item.url}</small><br>
-        <button onclick="edit(${i})">編輯</button>
-        <button onclick="del(${i})">刪除</button>
+        <button onclick="event.stopPropagation();edit(${i})">編輯</button>
+        <button onclick="event.stopPropagation();del(${i})">刪除</button>
       </div>
     `;
 
@@ -148,6 +169,8 @@ function render(){
 function openModal(){
   document.getElementById("modal").classList.add("open");
   editIndex=null;
+  document.getElementById("name").value="";
+  document.getElementById("url").value="";
 }
 
 function closeModal(){
@@ -157,6 +180,11 @@ function closeModal(){
 function save(){
   const name = document.getElementById("name").value;
   const url = document.getElementById("url").value;
+
+  if(!name || !url){
+    alert("請填寫完整");
+    return;
+  }
 
   const obj = {name,url,img:imgBase64};
 
@@ -181,7 +209,7 @@ function edit(i){
 }
 
 function del(i){
-  if(confirm("刪除?")){
+  if(confirm("確定刪除?")){
     data.splice(i,1);
     localStorage.setItem("portal",JSON.stringify(data));
     render();
@@ -202,3 +230,7 @@ render();
 
 </body>
 </html>
+"""
+
+# 顯示（關鍵：components 才能跑 JS）
+components.html(html_code, height=900, scrolling=True)

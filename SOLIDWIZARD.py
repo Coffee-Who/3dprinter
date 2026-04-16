@@ -28,8 +28,8 @@
 html_code = """--radius-sm:10px;"""
 html_code = """--radius-xs:7px;"""
   html_code = """--shadow:0 2px 14px""" rgba(0,0,0,0.07);
-  --shadow-md:0 4px 20px rgba(0,0,0,0.10);
-  --shadow-lg:0 10px 40px rgba(0,0,0,0.14);
+  html_code = """--shadow-md:0 4px 20px""" rgba(0,0,0,0.10);
+  html_code = """--shadow-lg:0 10px 40px""" rgba(0,0,0,0.14);
 }
 
 /* DARK MODE */

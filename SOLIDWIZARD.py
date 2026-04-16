@@ -24,16 +24,10 @@
   --danger-bg:#FFF1F1;
   --danger-border:#FCA5A5;
   --danger-text:#B91C1C;
-  html_code = """
---radius:16px;
-"""
-html_code = """
---radius-sm:10px;
-"""
-html_code = """
---radius-xs:7px;
-"""
-  --shadow:0 2px 14px rgba(0,0,0,0.07);
+  html_code = """--radius:16px;"""
+html_code = """--radius-sm:10px;"""
+html_code = """--radius-xs:7px;"""
+  html_code = """--shadow:0 2px 14px""" rgba(0,0,0,0.07);
   --shadow-md:0 4px 20px rgba(0,0,0,0.10);
   --shadow-lg:0 10px 40px rgba(0,0,0,0.14);
 }

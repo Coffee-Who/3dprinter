@@ -1,199 +1,186 @@
 import streamlit as st
-import requests
-import base64
-import json
-import time
+import streamlit.components.v1 as components
 
 # =========================
-# CONFIG
+# PAGE CONFIG
 # =========================
-REPO = "Coffee-Who/3dprinter"
-BRANCH = "main"
-DATA_PATH = "data/portal.json"
-
-TOKEN = st.secrets["GITHUB_TOKEN"]
-
-st.set_page_config(layout="wide", page_title="實威國際 Portal V2")
+st.set_page_config(
+    page_title="實威國際 Portal V2",
+    layout="wide"
+)
 
 # =========================
-# GITHUB - LOAD JSON
+# SAFE SECRETS（避免 KeyError）
 # =========================
-def load_data():
-    url = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{DATA_PATH}?t={int(time.time())}"
+def safe_get_secret(key):
     try:
-        return requests.get(url).json()
-    except:
-        return {"categories": []}
-
-
-# =========================
-# GITHUB - SAVE JSON
-# =========================
-def save_data(data):
-    url = f"https://api.github.com/repos/{REPO}/contents/{DATA_PATH}"
-
-    r = requests.get(url, headers={
-        "Authorization": f"token {TOKEN}"
-    })
-
-    sha = None
-    if r.status_code == 200:
-        sha = r.json().get("sha")
-
-    content = base64.b64encode(
-        json.dumps(data, ensure_ascii=False, indent=2).encode()
-    ).decode()
-
-    payload = {
-        "message": "update portal data",
-        "content": content,
-        "branch": BRANCH
-    }
-
-    if sha:
-        payload["sha"] = sha
-
-    requests.put(url, json=payload, headers={
-        "Authorization": f"token {TOKEN}"
-    })
-
-
-# =========================
-# IMAGE UPLOAD TO GITHUB
-# =========================
-def upload_image(file_bytes, filename):
-    path = f"image/{filename}"
-    url = f"https://api.github.com/repos/{REPO}/contents/{path}"
-
-    content = base64.b64encode(file_bytes).decode()
-
-    payload = {
-        "message": f"upload {filename}",
-        "content": content,
-        "branch": BRANCH
-    }
-
-    r = requests.put(url, json=payload, headers={
-        "Authorization": f"token {TOKEN}"
-    })
-
-    if r.status_code in [200, 201]:
-        return f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/{path}"
-    else:
-        st.error(r.text)
+        return st.secrets[key]
+    except Exception:
         return None
 
+GITHUB_TOKEN = safe_get_secret("GITHUB_TOKEN")
+GITHUB_REPO = safe_get_secret("GITHUB_REPO")
 
 # =========================
-# LOAD SESSION DATA
+# SIDEBAR STATUS
 # =========================
-if "data" not in st.session_state:
-    st.session_state.data = load_data()
+with st.sidebar:
+    st.title("⚙️ V2 System")
 
-data = st.session_state.data
+    st.write("GitHub 狀態：")
 
-
-# =========================
-# UI HEADER
-# =========================
-st.title("🏢 實威國際入口網站 V2（企業雲端版）")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("🔄 重新同步"):
-        st.session_state.data = load_data()
-        st.rerun()
-
-with col2:
-    if st.button("💾 手動儲存"):
-        save_data(data)
-        st.success("已同步到 GitHub")
-
-
-st.divider()
-
-
-# =========================
-# ADD CATEGORY
-# =========================
-st.subheader("➕ 新增分類")
-
-cat_name = st.text_input("分類名稱")
-cat_emoji = st.text_input("Emoji", "📁")
-
-if st.button("新增分類"):
-    if cat_name.strip() == "":
-        st.warning("請輸入分類名稱")
+    if GITHUB_TOKEN:
+        st.success("TOKEN 已設定")
     else:
-        data["categories"].append({
-            "id": f"cat_{int(time.time())}",
-            "name": cat_name,
-            "emoji": cat_emoji,
-            "cards": []
-        })
-        save_data(data)
-        st.rerun()
+        st.warning("未設定 GITHUB_TOKEN（可忽略，不影響 UI）")
 
+    if GITHUB_REPO:
+        st.success(GITHUB_REPO)
+    else:
+        st.warning("未設定 REPO")
 
-st.divider()
-
+    st.markdown("---")
+    st.info("V2 = UI Portal + 安全 secrets + 可擴充 GitHub 同步")
 
 # =========================
-# RENDER CATEGORIES
+# FULL HTML PORTAL (你的完整 UI)
 # =========================
-for ci, cat in enumerate(data["categories"]):
+html_code = r"""
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>實威國際入口網 V2</title>
 
-    st.markdown(f"## {cat['emoji']} {cat['name']}")
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 
-    # -------------------------
-    # CARDS
-    # -------------------------
-    cols = st.columns(4)
+<style>
+/* ===== BASE ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans','Noto Sans TC',sans-serif;
+  background:#0f1117;
+  color:#eee;
+}
 
-    for i, card in enumerate(cat["cards"]):
-        with cols[i % 4]:
-            if card.get("img"):
-                st.image(card["img"], use_container_width=True)
+/* ===== LAYOUT ===== */
+.page-wrap{max-width:1200px;margin:auto;padding:20px}
 
-            st.markdown(f"### {card['title']}")
-            st.link_button("開啟", card["url"])
+/* ===== HEADER ===== */
+.header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 0;border-bottom:1px solid #2a2d3e;
+}
+.logo{font-size:18px;font-weight:700;color:#3b82f6}
 
-            if st.button("🗑 刪除", key=f"del_{ci}_{i}"):
-                del data["categories"][ci]["cards"][i]
-                save_data(data)
-                st.rerun()
+/* ===== GRID ===== */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:14px;
+  margin-top:20px;
+}
 
+/* ===== CARD ===== */
+.card{
+  background:#1a1d27;
+  border-radius:14px;
+  overflow:hidden;
+  text-decoration:none;
+  color:white;
+  transition:0.2s;
+  border:1px solid #2a2d3e;
+}
+.card:hover{
+  transform:translateY(-5px);
+  border-color:#3b82f6;
+}
+.card img{
+  width:100%;
+  height:110px;
+  object-fit:cover;
+}
+.card-body{
+  padding:10px;
+}
+.card-title{
+  font-size:14px;
+  font-weight:600;
+}
+.card-sub{
+  font-size:11px;
+  color:#aaa;
+  margin-top:3px;
+}
 
-    # =========================
-    # ADD CARD
-    # =========================
-    with st.expander("➕ 新增連結"):
-        title = st.text_input("名稱", key=f"title_{ci}")
-        url = st.text_input("網址", key=f"url_{ci}")
-        img = st.file_uploader("圖片", type=["png", "jpg", "jpeg"], key=f"img_{ci}")
+/* ===== SECTION ===== */
+.section-title{
+  margin-top:30px;
+  font-size:16px;
+  color:#3b82f6;
+  font-weight:700;
+}
 
-        if st.button("新增", key=f"add_{ci}"):
+</style>
+</head>
 
-            if title.strip() == "" or url.strip() == "":
-                st.warning("請填寫完整資料")
-            else:
+<body>
 
-                img_url = ""
+<div class="page-wrap">
 
-                if img:
-                    filename = f"{int(time.time())}.jpg"
-                    img_url = upload_image(img.read(), filename)
+  <div class="header">
+    <div class="logo">實威國際 Portal V2</div>
+  </div>
 
-                data["categories"][ci]["cards"].append({
-                    "title": title,
-                    "url": url,
-                    "img": img_url
-                })
+  <!-- SECTION -->
+  <div class="section-title">A · 內部系統</div>
+  <div class="grid">
 
-                save_data(data)
-                st.rerun()
+    <a class="card" href="http://192.168.100.85/WebCRM" target="_blank">
+      <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600">
+      <div class="card-body">
+        <div class="card-title">CRM</div>
+        <div class="card-sub">Internal System</div>
+      </div>
+    </a>
 
+    <a class="card" href="http://192.168.100.89/SWTCweb4.0" target="_blank">
+      <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600">
+      <div class="card-body">
+        <div class="card-title">EIP</div>
+        <div class="card-sub">Portal</div>
+      </div>
+    </a>
 
-st.divider()
-st.caption("V2 Enterprise Portal · GitHub Sync Edition")
+  </div>
+
+  <!-- SECTION -->
+  <div class="section-title">B · 官方系統</div>
+  <div class="grid">
+
+    <a class="card" href="https://www.swtc.com" target="_blank">
+      <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600">
+      <div class="card-body">
+        <div class="card-title">官方網站</div>
+        <div class="card-sub">SWTC</div>
+      </div>
+    </a>
+
+    <a class="card" href="https://youtube.com" target="_blank">
+      <img src="https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=600">
+      <div class="card-body">
+        <div class="card-title">YouTube</div>
+        <div class="card-sub">Channel</div>
+      </div>
+    </a>
+
+  </div>
+
+</div>
+
+</body>
+</html>
+"""
+
+components.html(html_code, height=900, scrolling=True)

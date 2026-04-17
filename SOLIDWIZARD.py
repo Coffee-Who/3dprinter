@@ -12,8 +12,8 @@ st.set_page_config(layout="wide", page_title="實威國際入口網")
 #  3. 第一次啟動後，terminal 會印出 BIN_ID → 填入 JSONBIN_BIN_ID
 #  4. 之後電腦/手機都從同一個 Bin 讀寫，資料完全同步
 
-JSONBIN_MASTER_KEY = "$2a$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # ← 貼上 Master Key
-JSONBIN_BIN_ID     = ""          # ← 第一次留空；啟動後把 terminal 印出的 ID 填入此處
+JSONBIN_MASTER_KEY = "$2a$10$i8COKSrTKdtvxAwfLVDbte2AoL7Nar3oLKA7ZgQWZrfrLlEC8Yluy"  # ← 貼上 Master Key
+JSONBIN_BIN_ID     = "69e2438b36566621a8c3ac23"          # ← 第一次留空；啟動後把 terminal 印出的 ID 填入此處
 ADMIN_PASS         = "0000"      # ← 管理員密碼（可自行修改）
 # ─────────────────────────────────────────────
 

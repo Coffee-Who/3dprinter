@@ -18,7 +18,7 @@ import requests
 
 # 1. 填入您的正確資訊
 JSONBIN_MASTER_KEY = "$2a$10$NmH85djTPLNNMfQu4xJ.0uOLgN09L1GvrTK4dOP2B/rCzqfH6lo9."
-JSONBIN_BIN_ID = "69e2028a36566621a8c2868e"
+JSONBIN_BIN_ID = "69e2008daaba8821970bcc84"
 
 def get_jsonbin_data():
     url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"

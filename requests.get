@@ -1,0 +1,13 @@
+import requests
+
+url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
+headers = {
+    'X-Master-Key': JSONBIN_MASTER_KEY
+}
+
+response = requests.get(url, headers=headers)
+if response.status_code == 200:
+    data = response.json()['record']
+    # 這裡會顯示您的雲端資料
+else:
+    print("讀取失敗，請檢查 Key 是否過期或 Bin ID 是否正確")

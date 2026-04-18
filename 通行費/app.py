@@ -1,23 +1,9 @@
 import streamlit as st
 import requests
-import pandas as pd
-from datetime import datetime
 
 # ===== 設定 =====
-GOOGLE_API_KEY = "你的API KEY"
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 DEFAULT_START = "實威國際 台中分公司"
-
-# ===== 載入 ETC 表 =====
-df_fee = pd.read_csv("etc_fee.csv")
-
-# ===== 交流道對應 =====
-interchange_keywords = {
-    "台中交流道": "台中",
-    "南屯交流道": "南屯",
-    "彰化交流道": "彰化",
-    "新竹交流道": "新竹",
-    "桃園交流道": "桃園"
-}
 
 # ===== Google 路徑 =====
 def get_route(origin, destination):
@@ -30,98 +16,82 @@ def get_route(origin, destination):
     }
     return requests.get(url, params=params).json()
 
-# ===== 抓交流道 =====
-def extract_interchanges(data):
+# ===== 判斷是否國道 =====
+def is_highway_step(step):
+    text = step["html_instructions"]
+    keywords = ["國道", "National", "Freeway"]
+    return any(k in text for k in keywords)
+
+# ===== 國道距離 =====
+def get_highway_distance(data):
     steps = data["routes"][0]["legs"][0]["steps"]
 
-    start_ic = None
-    end_ic = None
-
+    total = 0
     for step in steps:
-        text = step["html_instructions"]
+        if is_highway_step(step):
+            total += step["distance"]["value"]
 
-        if "國道" in text and "入口" in text and not start_ic:
-            for key in interchange_keywords:
-                if key in text:
-                    start_ic = interchange_keywords[key]
-
-        if "出口" in text:
-            for key in interchange_keywords:
-                if key in text:
-                    end_ic = interchange_keywords[key]
-
-    return start_ic, end_ic
+    return total / 1000
 
 # ===== ETC 計算 =====
-def get_fee(start, end):
-    try:
-        fee = df_fee[
-            (df_fee["起點"] == start) &
-            (df_fee["終點"] == end)
-        ]["費用"].values[0]
-        return fee
-    except:
-        return "查無費率"
+def calc_etc_by_distance(km):
+    free_km = 20
 
-# ===== 建立報帳 =====
-def create_report(origin, destination, start_ic, end_ic, fee):
-    df = pd.DataFrame([{
-        "日期": datetime.now().strftime("%Y-%m-%d"),
-        "出發地": origin,
-        "目的地": destination,
-        "起點交流道": start_ic,
-        "終點交流道": end_ic,
-        "ETC費用": fee
-    }])
-    file_name = "ETC報帳.xlsx"
-    df.to_excel(file_name, index=False)
-    return file_name
+    if km <= free_km:
+        return 0
+
+    km -= free_km
+    fee = 0
+
+    if km > 0:
+        d = min(km, 200)
+        fee += d * 1.2
+        km -= d
+
+    if km > 0:
+        d = min(km, 200)
+        fee += d * 1.0
+        km -= d
+
+    if km > 0:
+        fee += km * 0.9
+
+    return round(fee)
 
 # ===== UI =====
 st.set_page_config(layout="wide")
-st.title("🚗 ETC 費用計算系統（企業版 v2）")
+st.title("🚗 ETC 國道費用計算（企業版 v3）")
 
 origin = st.text_input("出發地", DEFAULT_START)
-destination = st.text_input("客戶公司 / 地址")
+destination = st.text_input("目的地（客戶）")
 
-if st.button("開始計算"):
+if st.button("計算"):
 
     if not destination:
         st.warning("請輸入目的地")
-    else:
-        data = get_route(origin, destination)
+        st.stop()
 
-        try:
-            route = data["routes"][0]
-            leg = route["legs"][0]
+    data = get_route(origin, destination)
 
-            start_ic, end_ic = extract_interchanges(data)
-            fee = get_fee(start_ic, end_ic)
+    try:
+        route = data["routes"][0]
+        leg = route["legs"][0]
 
-            # ===== 顯示資訊 =====
-            col1, col2 = st.columns(2)
+        highway_km = get_highway_distance(data)
+        fee = calc_etc_by_distance(highway_km)
 
-            with col1:
-                st.success(f"""
-                🚏 起點交流道：{start_ic}  
-                🏁 終點交流道：{end_ic}  
-                💰 ETC費用：{fee} 元  
-                ⏱ 行車時間：{leg['duration']['text']}
-                """)
+        col1, col2 = st.columns(2)
 
-                file = create_report(origin, destination, start_ic, end_ic, fee)
+        with col1:
+            st.success(f"""
+🚗 國道距離：{highway_km:.1f} km  
+💰 ETC費用：約 {fee} 元  
+⏱ 行車時間：{leg['duration']['text']}
+""")
 
-                with open(file, "rb") as f:
-                    st.download_button(
-                        "📥 下載報帳Excel",
-                        f,
-                        file_name=file
-                    )
+        with col2:
+            map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={origin}&destination={destination}"
+            st.components.v1.iframe(map_url, height=500)
 
-            with col2:
-                # ===== 顯示地圖 =====
-                map_url = f"https://www.google.com/maps/embed/v1/directions?key={GOOGLE_API_KEY}&origin={origin}&destination={destination}"
-                st.components.v1.iframe(map_url, height=500)
-
-        except:
-            st.error("解析失敗（可能抓不到交流道）")
+    except:
+        st.error("❌ 無法解析路線（請確認地址）")

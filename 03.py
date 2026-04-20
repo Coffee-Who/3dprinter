@@ -12,33 +12,29 @@ st.set_page_config(page_title="SOLIDWIZARD | PreForm AI", layout="wide")
 
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { background-color: #f8fafc; border-right: 1px solid #e2e8f0; }
-    .stButton>button { width: 100%; border-radius: 4px; font-weight: 600; background-color: #ffffff;
-        border: 1px solid #cbd5e1; height: 36px; font-size: 12px; transition: all .15s; }
-    .stButton>button:hover { background-color: #0081FF; color: white; border-color: #0081FF; }
-    /* 主要動作按鈕 */
-    div[data-testid="stButton"]:has(button[kind="primary"]) button {
-        background:#0081FF; color:#fff; border-color:#0059b3; }
-    .price-container { background-color: #ffffff; padding: 20px; border-radius: 8px;
-        border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .price-result { color: #1e293b; font-size: 32px; font-weight: 800;
-        border-bottom: 2px solid #0081FF; display: inline-block; margin-bottom: 10px; }
+    .stApp, .stApp > div { background-color: #0d1117 !important; color: #FFFFFF; }
+    section[data-testid="stMain"] { background-color: #0d1117 !important; }
+    [data-testid="stSidebar"] { background-color: #0d1117 !important; border-right: 1px solid #30363d !important; }
+    [data-testid="stSidebar"] * { color: #c9d1d9 !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #FFFFFF !important; }
+    .stButton > button { width: 100%; border-radius: 6px; font-weight: 600; background-color: #161b22 !important; border: 1px solid #30363d !important; color: #8B949E !important; height: 36px; font-size: 12px; transition: all .15s; }
+    .stButton > button:hover { background-color: #00C853 !important; color: #000000 !important; border-color: #00C853 !important; }
+    .price-container { background: #161b22; padding: 20px; border-radius: 10px; border: 1px solid #30363d; margin-bottom: 16px; }
+    .price-header { font-size: 11px; color: #8B949E; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .price-result { color: #00C853; font-size: 36px; font-weight: 800; display: inline-block; margin-bottom: 12px; }
     .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .data-item { border-left: 3px solid #cbd5e1; padding-left: 10px; }
-    .data-label { color: #64748b; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-    .data-value { color: #0f172a; font-size: 14px; font-weight: 700; }
-    .cost-breakdown { background: #f8fafc; border-radius: 6px; padding: 12px 16px;
-        margin-top: 12px; border: 1px solid #e2e8f0; }
-    .cost-row { display: flex; justify-content: space-between; font-size: 12px; color: #475569; padding: 3px 0; }
-    .cost-row.total { font-weight: 700; color: #0f172a; border-top: 1px solid #cbd5e1;
-        margin-top: 6px; padding-top: 6px; font-size: 13px; }
-    .priority-note { background: #eff6ff; color: #1d4ed8; border-left: 3px solid #3b82f6;
-        padding: 8px 12px; font-size: 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px; }
-    /* 工具面板區塊標題 */
-    h4 { font-size: 13px !important; margin: 4px 0 6px !important; color: #1e293b !important; }
-    /* 方向鍵中間欄空白 */
-    div[data-testid="column"]:nth-child(2) .stButton button { background: transparent !important;
-        border-color: transparent !important; cursor: default !important; }
+    .data-item { border-left: 3px solid #30363d; padding-left: 10px; }
+    .data-label { color: #8B949E; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    .data-value { color: #FFFFFF; font-size: 14px; font-weight: 700; }
+    .cost-breakdown { background: #0d1117; border-radius: 6px; padding: 12px 16px; margin-top: 12px; border: 1px solid #30363d; }
+    .cost-row { display: flex; justify-content: space-between; font-size: 12px; color: #8B949E; padding: 4px 0; }
+    .cost-row.total { font-weight: 700; color: #00C853; border-top: 1px solid #30363d; margin-top: 6px; padding-top: 8px; font-size: 13px; }
+    .priority-note { background: rgba(0,200,83,0.08); color: #00C853; border-left: 3px solid #00C853; padding: 8px 12px; font-size: 12px; border-radius: 0 6px 6px 0; margin-bottom: 10px; }
+    h4 { font-size: 12px !important; margin: 6px 0 8px !important; color: #8B949E !important; }
+    hr { border-color: #30363d !important; }
+    .model-info-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; margin-top: 8px; font-size: 11px; color: #8B949E; line-height: 2; }
+    .model-info-card b { color: #FFFFFF; }
+    div[data-testid="column"]:nth-child(2) .stButton button { background: transparent !important; border-color: transparent !important; cursor: default !important; }
     </style>
 """, unsafe_allow_html=True)
 

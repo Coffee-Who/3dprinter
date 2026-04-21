@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>實威國際 · 3D Print Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#000;--bg1:#0d1117;--bg2:#161b22;--bg3:#21262d;
+  --border:#21262d;--border2:#30363d;
+  --t1:#e6edf3;--t2:#8b949e;--t3:#484f58;
+  --green:#2563EB;--green2:#1d4ed8;--gbg:#EFF4FF;
+  --yellow:#d29922;--red:#f85149;--blue:#58a6ff;
+  --sh:0 2px 12px rgba(0,0,0,.4);
+}
+body.lm{
+  --bg0:#f4f5f8;--bg1:#fff;--bg2:#f6f8fa;--bg3:#e1e4e8;
+  --border:#d0d7de;--border2:#b1bac4;
+  --t1:#1f2328;--t2:#656d76;--t3:#8c959f;
+  --green:#1d4ed8;--green2:#2563EB;--gbg:#EFF4FF;
+  --yellow:#9a6700;--red:#d1242f;--blue:#0969da;
+  --sh:0 2px 12px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{height:100%}
+body{font-family:'DM Sans','Noto Sans TC',-apple-system,sans-serif;color:var(--t1);font-size:13px;background:var(--bg0);min-height:100vh;transition:background .2s,color .2s}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── shell ── */
+#shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#topbar{background:var(--bg1);border-bottom:1px solid var(--border);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:20}
+.logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;color:var(--t1)}
+.logo-box{width:26px;height:26px;background:var(--green);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo-sep{width:1px;height:14px;background:var(--border2)}
+.logo-sub{font-size:11px;color:var(--t2)}
+.tr{display:flex;align-items:center;gap:8px}
+.theme-btn{background:var(--bg2);border:1px solid var(--border);padding:5px 11px;border-radius:20px;cursor:pointer;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:5px;transition:.15s;font-family:inherit}
+.theme-btn:hover{color:var(--t1);border-color:var(--border2)}
+.vbadge{font-size:10px;color:var(--t3);background:var(--bg2);border:1px solid var(--border);padding:3px 8px;border-radius:4px}
+
+#tabbar{background:var(--bg1);border-bottom:1px solid var(--border);display:flex;padding:0 20px;flex-shrink:0;z-index:10}
+.tab{padding:11px 16px;font-size:13px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:color .15s;user-select:none;font-weight:500}
+.tab:hover{color:var(--t1)}
+.tab.on{color:var(--t1);border-bottom-color:var(--green)}
+.soon-badge{font-size:9px;background:var(--bg3);color:var(--t2);padding:1px 5px;border-radius:3px}
+
+#pages{flex:1;overflow:hidden;position:relative}
+.pg{display:none;position:absolute;inset:0;overflow-y:auto}
+.pg.on{display:block}
+
+/* ── COMMON ELEMENTS ── */
+select,input[type=number],input[type=text],input[type=url],input[type=password]{
+  width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--t1);
+  padding:6px 9px;border-radius:5px;font-size:12px;outline:none;font-family:inherit;transition:border-color .15s
+}
+select:focus,input:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+input[type=range]{-webkit-appearance:none;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer;flex:1}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--green);border-radius:50%;cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg2);color:var(--t1);transition:.15s;font-family:inherit;white-space:nowrap}
+.btn:hover{background:var(--bg3);border-color:var(--border2)}
+.btn.prim{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.prim:hover{background:var(--green2)}
+.btn.dngr{background:rgba(248,81,73,.1);color:var(--red);border-color:var(--red)}
+.btn.sm{padding:4px 10px;font-size:11px}
+
+/* ── MODALS ── */
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s}
+.mover.on{opacity:1;pointer-events:all}
+.mbox{background:var(--bg1);border:1px solid var(--border2);border-radius:14px;padding:24px;width:100%;max-width:400px;box-shadow:var(--sh);transform:translateY(8px);transition:transform .2s}
+.mover.on .mbox{transform:translateY(0)}
+.mt{font-size:15px;font-weight:700;margin-bottom:4px}
+.ms{font-size:12px;color:var(--t2);margin-bottom:16px}
+.fg{margin-bottom:10px}
+.fl{font-size:11px;font-weight:600;color:var(--t2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:16px}
+
+/* ── TOAST ── */
+#toasts{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:7px;z-index:999}
+.toast{background:var(--bg1);border:1px solid var(--border2);border-radius:8px;padding:10px 15px;font-size:12px;font-weight:500;box-shadow:var(--sh);display:flex;align-items:center;gap:6px;min-width:180px;animation:tIn .2s ease;color:var(--t1)}
+.toast.ok{border-left:3px solid var(--green)}
+.toast.err{border-left:3px solid var(--red)}
+@keyframes tIn{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ══════════════════════════════════════════════
+   PAGE 0 · SOLIDWIZARD PORTAL
+══════════════════════════════════════════════ */
+.hw{padding:0 24px 60px;max-width:1200px;margin:0 auto}
+.hw-hero{text-align:center;padding:36px 0 24px}
+.eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:12px}
+.eyebrow::before,.eyebrow::after{content:'';width:20px;height:1px;background:var(--green);opacity:.5}
+.hw-hero h1{font-size:clamp(24px,5vw,42px);font-weight:700;letter-spacing:-1px;line-height:1.1;color:var(--t1)}
+.hw-hero h1 em{font-style:normal;color:var(--green)}
+.hw-hero p{color:var(--t2);font-size:14px;margin-top:8px}
+.srch-bar{display:flex;align-items:center;gap:8px;max-width:480px;margin:18px auto 0;background:var(--bg1);border:1.5px solid var(--border2);border-radius:40px;padding:6px 6px 6px 16px;box-shadow:var(--sh)}
+.srch-bar input{flex:1;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--t1);outline:none}
+.srch-bar input::placeholder{color:var(--t3)}
+.srch-bar button{background:var(--green);color:#fff;border:none;border-radius:30px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.srch-bar button:hover{background:var(--green2)}
+.stats-row{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap;justify-content:center}
+.sc{background:var(--bg1);border:1px solid var(--border);border-radius:30px;padding:4px 12px;font-size:11px;color:var(--t2);display:flex;align-items:center;gap:4px}
+.sc strong{color:var(--green);font-weight:700}
+.hw-acts{display:flex;justify-content:flex-end;gap:8px;margin:12px 0}
+.admin-bar{background:var(--gbg);border:1px solid rgba(37,99,235,.25);border-radius:7px;padding:8px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;display:none}
+.admin-bar.on{display:flex}
+.ab-l{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green)}
+.ab-r{display:flex;gap:6px}
+.hw-sec{margin-top:28px}
+.hw-sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+.hw-sec-t{display:flex;align-items:center;gap:8px}
+.hw-sec-name{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.hw-sec-cnt{font-size:11px;color:var(--t3);padding:2px 8px;border-radius:20px;background:var(--bg2);border:1px solid var(--border)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:11px}
+.lcard{background:var(--bg1);border:1.5px solid var(--border);border-radius:13px;overflow:hidden;cursor:pointer;transition:all .18s;position:relative;box-shadow:var(--sh)}
+.lcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.3);border-color:var(--green)}
+.lcard-img{width:100%;height:110px;object-fit:cover;display:block;background:var(--bg2)}
+.lcard-ph{width:100%;height:110px;background:linear-gradient(135deg,var(--gbg),var(--bg2));display:flex;align-items:center;justify-content:center;font-size:26px}
+.lcard-b{padding:10px 12px 12px}
+.lcard-t{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcard-u{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcard-del{position:absolute;top:6px;right:6px;background:rgba(13,17,23,.88);border:1px solid var(--border2);border-radius:5px;width:22px;height:22px;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:var(--red);z-index:2}
+.lcard:hover .lcard-del.vis{display:flex}
+.lcard-del:hover{background:rgba(248,81,73,.15)}
+.add-lcard{background:var(--bg2);border:2px dashed var(--border2);border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;padding:22px 12px;transition:.15s;min-height:170px;color:var(--t3)}
+.add-lcard:hover{border-color:var(--green);color:var(--green);background:var(--gbg)}
+.hw-footer{text-align:center;padding:24px 0 0;border-top:1px solid var(--border);margin-top:48px;color:var(--t3);font-size:11px}
+.hw-footer a{color:var(--green);text-decoration:none}
+
+/* ══════════════════════════════════════════════
+   PAGE 1 · 3D列印前準備
+══════════════════════════════════════════════ */
+.prep{display:flex;flex-direction:column;height:100%}
+.prep-sec-h{background:var(--bg1);border-bottom:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.prep-sec-h span{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.8px}
+.prep-sec-h em{font-style:normal;color:var(--green)}
+.prep-sec-h small{font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0}
+
+/* PreForm toolbar */
+.pft{background:var(--bg1);border-bottom:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex-shrink:0}
+.pft-g{display:flex;align-items:center;gap:3px;padding-right:8px;border-right:1px solid var(--border);margin-right:3px}
+.pft-g:last-child{border-right:none}
+.pft-btn{background:var(--bg2);border:1px solid var(--border);color:var(--t1);padding:5px 11px;border-radius:5px;font-size:12px;cursor:pointer;transition:all .14s;display:flex;align-items:center;gap:4px;font-weight:500;white-space:nowrap;font-family:inherit}
+.pft-btn:hover{border-color:var(--border2);background:var(--bg3)}
+.pft-btn.prim{background:var(--green);color:#fff;border-color:var(--green)}
+.pft-btn.prim:hover{background:var(--green2)}
+.pft-btn.act{border-color:var(--green);color:var(--green);background:var(--gbg)}
+.pft-st{font-size:11px;color:var(--t3);padding-left:4px}
+
+/* 3-col */
+.pf3{display:flex;height:430px;flex-shrink:0}
+
+/* left */
+.pfl{width:238px;min-width:238px;background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.pf-s{border-bottom:1px solid var(--border);padding:10px 12px}
+.pf-s:last-child{border-bottom:none}
+.pf-t{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:7px}
+.pbtns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pbtn{background:var(--bg2);border:1px solid var(--border);color:var(--t2);padding:7px 6px;border-radius:5px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;transition:.14s;user-select:none;line-height:1.4}
+.pbtn:hover{border-color:var(--border2);color:var(--t1)}
+.pbtn.act{border-color:var(--green);color:var(--green);background:var(--gbg)}
+.pbtn small{display:block;font-size:9px;font-weight:400;color:var(--t3);margin-top:1px}
+.pbtn.act small{color:var(--green)}
+.f-lbl{font-size:11px;color:var(--t2);font-weight:500;margin-bottom:4px;display:block}
+.mat-b{font-size:11px;color:var(--green);margin-top:5px;background:var(--gbg);border:1px solid rgba(37,99,235,.2);padding:4px 8px;border-radius:4px;line-height:1.6}
+.mat-b span{color:var(--t2);font-size:10px}
+.type-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ttag{padding:4px 8px;border-radius:4px;border:1px solid var(--border2);font-size:11px;cursor:pointer;color:var(--t2);background:var(--bg2);transition:.14s;font-weight:500;user-select:none}
+.ttag.act{border-color:var(--green);color:var(--green);background:var(--gbg)}
+.srow{display:flex;align-items:center;gap:8px}
+.sv{font-size:12px;color:var(--green);font-weight:700;min-width:30px;text-align:right}
+.jstats{display:flex;flex-direction:column;gap:5px}
+.jsr{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.jsl{color:var(--t2)}
+.jsv{font-weight:600;color:var(--t1)}
+.jsv.g{color:var(--green)}.jsv.y{color:var(--yellow)}.jsv.r{color:var(--red)}
+.btrack{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:3px}
+.bfill{height:100%;border-radius:3px;transition:width .4s,background .4s}
+
+/* viewport */
+.pfvp{flex:1;background:#060a0f;display:flex;flex-direction:column;overflow:hidden;position:relative}
+body.lm .pfvp{background:#e8edf2}
+.vp-bar{display:flex;align-items:center;gap:4px;padding:6px 9px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg1)}
+.vbtn{background:var(--bg2);border:1px solid var(--border);color:var(--t2);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;transition:.14s;user-select:none;font-weight:500;font-family:inherit}
+.vbtn:hover{color:var(--t1);border-color:var(--border2)}
+.vbtn.act{color:var(--green);border-color:var(--green);background:var(--gbg)}
+.vp-sep{width:1px;height:14px;background:var(--border);margin:0 2px}
+#vp3d{flex:1;position:relative;overflow:hidden}
+.vp-foot{display:flex;align-items:center;justify-content:space-between;padding:5px 11px;border-top:1px solid var(--border);background:var(--bg1);flex-shrink:0}
+.ax-row{display:flex;gap:4px;align-items:center}
+.ax{padding:2px 5px;border-radius:3px;font-size:9px;font-weight:700}
+.ax-x{color:#f85149;background:rgba(45,10,10,.8)}.ax-y{color:#1d4ed8;background:rgba(10,32,16,.8)}.ax-z{color:#58a6ff;background:rgba(10,24,48,.8)}
+.vp-hint{font-size:9px;color:var(--t3);margin-left:6px}
+.vp-inf{font-size:10px;color:var(--t3)}
+
+/* right */
+.pfr{width:218px;min-width:218px;background:var(--bg1);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.rsec{padding:10px 12px;border-bottom:1px solid var(--border)}
+.rsec:last-child{border-bottom:none;flex:1}
+.rt{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.7px;font-weight:600;margin-bottom:8px}
+.rrow{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.rrow:last-of-type{margin-bottom:0}
+.rlbl{width:12px;font-size:13px;font-weight:700}
+.rlbl.x{color:#f85149}.rlbl.y{color:#1d4ed8}.rlbl.z{color:#58a6ff}
+.rinp{flex:1;background:var(--bg2);border:1px solid var(--border2);color:var(--t1);padding:5px 6px;border-radius:4px;font-size:12px;outline:none;text-align:center;font-weight:600;font-family:inherit;min-width:0}
+.rinp:focus{border-color:var(--green)}
+.rdeg{font-size:10px;color:var(--t3)}
+.rpm-g{display:flex;gap:2px}
+.rpm{background:var(--bg2);border:1px solid var(--border);color:var(--t2);padding:4px 7px;border-radius:3px;font-size:11px;cursor:pointer;font-weight:600;transition:.14s;font-family:inherit}
+.rpm:hover{background:var(--bg3);color:var(--t1)}
+.or-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px}
+.orc{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:7px;text-align:center}
+.orl{font-size:9px;color:var(--t2);margin-bottom:2px;text-transform:uppercase}
+.orv{font-size:16px;font-weight:700;color:var(--green)}
+.sug-list{display:flex;flex-direction:column;gap:3px}
+.sug{border-left:2px solid var(--border2);padding:5px 7px;border-radius:0 4px 4px 0;font-size:11px;color:var(--t2);line-height:1.5;background:var(--bg2)}
+.sug.ok{border-left-color:var(--green);color:var(--t1)}
+.sug.warn{border-left-color:var(--yellow);color:var(--t1)}
+.sug.err{border-left-color:var(--red);color:var(--t1)}
+.sug b{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:1px;opacity:.5;font-weight:600}
+
+/* section divider */
+.sdiv{display:flex;align-items:center;background:var(--bg0);border-top:2px solid var(--border);padding:0 16px;flex-shrink:0}
+.sdiv-l{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.7px;padding:6px 11px;background:var(--bg1);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;margin-bottom:-1px;display:flex;align-items:center;gap:4px}
+.sdiv-l span{color:var(--green)}
+
+/* quote section */
+.qwrap{display:flex;height:360px;flex-shrink:0}
+.qmain{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.qmet{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.mc{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:10px 9px 8px}
+.mcl{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:500}
+.mcv{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.mcu{font-size:10px;color:var(--t2);margin-top:2px}
+.cg{color:var(--green)}.cy{color:var(--yellow)}.cr{color:var(--red)}.cw{color:var(--t1)}
+.qbot{display:flex;flex:1;overflow:hidden}
+.hm-panel{flex:1;padding:10px;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.ptitle{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;font-weight:600}
+.hm-grid{display:flex;gap:3px;flex:1;min-height:50px}
+.hb{border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px 8px;cursor:default;position:relative;transition:filter .14s}
+.hb:hover{filter:brightness(1.2)}
+.hb:hover .hbt{display:block}
+.hbn{font-size:9px;font-weight:500;line-height:1.3}
+.hbs{font-size:11px;font-weight:700}
+.hbt{display:none;position:absolute;bottom:108%;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border2);padding:4px 9px;border-radius:4px;font-size:11px;color:var(--t1);white-space:nowrap;z-index:99;pointer-events:none;box-shadow:var(--sh)}
+.qor{width:235px;min-width:235px;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.o-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.oc{background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:7px;text-align:center}
+.ocl{font-size:9px;color:var(--t2);margin-bottom:2px;text-transform:uppercase}
+.ocv{font-size:17px;font-weight:700;color:var(--green)}
+
+/* upload */
+.uz{border:2px dashed var(--border2);border-radius:7px;padding:13px 10px;text-align:center;cursor:pointer;transition:.18s;background:var(--bg2)}
+.uz:hover,.uz.has{border-color:var(--green);background:var(--gbg)}
+.uz.has{border-style:solid}
+.uz-icon{font-size:20px;opacity:.35;margin-bottom:4px}
+.uz-txt{font-size:12px;color:var(--t2);font-weight:500}
+.uz-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.uz-name{font-size:11px;color:var(--green);margin-top:4px;word-break:break-all;display:none;font-weight:600}
+input[type=file]{display:none}
+
+/* soon pages */
+.cs{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.cs-i{font-size:30px;opacity:.15}.cs-t{font-size:13px;color:var(--t3);font-weight:500}.cs-s{font-size:12px;color:var(--t3)}
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<!-- Pass Modal -->
+<div class="mover" id="passOv">
+  <div class="mbox" style="max-width:320px;text-align:center">
+    <div style="font-size:30px;margin-bottom:10px">🔐</div>
+    <div class="mt">管理員驗證</div>
+    <div class="ms">請輸入管理員密碼</div>
+    <input type="password" id="passInp" placeholder="••••" maxlength="20" style="text-align:center;letter-spacing:4px;font-size:15px;margin-bottom:8px">
+    <div id="passErr" style="font-size:11px;color:var(--red);min-height:14px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn" onclick="closePass()">取消</button>
+      <button class="btn prim" onclick="verifyPass()">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Card Modal -->
+<div class="mover" id="addOv">
+  <div class="mbox">
+    <div class="mt">➕ 新增連結</div>
+    <div class="ms">新增快速連結到分類</div>
+    <div class="fg"><label class="fl">分類</label><select id="addCat"></select></div>
+    <div class="fg"><label class="fl">標題</label><input type="text" id="addTit" placeholder="例：SOLIDWORKS 官網"></div>
+    <div class="fg"><label class="fl">網址</label><input type="url" id="addUrl" placeholder="https://..."></div>
+    <div class="fg"><label class="fl">圖片網址（可選）</label><input type="url" id="addImg" placeholder="https://..."></div>
+    <div class="ma">
+      <button class="btn" onclick="closeAdd()">取消</button>
+      <button class="btn prim" onclick="saveCard()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div id="shell">
+  <div id="topbar">
+    <div class="logo">
+      <div class="logo-box">🖨</div>
+      實威國際
+      <div class="logo-sep"></div>
+      <span class="logo-sub">3D Print Studio</span>
+    </div>
+    <div class="tr">
+      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 暗色</button>
+      <span class="vbadge">v1.0</span>
+    </div>
+  </div>
+
+  <div id="tabbar">
+    <div class="tab on" onclick="goTab(0)">首頁</div>
+    <div class="tab" onclick="goTab(1)">3D列印前準備</div>
+    <div class="tab" onclick="goTab(2)">歷史記錄 <span class="soon-badge">Soon</span></div>
+    <div class="tab" onclick="goTab(3)">材料管理 <span class="soon-badge">Soon</span></div>
+    <div class="tab" onclick="goTab(4)">設定 <span class="soon-badge">Soon</span></div>
+  </div>
+
+  <div id="pages">
+
+    <!-- PAGE 0: SOLIDWIZARD PORTAL -->
+    <div class="pg on" id="pg0">
+    <div class="hw">
+      <div class="hw-hero">
+        <div class="eyebrow">SOLIDWIZARD</div>
+        <h1>實威國際<em>入口網</em></h1>
+        <p>統一管理所有常用系統、工具與資源的快速入口</p>
+        <div class="srch-bar">
+          <input type="text" id="srch" placeholder="搜尋連結名稱…" oninput="filterCards(this.value)">
+          <button onclick="filterCards(document.getElementById('srch').value)">搜尋</button>
+        </div>
+        <div class="stats-row">
+          <div class="sc">📂 分類 <strong id="stCat">5</strong></div>
+          <div class="sc">🔗 連結 <strong id="stLinks">16</strong></div>
+          <div class="sc">🕐 <strong id="stTime">—</strong></div>
+          <div class="sc">🟢 線上</div>
+        </div>
+      </div>
+      <div class="hw-acts">
+        <button class="btn sm" onclick="requestAdmin()" id="adminBtn">🔐 管理員</button>
+        <button class="btn sm prim" onclick="goTab(1)">▶ 3D列印前準備</button>
+      </div>
+      <div class="admin-bar" id="adminBar">
+        <div class="ab-l">⚙️ 管理員模式已啟用</div>
+        <div class="ab-r">
+          <button class="btn sm prim" onclick="openAdd()">➕ 新增</button>
+          <button class="btn sm dngr" onclick="exitAdmin()">退出</button>
+        </div>
+      </div>
+      <div id="sectionsC"></div>
+      <div class="hw-footer">© 2025 實威國際股份有限公司 · <a href="https://www.swtc.com" target="_blank">swtc.com</a></div>
+    </div>
+    </div>
+
+    <!-- PAGE 1: 3D列印前準備 -->
+    <div class="pg" id="pg1">
+    <div class="prep">
+
+      <div class="prep-sec-h">
+        <span>01 <em>·</em> 最佳擺放優化</span>
+        <small>— 上傳 STL 後自動計算材積、費用、時間</small>
+      </div>
+
+      <div class="pft">
+        <div class="pft-g">
+          <button class="pft-btn prim" onclick="oneClick()">⚡ 一鍵優化</button>
+        </div>
+        <div class="pft-g">
+          <button class="pft-btn act" id="btnO" onclick="pfTool('O')">🔄 擺放</button>
+          <button class="pft-btn" id="btnS" onclick="pfTool('S')">🌿 支撐</button>
+          <button class="pft-btn" id="btnL" onclick="pfTool('L')">📐 佈局</button>
+        </div>
+        <div class="pft-g">
+          <button class="pft-btn" onclick="oneClick()">自動擺放</button>
+          <button class="pft-btn" onclick="autoSupp()">自動支撐</button>
+          <button class="pft-btn" onclick="resetRot()">重設旋轉</button>
+        </div>
+        <span class="pft-st" id="pfSt">請上傳 STL 模型開始</span>
+      </div>
+
+      <div class="pf3">
+        <!-- LEFT -->
+        <div class="pfl">
+          <div class="pf-s">
+            <div class="pf-t">上傳模型</div>
+            <div class="uz" id="dz" onclick="document.getElementById('fi').click()">
+              <div class="uz-icon">📁</div>
+              <div class="uz-txt">上傳模型</div>
+              <div class="uz-sub">STL · OBJ · 3MF · STEP</div>
+              <div class="uz-name" id="fname"></div>
+            </div>
+            <input type="file" id="fi" accept=".stl,.obj,.3mf,.step" onchange="onFile(this)">
+          </div>
+          <div class="pf-s">
+            <div class="pf-t">列印機型</div>
+            <div class="pbtns">
+              <div class="pbtn act" id="pp0" onclick="setPrinter(0)">Form 4<small>20.0×12.5×21.0 cm</small></div>
+              <div class="pbtn" id="pp1" onclick="setPrinter(1)">Form 4L<small>35.3×19.6×35.0 cm</small></div>
+            </div>
+          </div>
+          <div class="pf-s">
+            <div class="pf-t">材料選擇</div>
+            <select id="matSel" onchange="onMat()">
+              <option value="3500|1.1">Standard Black V4</option>
+              <option value="3500|1.1">Standard Grey V4</option>
+              <option value="3500|1.1">Standard White V4</option>
+              <option value="4200|1.12">Clear V4</option>
+              <option value="5800|1.2">Tough 2000</option>
+              <option value="5800|1.2">Tough 1500</option>
+              <option value="5800|1.15">Durable</option>
+              <option value="6200|1.08">Flexible 80A</option>
+              <option value="6200|1.05">Elastic 50A</option>
+              <option value="7200|1.3">High Temp</option>
+              <option value="9500|1.4">Castable Wax</option>
+              <option value="12800|1.15">Dental LT Clear</option>
+              <option value="18500|1.2">BioMed Clear</option>
+            </select>
+            <div class="mat-b" id="matB"><span>單價</span> NT$ 3,500 / L &nbsp;·&nbsp; <span>密度</span> 1.10 g/cm³</div>
+          </div>
+          <div class="pf-s">
+            <div class="pf-t">模型類型</div>
+            <div class="type-tags">
+              <div class="ttag act" onclick="setMT(this,'cosmetic')">外觀件</div>
+              <div class="ttag" onclick="setMT(this,'engineering')">工程件</div>
+              <div class="ttag" onclick="setMT(this,'hollow')">中空件</div>
+              <div class="ttag" onclick="setMT(this,'thin')">薄件</div>
+            </div>
+          </div>
+          <div class="pf-s">
+            <div class="pf-t">模型尺寸 (mm)</div>
+            <div class="row3" style="margin-bottom:7px">
+              <input type="number" id="sx" value="50" placeholder="X" oninput="pfCalc()">
+              <input type="number" id="sy" value="30" placeholder="Y" oninput="pfCalc()">
+              <input type="number" id="sz" value="40" placeholder="Z" oninput="pfCalc()">
+            </div>
+            <span class="f-lbl">列印層厚</span>
+            <select id="lt" onchange="pfCalc()">
+              <option value="0.05">0.05 mm（精細）</option>
+              <option value="0.1" selected>0.10 mm（標準）</option>
+              <option value="0.2">0.20 mm（快速）</option>
+            </select>
+          </div>
+          <div class="pf-s">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <div class="pf-t" style="margin:0">支撐密度</div>
+              <span id="sdlbl" style="color:var(--green);font-weight:700;font-size:11px">20%</span>
+            </div>
+            <div class="srow">
+              <input type="range" id="sd" min="0" max="50" step="5" value="20" oninput="onSupp(this.value)">
+              <span class="sv" id="sdv">20%</span>
+            </div>
+          </div>
+          <div class="pf-s">
+            <div class="pf-t">列印數量</div>
+            <input type="number" id="qty" value="1" min="1" oninput="pfCalc()">
+          </div>
+          <div class="pf-s" style="flex:1">
+            <div class="pf-t">Job Info</div>
+            <div class="jstats">
+              <div class="jsr"><span class="jsl">列印體積</span><span class="jsv" id="jiVol">—</span></div>
+              <div class="jsr"><span class="jsl">材料重量</span><span class="jsv" id="jiWt">—</span></div>
+              <div class="jsr"><span class="jsl">列印時間</span><span class="jsv" id="jiTime">—</span></div>
+              <div class="jsr"><span class="jsl">估算費用</span><span class="jsv cg" id="jiCost">—</span></div>
+              <div class="jsr"><span class="jsl">成功率</span><span class="jsv g" id="jiSucc">—</span></div>
+            </div>
+            <div style="margin-top:6px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t2)"><span>列印可行性</span><span id="jiPct">—</span></div>
+              <div class="btrack"><div class="bfill" id="bfill" style="width:0;background:var(--green)"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEWPORT -->
+        <div class="pfvp">
+          <div class="vp-bar">
+            <div class="vbtn act" id="vbP" onclick="setCam('persp',this)">透視</div>
+            <div class="vbtn" id="vbT" onclick="setCam('top',this)">頂視</div>
+            <div class="vbtn" id="vbF" onclick="setCam('front',this)">前視</div>
+            <div class="vbtn" id="vbS" onclick="setCam('side',this)">側視</div>
+            <div class="vp-sep"></div>
+            <div class="vbtn" onclick="zoomFit()">⊡ 適合視窗</div>
+            <div class="vbtn" onclick="resetCam()">⟳ 重設視角</div>
+          </div>
+          <div id="vp3d"></div>
+          <div class="vp-foot">
+            <div class="ax-row">
+              <span class="ax ax-x">X</span><span class="ax ax-y">Y</span><span class="ax ax-z">Z</span>
+              <span class="vp-hint">右鍵拖曳旋轉 · 中鍵平移 · 滾輪縮放</span>
+            </div>
+            <div class="vp-inf" id="vpinf">Form 4 · 20.0×12.5×21.0 cm</div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="pfr">
+          <div class="rsec">
+            <div class="rt">旋轉控制</div>
+            <div class="rrow">
+              <span class="rlbl x">X</span>
+              <input type="number" class="rinp" id="rx" value="0" oninput="onRot()">
+              <span class="rdeg">°</span>
+              <div class="rpm-g"><div class="rpm" onclick="stepR('rx',-15)">−</div><div class="rpm" onclick="stepR('rx',15)">+</div></div>
+            </div>
+            <div class="rrow">
+              <span class="rlbl y">Y</span>
+              <input type="number" class="rinp" id="ry" value="0" oninput="onRot()">
+              <span class="rdeg">°</span>
+              <div class="rpm-g"><div class="rpm" onclick="stepR('ry',-15)">−</div><div class="rpm" onclick="stepR('ry',15)">+</div></div>
+            </div>
+            <div class="rrow">
+              <span class="rlbl z">Z</span>
+              <input type="number" class="rinp" id="rz" value="0" oninput="onRot()">
+              <span class="rdeg">°</span>
+              <div class="rpm-g"><div class="rpm" onclick="stepR('rz',-15)">−</div><div class="rpm" onclick="stepR('rz',15)">+</div></div>
+            </div>
+          </div>
+          <div class="rsec">
+            <div class="rt">最佳擺放結果</div>
+            <div class="or-grid">
+              <div class="orc"><div class="orl">建議角度</div><div class="orv" id="oa">35°</div></div>
+              <div class="orc"><div class="orl">X 旋轉</div><div class="orv" id="oX">15°</div></div>
+              <div class="orc"><div class="orl">Y 旋轉</div><div class="orv" id="oY">0°</div></div>
+              <div class="orc"><div class="orl">支撐類型</div><div class="orv" style="font-size:12px" id="oSt">輕</div></div>
+            </div>
+          </div>
+          <div class="rsec" style="flex:1;overflow-y:auto">
+            <div class="rt" style="margin-bottom:7px">優化說明</div>
+            <div class="sug-list" id="sugList"><div class="sug"><b>等待中</b>上傳模型後點擊「一鍵優化」</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sdiv"><div class="sdiv-l">02 <span>·</span> 風險分析 &amp; 估價</div></div>
+
+      <div class="qwrap">
+        <div class="qmain">
+          <div class="qmet">
+            <div class="mc"><div class="mcl">列印時間</div><div class="mcv cw" id="qv0">—</div><div class="mcu">hrs</div></div>
+            <div class="mc"><div class="mcl">材料用量</div><div class="mcv cw" id="qv1">—</div><div class="mcu">mL</div></div>
+            <div class="mc"><div class="mcl">估算費用</div><div class="mcv cw" id="qv2">—</div><div class="mcu">NT$</div></div>
+            <div class="mc"><div class="mcl">成功率</div><div class="mcv cg" id="qv3">—</div><div class="mcu" id="qrk">—</div></div>
+          </div>
+          <div class="qbot">
+            <div class="hm-panel">
+              <div class="ptitle">風險熱力分析</div>
+              <div class="hm-grid">
+                <div class="hb" style="background:#0d1433;flex:2.5"><div class="hbt">角度良好，剝離力低</div><div class="hbn" style="color:#60a5fa">擺放角度</div><div class="hbs" style="color:#60a5fa">低</div></div>
+                <div class="hb" style="background:#0d1433;flex:2"><div class="hbt">支撐佈點均勻</div><div class="hbn" style="color:#60a5fa">支撐分佈</div><div class="hbs" style="color:#60a5fa">低</div></div>
+                <div class="hb" style="background:#1e2a5e;flex:1.8"><div class="hbt">截面有突變，建議斜放</div><div class="hbn" style="color:#d29922">截面變化</div><div class="hbs" style="color:#d29922">中</div></div>
+                <div class="hb" id="hmD" style="background:#0d1433;flex:1.5"><div class="hbt">排液設計合理</div><div class="hbn" style="color:#60a5fa">排液孔</div><div class="hbs" style="color:#60a5fa">低</div></div>
+                <div class="hb" style="background:#2d0000;flex:1.2"><div class="hbt">底面積大，剝離力偏高</div><div class="hbn" style="color:#f85149">剝離吸力</div><div class="hbs" style="color:#f85149">高</div></div>
+              </div>
+            </div>
+            <div class="qor">
+              <div class="ptitle">擺放優化建議</div>
+              <div class="o-grid">
+                <div class="oc"><div class="ocl">建議角度</div><div class="ocv" id="qoa">35°</div></div>
+                <div class="oc"><div class="ocl">X 旋轉</div><div class="ocv" id="qox">15°</div></div>
+                <div class="oc"><div class="ocl">Y 旋轉</div><div class="ocv" id="qoy">0°</div></div>
+              </div>
+              <div class="sug-list" id="qsl"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /prep -->
+    </div>
+
+    <!-- PAGE 2,3,4 -->
+    <div class="pg" id="pg2"><div class="cs"><div class="cs-i">📋</div><div class="cs-t">歷史記錄</div><div class="cs-s">功能開發中</div></div></div>
+    <div class="pg" id="pg3"><div class="cs"><div class="cs-i">🧪</div><div class="cs-t">材料管理</div><div class="cs-s">功能開發中</div></div></div>
+    <div class="pg" id="pg4"><div class="cs"><div class="cs-i">⚙</div><div class="cs-t">設定</div><div class="cs-s">功能開發中</div></div></div>
+
+  </div><!-- /pages -->
+</div><!-- /shell -->
+
+<script>
+/* ═══════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════ */
+const allTabs=document.querySelectorAll('.tab');
+const allPgs=document.querySelectorAll('.pg');
+function goTab(i){
+  allTabs.forEach((t,j)=>t.classList.toggle('on',i===j));
+  allPgs.forEach((p,j)=>p.classList.toggle('on',i===j));
+  if(i===1)setTimeout(()=>{if(!renderer)initThree();else onResize();},80);
+}
+
+/* ═══════════════════════════════════════
+   THEME
+═══════════════════════════════════════ */
+let isDark=true;
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.classList.toggle('lm',!isDark);
+  document.getElementById('themeBtn').textContent=isDark?'🌙 暗色':'☀️ 亮色';
+  if(renderer)renderer.setClearColor(isDark?0x060a0f:0xe8edf2,1);
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+function toast(msg,type=''){
+  const t=document.createElement('div');
+  t.className='toast'+(type?' '+type:'');
+  t.textContent=msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+/* ═══════════════════════════════════════
+   PORTAL DATA + RENDER
+═══════════════════════════════════════ */
+let PORTAL={categories:[
+  {id:'int',name:'A · 內部系統',emoji:'🏢',cards:[
+    {id:'i1',title:'CRM',url:'http://192.168.100.85/WebCRM/',img:'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=70'},
+    {id:'i2',title:'EIP',url:'http://192.168.100.89/SWTCweb4.0/',img:'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=70'},
+    {id:'i3',title:'EASYFLOW',url:'http://192.168.100.85/efnet/',img:'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400&q=70'},
+    {id:'i4',title:'請假系統',url:'http://192.168.2.251/MotorWeb/',img:'https://images.unsplash.com/photo-1508385082359-f38ae991e8f2?w=400&q=70'},
+  ]},
+  {id:'off',name:'B · 官方系統',emoji:'🌐',cards:[
+    {id:'o1',title:'實威國際官網',url:'https://www.swtc.com/zh-tw/',img:'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&q=70'},
+    {id:'o2',title:'實威 YouTube',url:'https://www.youtube.com/@solidwizard',img:'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=400&q=70'},
+    {id:'o3',title:'智慧製造 YouTube',url:'https://www.youtube.com/@SWTCIM',img:'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=70'},
+    {id:'o4',title:'實威知識+',url:'https://www.youtube.com/@實威知識',img:'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&q=70'},
+  ]},
+  {id:'sw',name:'C · SOLIDWORKS',emoji:'⚙️',cards:[
+    {id:'s1',title:'SOLIDWORKS 官網',url:'https://www.solidworks.com/',img:'https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?w=400&q=70'},
+    {id:'s2',title:'MySolidWorks',url:'https://my.solidworks.com/',img:'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&q=70'},
+    {id:'s3',title:'SOLIDWORKS Forum',url:'https://forum.solidworks.com/',img:'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&q=70'},
+  ]},
+  {id:'fl',name:'C · Formlabs',emoji:'🖨️',cards:[
+    {id:'f1',title:'Formlabs 原廠',url:'https://formlabs.com/',img:'https://images.unsplash.com/photo-1581090700227-1e37b190418e?w=400&q=70'},
+    {id:'f2',title:'Formlabs Support',url:'https://support.formlabs.com/',img:'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&q=70'},
+    {id:'f3',title:'Formlabs Dashboard',url:'https://dashboard.formlabs.com/',img:'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=70'},
+  ]},
+  {id:'sc',name:'D · SCANOLOGY',emoji:'📡',cards:[
+    {id:'sc1',title:'SCANOLOGY 官網',url:'https://www.scanology.com/',img:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=70'},
+  ]},
+]};
+let isAdmin=false,srchQ='',addCatId='';
+const PASS='0000';
+
+function renderPortal(){
+  const c=document.getElementById('sectionsC');c.innerHTML='';
+  let tot=0;PORTAL.categories.forEach(cat=>tot+=cat.cards.length);
+  document.getElementById('stCat').textContent=PORTAL.categories.length;
+  document.getElementById('stLinks').textContent=tot;
+  PORTAL.categories.forEach(cat=>{
+    const f=srchQ?cat.cards.filter(c=>c.title.toLowerCase().includes(srchQ)||c.url.toLowerCase().includes(srchQ)):cat.cards;
+    if(srchQ&&!f.length)return;
+    const sec=document.createElement('div');sec.className='hw-sec';
+    sec.innerHTML=`<div class="hw-sec-h">
+      <div class="hw-sec-t"><span style="font-size:16px">${cat.emoji}</span><span class="hw-sec-name">${cat.name}</span><span class="hw-sec-cnt">${f.length} 個</span></div>
+      ${isAdmin?`<button class="btn sm prim" onclick="openAdd('${cat.id}')">➕ 新增</button>`:''}
+    </div><div class="card-grid" id="cg-${cat.id}"></div>`;
+    c.appendChild(sec);
+    const grid=document.getElementById('cg-'+cat.id);
+    f.forEach(card=>{
+      const el=document.createElement('div');el.className='lcard';
+      el.onclick=e=>{if(e.target.closest('.lcard-del'))return;window.open(card.url,'_blank');};
+      let dom='';try{dom=new URL(card.url).hostname;}catch{dom=card.url;}
+      el.innerHTML=`${card.img?`<img class="lcard-img" src="${card.img}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}<div class="lcard-ph" style="${card.img?'display:none':''}">🔗</div><div class="lcard-b"><div class="lcard-t">${card.title}</div><div class="lcard-u">${dom}</div></div>${isAdmin?`<div class="lcard-del vis" onclick="delCard('${cat.id}','${card.id}')">✕</div>`:''}`
+      grid.appendChild(el);
+    });
+    if(isAdmin&&!srchQ){const a=document.createElement('div');a.className='add-lcard';a.onclick=()=>openAdd(cat.id);a.innerHTML='<div style="font-size:22px">➕</div><div style="font-size:12px;font-weight:600">新增連結</div>';grid.appendChild(a);}
+  });
+}
+function filterCards(q){srchQ=q.trim().toLowerCase();renderPortal();}
+function requestAdmin(){if(isAdmin){exitAdmin();return;}document.getElementById('passOv').classList.add('on');document.getElementById('passInp').value='';document.getElementById('passErr').textContent='';setTimeout(()=>document.getElementById('passInp').focus(),200);}
+function closePass(){document.getElementById('passOv').classList.remove('on');}
+function verifyPass(){if(document.getElementById('passInp').value===PASS){isAdmin=true;closePass();document.getElementById('adminBar').classList.add('on');document.getElementById('adminBtn').textContent='✅ 管理中';toast('✅ 管理員模式已啟用','ok');renderPortal();}else{document.getElementById('passErr').textContent='❌ 密碼錯誤';document.getElementById('passInp').value='';document.getElementById('passInp').focus();}}
+function exitAdmin(){isAdmin=false;document.getElementById('adminBar').classList.remove('on');document.getElementById('adminBtn').textContent='🔐 管理員';toast('已退出管理員模式');renderPortal();}
+function openAdd(catId){addCatId=catId||'';const sel=document.getElementById('addCat');sel.innerHTML=PORTAL.categories.map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.emoji} ${c.name}</option>`).join('');document.getElementById('addTit').value='';document.getElementById('addUrl').value='';document.getElementById('addImg').value='';document.getElementById('addOv').classList.add('on');setTimeout(()=>document.getElementById('addTit').focus(),200);}
+function closeAdd(){document.getElementById('addOv').classList.remove('on');}
+function saveCard(){const t=document.getElementById('addTit').value.trim(),u=document.getElementById('addUrl').value.trim(),img=document.getElementById('addImg').value.trim(),cid=document.getElementById('addCat').value;if(!t||!u){toast('❌ 標題和網址為必填','err');return;}const cat=PORTAL.categories.find(c=>c.id===cid);if(!cat)return;cat.cards.push({id:'c'+Date.now(),title:t,url:u.startsWith('http')?u:'https://'+u,img:img||null});closeAdd();toast('✅ 已新增：'+t,'ok');renderPortal();}
+function delCard(cid,id){const cat=PORTAL.categories.find(c=>c.id===cid);if(!cat)return;const card=cat.cards.find(c=>c.id===id);if(!card||!confirm('確定刪除「'+card.title+'」？'))return;cat.cards=cat.cards.filter(c=>c.id!==id);toast('🗑️ 已刪除：'+card.title);renderPortal();}
+
+/* ═══════════════════════════════════════
+   3D PRINT LOGIC
+═══════════════════════════════════════ */
+const PRINTERS=[
+  {name:'Form 4',  W:200,D:125,H:210,label:'20.0×12.5×21.0 cm'},
+  {name:'Form 4L', W:353,D:196,H:350,label:'35.3×19.6×35.0 cm'},
+];
+const aMap={cosmetic:38,engineering:28,hollow:32,thin:52};
+const sgMap={
+  cosmetic:{cls:'ok',label:'外觀件：優先品質',tip:'輕支撐多點，遠離外觀面'},
+  engineering:{cls:'ok',label:'工程件：優先精度',tip:'中強度支撐，均勻佈點'},
+  hollow:{cls:'warn',label:'中空件：需開排液孔',tip:'排液孔朝下，至少 2 孔'},
+  thin:{cls:'warn',label:'薄件：側立防翹曲',tip:'50°+ 側立，加強底部支撐'}
+};
+let mtype='cosmetic',hasFile=false,printerIdx=0;
+let matPrice=3500,matDensity=1.1,rX=0,rY=0,rZ=0;
+
+function setPrinter(i){
+  printerIdx=i;
+  document.getElementById('pp0').classList.toggle('act',i===0);
+  document.getElementById('pp1').classList.toggle('act',i===1);
+  const p=PRINTERS[i];
+  document.getElementById('vpinf').textContent=p.name+' · '+p.label;
+  if(renderer&&scene)rebuildScene();
+  zoomFit();
+  pfCalc();
+}
+function onMat(){
+  const parts=document.getElementById('matSel').value.split('|');
+  matPrice=+parts[0];matDensity=+parts[1];
+  const name=document.getElementById('matSel').options[document.getElementById('matSel').selectedIndex].text;
+  document.getElementById('matB').innerHTML=`<span>單價</span> NT$ ${matPrice.toLocaleString()} / L &nbsp;·&nbsp; <span>密度</span> ${matDensity.toFixed(2)} g/cm³`;
+  pfCalc();
+}
+function setMT(el,t){document.querySelectorAll('.ttag').forEach(e=>e.classList.remove('act'));el.classList.add('act');mtype=t;pfCalc();}
+function pfTool(t){['O','S','L'].forEach(n=>document.getElementById('btn'+n).classList.toggle('act',n===t));}
+function onFile(inp){
+  if(!inp.files[0])return;
+  hasFile=true;
+  document.getElementById('dz').classList.add('has');
+  const fn=document.getElementById('fname');fn.style.display='block';fn.textContent='✓ '+inp.files[0].name;
+  document.getElementById('pfSt').textContent='模型已載入 — 點擊「一鍵優化」';
+  pfCalc();
+  if(renderer&&scene)rebuildModel();
+}
+function onSupp(v){document.getElementById('sdlbl').textContent=v+'%';document.getElementById('sdv').textContent=v+'%';pfCalc();}
+function pfCalc(){
+  const x=+document.getElementById('sx').value||50;
+  const y=+document.getElementById('sy').value||30;
+  const z=+document.getElementById('sz').value||40;
+  const layer=+document.getElementById('lt').value;
+  const supp=+document.getElementById('sd').value;
+  const qty=+document.getElementById('qty').value||1;
+  const ang=aMap[mtype]||35;
+  const volCm3=x*y*z*0.001;
+  const volMl=volCm3*0.28*(1+supp/100)*qty;
+  const weightG=volMl*matDensity;
+  const cost=Math.round(volMl*matPrice/1000);
+  const layers=Math.ceil(z/layer);
+  const time=+(layers*0.009/60+0.5).toFixed(1);
+  const succ=Math.min(97,Math.max(52,90-(supp>35?8:0)+(ang>=30&&ang<=45?5:0)));
+  const f=hasFile;
+  document.getElementById('jiVol').textContent=f?volCm3.toFixed(2)+' cm³':'—';
+  document.getElementById('jiWt').textContent=f?weightG.toFixed(1)+' g':'—';
+  document.getElementById('jiTime').textContent=f?time+' hrs':'—';
+  document.getElementById('jiCost').textContent=f?'NT$ '+cost.toLocaleString():'—';
+  const js=document.getElementById('jiSucc');js.textContent=f?succ+'%':'—';
+  js.className='jsv '+(succ>=88?'g':succ>=70?'y':'r');
+  document.getElementById('jiPct').textContent=f?succ+'%':'—';
+  document.getElementById('bfill').style.width=f?succ+'%':'0';
+  document.getElementById('bfill').style.background=succ>=88?'var(--green)':succ>=70?'var(--yellow)':'var(--red)';
+  document.getElementById('oa').textContent=ang+'°';document.getElementById('oX').textContent=(ang>40?20:15)+'°';document.getElementById('oY').textContent='0°';
+  document.getElementById('oSt').textContent=mtype==='engineering'?'中':mtype==='hollow'?'中強':'輕';
+  document.getElementById('qv0').textContent=f?time:'—';document.getElementById('qv1').textContent=f?volMl.toFixed(1):'—';document.getElementById('qv2').textContent=f?cost.toLocaleString():'—';
+  const v3=document.getElementById('qv3'),rk=document.getElementById('qrk');
+  v3.textContent=f?succ+'%':'—';
+  if(!f){v3.className='mcv cw';rk.textContent='—';}
+  else if(succ>=88){v3.className='mcv cg';rk.textContent='低風險';}
+  else if(succ>=70){v3.className='mcv cy';rk.textContent='中風險';}
+  else{v3.className='mcv cr';rk.textContent='高風險';}
+  document.getElementById('qoa').textContent=ang+'°';document.getElementById('qox').textContent=(ang>40?20:15)+'°';document.getElementById('qoy').textContent='0°';
+  const hd=document.getElementById('hmD');const isH=mtype==='hollow';
+  hd.style.background=isH?'#2d0000':'#0d1433';hd.querySelector('.hbn').style.color=isH?'#f85149':'#60a5fa';hd.querySelector('.hbs').style.color=isH?'#f85149':'#60a5fa';hd.querySelector('.hbs').textContent=isH?'高':'低';
+  const sg=sgMap[mtype];const txt=`<div class="sug ${sg.cls}"><b>模型策略</b>${sg.label}：${sg.tip}</div><div class="sug ok"><b>擺放角度</b>建議 ${ang}° 斜放，降低 FEP 剝離力</div><div class="sug ok"><b>支撐位置</b>底部＋背面（非視覺面）</div><div class="sug warn"><b>額外旋轉</b>X 軸加旋 10°–20°，避免截面平行 FEP</div>${isH?'<div class="sug err"><b>⚠ 中空警告</b>至少 2 個排液孔，孔口朝下</div>':''}<div class="sug ok"><b>優先策略</b>成功率 › 品質 › 速度</div>`;
+  document.getElementById('sugList').innerHTML=txt;document.getElementById('qsl').innerHTML=txt;
+  if(renderer&&scene)rebuildModel();
+}
+function oneClick(){if(!hasFile){document.getElementById('pfSt').textContent='⚠ 請先上傳模型';return;}const ang=aMap[mtype]||35;document.getElementById('rx').value=ang;rX=ang;document.getElementById('ry').value=15;rY=15;document.getElementById('rz').value=0;rZ=0;document.getElementById('pfSt').textContent='✓ 已自動優化擺放角度';pfCalc();}
+function autoSupp(){document.getElementById('pfSt').textContent=hasFile?'✓ 支撐已自動生成':'⚠ 請先上傳模型';}
+function resetRot(){['rx','ry','rz'].forEach(id=>document.getElementById(id).value=0);rX=rY=rZ=0;pfCalc();}
+function onRot(){rX=+document.getElementById('rx').value||0;rY=+document.getElementById('ry').value||0;rZ=+document.getElementById('rz').value||0;if(renderer&&scene)rebuildModel();}
+function stepR(id,d){const el=document.getElementById(id);el.value=Math.max(-180,Math.min(180,(+el.value||0)+d));onRot();}
+
+/* ═══════════════════════════════════════
+   THREE.JS ENGINE
+   Right-drag = Orbit | Middle-drag = Pan | Wheel = Zoom
+═══════════════════════════════════════ */
+let THREE=null,renderer=null,scene=null,camera=null,modelG=null;
+let camMode='persp',camO={th:-0.55,ph:1.05,r:600,tx:0,ty:15,tz:0};
+let ms={dn:false,btn:-1,lx:0,ly:0};
+
+function initThree(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload=()=>{THREE=window.THREE;setupScene();};
+  document.head.appendChild(s);
+}
+
+function setupScene(){
+  const vp=document.getElementById('vp3d');
+  if(!vp)return;
+  const W=vp.clientWidth||600,H=vp.clientHeight||320;
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.setClearColor(isDark?0x060a0f:0xe8edf2,1);
+  renderer.shadowMap.enabled=true;
+  vp.appendChild(renderer.domElement);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,W/H,1,8000);
+  addLights();
+  updateCam();
+  rebuildScene();
+  // Mouse controls
+  const el=renderer.domElement;
+  el.addEventListener('mousedown',e=>{ms.dn=true;ms.btn=e.button;ms.lx=e.clientX;ms.ly=e.clientY;e.preventDefault();},{passive:false});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+  window.addEventListener('mouseup',()=>{ms.dn=false;ms.btn=-1;});
+  window.addEventListener('mousemove',onMM);
+  el.addEventListener('wheel',onWhl,{passive:false});
+  window.addEventListener('resize',onResize);
+  animate();
+}
+function addLights(){
+  scene.add(new THREE.AmbientLight(0xffffff,0.5));
+  const d=new THREE.DirectionalLight(0xffffff,0.85);d.position.set(300,500,400);d.castShadow=true;scene.add(d);
+  const d2=new THREE.DirectionalLight(0x6699ff,0.25);d2.position.set(-300,-100,-300);scene.add(d2);
+}
+function onMM(e){
+  if(!ms.dn||!camera)return;
+  const dx=e.clientX-ms.lx,dy=e.clientY-ms.ly;ms.lx=e.clientX;ms.ly=e.clientY;
+  if(ms.btn===2){// right = orbit
+    camO.th-=dx*0.007;camO.ph=Math.max(0.05,Math.min(Math.PI*.95,camO.ph-dy*0.007));
+  }else if(ms.btn===1){// middle = pan
+    const spd=camO.r*0.0012;
+    const right=new THREE.Vector3();camera.getWorldDirection(new THREE.Vector3());
+    right.crossVectors(camera.getWorldDirection(new THREE.Vector3()),camera.up).normalize();
+    camO.tx-=right.x*dx*spd;camO.ty+=dy*spd;camO.tz-=right.z*dx*spd;
+  }
+  updateCam();
+}
+function onWhl(e){e.preventDefault();camO.r=Math.max(60,Math.min(3000,camO.r*(e.deltaY>0?1.1:0.9)));updateCam();}
+function updateCam(){
+  if(!camera)return;
+  if(camMode==='top'){camera.position.set(camO.tx,camO.ty+camO.r,camO.tz+.01);camera.up.set(0,0,-1);}
+  else if(camMode==='front'){camera.position.set(camO.tx,camO.ty,camO.tz+camO.r);camera.up.set(0,1,0);}
+  else if(camMode==='side'){camera.position.set(camO.tx+camO.r,camO.ty,camO.tz);camera.up.set(0,1,0);}
+  else{const s=Math.sin(camO.ph);camera.position.set(camO.tx+camO.r*s*Math.sin(camO.th),camO.ty+camO.r*Math.cos(camO.ph),camO.tz+camO.r*s*Math.cos(camO.th));camera.up.set(0,1,0);}
+  camera.lookAt(camO.tx,camO.ty,camO.tz);
+}
+function rebuildScene(){
+  if(!THREE||!scene)return;
+  while(scene.children.length)scene.remove(scene.children[0]);
+  addLights();buildPlatform();rebuildModel();buildAxes();
+}
+function buildPlatform(){
+  const p=PRINTERS[printerIdx];const W=p.W,D=p.D,H=p.H,base=-H/2;
+  // Grid
+  const gm=new THREE.LineBasicMaterial({color:0x1e2a5e,transparent:true,opacity:.8});
+  const gW=W*1.5,gD=D*1.5,cols=24,rows=16;
+  for(let i=0;i<=cols;i++){const x=-gW/2+i*(gW/cols);const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,base,-gD/2),new THREE.Vector3(x,base,gD/2)]);scene.add(new THREE.Line(g,gm));}
+  for(let i=0;i<=rows;i++){const z=-gD/2+i*(gD/rows);const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-gW/2,base,z),new THREE.Vector3(gW/2,base,z)]);scene.add(new THREE.Line(g,gm));}
+  // Platform slab
+  const slab=new THREE.Mesh(new THREE.BoxGeometry(W,5,D),new THREE.MeshLambertMaterial({color:0x0d1433,transparent:true,opacity:.9}));
+  slab.position.y=base-2.5;slab.receiveShadow=true;scene.add(slab);
+  // Green border
+  const bdr=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W,1,D)),new THREE.LineBasicMaterial({color:0x2563EB,linewidth:2}));
+  bdr.position.y=base;scene.add(bdr);
+  // Volume box
+  const vbox=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W,H,D)),new THREE.LineBasicMaterial({color:0x1e2a5e,transparent:true,opacity:.4}));
+  scene.add(vbox);
+  // Corner pillars
+  [[W/2,D/2],[-W/2,D/2],[W/2,-D/2],[-W/2,-D/2]].forEach(([px,pz])=>{
+    const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,base,pz),new THREE.Vector3(px,H/2,pz)]);
+    scene.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0x2563EB30,transparent:true,opacity:.25})));
+  });
+  // Label
+  const lc=document.createElement('canvas');lc.width=512;lc.height=64;
+  const lx=lc.getContext('2d');lx.font='bold 20px Arial';lx.fillStyle='rgba(37,99,235,.85)';lx.textAlign='center';lx.fillText(p.name+' · '+p.label,256,40);
+  const lsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(lc),transparent:true}));
+  lsp.scale.set(180,22,1);lsp.position.set(0,base-18,0);scene.add(lsp);
+}
+function rebuildModel(){
+  if(!THREE||!scene)return;
+  if(modelG){scene.remove(modelG);modelG=null;}
+  if(!hasFile)return;
+  const p=PRINTERS[printerIdx];
+  const mx=+document.getElementById('sx').value||50;
+  const my=+document.getElementById('sy').value||30;
+  const mz=+document.getElementById('sz').value||40;
+  const supp=+document.getElementById('sd').value/100;
+  modelG=new THREE.Group();
+  // Model
+  const geom=new THREE.BoxGeometry(mx,mz,my);
+  const mesh=new THREE.Mesh(geom,new THREE.MeshPhongMaterial({color:0x2255aa,transparent:true,opacity:.8,shininess:70,specular:0x334466}));
+  mesh.position.y=-p.H/2+mz/2+3;mesh.rotation.x=rX*Math.PI/180;mesh.rotation.y=rY*Math.PI/180;mesh.rotation.z=rZ*Math.PI/180;
+  mesh.castShadow=true;modelG.add(mesh);
+  // Wireframe
+  const wf=new THREE.LineSegments(new THREE.EdgesGeometry(geom),new THREE.LineBasicMaterial({color:0x58a6ff,transparent:true,opacity:.9}));
+  wf.position.copy(mesh.position);wf.rotation.copy(mesh.rotation);modelG.add(wf);
+  // Top green face
+  const tf=new THREE.Mesh(new THREE.PlaneGeometry(mx,my),new THREE.MeshBasicMaterial({color:0x2563EB,transparent:true,opacity:.2,side:THREE.DoubleSide}));
+  tf.position.set(0,mesh.position.y+mz/2+.5,0);tf.rotation.x=-Math.PI/2;modelG.add(tf);
+  // Supports
+  const n=Math.max(4,Math.round(4+supp*8));const sh=25+supp*15;
+  for(let i=0;i<n;i++){
+    const sx=(-mx/2+mx/(n-1)*i);
+    const sm=new THREE.Mesh(new THREE.CylinderGeometry(.8,1.4,sh,6),new THREE.MeshLambertMaterial({color:0x1e3a8a,transparent:true,opacity:.7}));
+    sm.position.set(sx,mesh.position.y-mz/2-sh/2+1,-my/4);modelG.add(sm);
+    const tp=new THREE.Mesh(new THREE.SphereGeometry(2,8,8),new THREE.MeshLambertMaterial({color:0x2563EB}));
+    tp.position.set(sx,mesh.position.y-mz/2+1,-my/4);modelG.add(tp);
+  }
+  // Vol label
+  const vc=document.createElement('canvas');vc.width=256;vc.height=48;
+  const vx=vc.getContext('2d');vx.font='bold 16px Arial';vx.fillStyle='rgba(63,185,80,1)';vx.textAlign='center';
+  vx.fillText((mx*my*mz*.001*.28).toFixed(1)+' cm³',128,32);
+  const vsp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(vc),transparent:true}));
+  vsp.scale.set(80,15,1);vsp.position.set(0,mesh.position.y+mz/2+20,0);modelG.add(vsp);
+  scene.add(modelG);
+}
+function buildAxes(){const a=new THREE.AxesHelper(50);const p=PRINTERS[printerIdx];a.position.set(-p.W/2-20,-p.H/2,-p.D/2-20);scene.add(a);}
+function animate(){if(!renderer)return;requestAnimationFrame(animate);renderer.render(scene,camera);}
+function setCam(mode,el){
+  camMode=mode;document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('act'));if(el)el.classList.add('act');
+  if(mode==='top'){camO.th=0;camO.ph=0.01;camO.r=700;}
+  else if(mode==='front'){camO.th=0;camO.ph=Math.PI/2;camO.r=650;}
+  else if(mode==='side'){camO.th=Math.PI/2;camO.ph=Math.PI/2;camO.r=650;}
+  else{camO.th=-0.55;camO.ph=1.05;camO.r=600;}
+  updateCam();
+}
+function zoomFit(){const p=PRINTERS[printerIdx];camO.r=Math.max(p.W,p.D,p.H)*2.4;camO.tx=0;camO.ty=0;camO.tz=0;updateCam();}
+function resetCam(){camO={th:-0.55,ph:1.05,r:600,tx:0,ty:15,tz:0};camMode='persp';document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('act'));document.getElementById('vbP').classList.add('act');updateCam();}
+function onResize(){if(!renderer||!camera)return;const vp=document.getElementById('vp3d');if(!vp)return;const W=vp.clientWidth,H=vp.clientHeight;if(!W||!H)return;renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
+
+/* ═══════════════════════════════════════
+   MODAL CLOSE ON OVERLAY
+═══════════════════════════════════════ */
+document.getElementById('passOv').addEventListener('click',e=>{if(e.target===document.getElementById('passOv'))closePass();});
+document.getElementById('passInp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyPass();});
+document.getElementById('addOv').addEventListener('click',e=>{if(e.target===document.getElementById('addOv'))closeAdd();});
+
+/* ═══════════════════════════════════════
+   TIME + INIT
+═══════════════════════════════════════ */
+function tick(){const n=new Date();document.getElementById('stTime').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
+tick();setInterval(tick,60000);
+renderPortal();
+pfCalc();
+</script>
+</body>
+</html>

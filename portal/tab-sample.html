@@ -10,6 +10,19 @@ body.lm{--bg0:#f4f5f8;--bg1:#fff;--bg2:#f6f8fa;--bg3:#e1e4e8;--bd:#d0d7de;--bd2:
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans','Noto Sans TC',sans-serif;color:var(--t1);background:var(--bg0);min-height:100vh;overflow-y:auto}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+/* topbar */
+#topbar{background:var(--bg1);border-bottom:1px solid var(--bd);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100}
+.logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px}
+.logo-box{width:28px;height:28px;background:var(--ac);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-sep{width:1px;height:14px;background:var(--bd2)}.logo-sub{font-size:11px;color:var(--t2)}
+.tr{display:flex;align-items:center;gap:8px}
+.tbtn{background:var(--bg2);border:1px solid var(--bd);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:13px;color:var(--t2);font-family:inherit;transition:.15s}.tbtn:hover{color:var(--t1)}
+.vbg{font-size:10px;color:var(--t3);background:var(--bg2);border:1px solid var(--bd);padding:3px 8px;border-radius:4px}
+/* navtab */
+#navtab{background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;padding:0 16px;overflow-x:auto;position:sticky;top:52px;z-index:99}
+.ntab{padding:12px 16px;font-size:13px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:color .15s;user-select:none;font-weight:500}
+.ntab:hover{color:var(--t1)}.ntab.on{color:var(--t1);border-bottom-color:var(--ac)}
+.sbg{font-size:9px;background:var(--bg3);color:var(--t2);padding:1px 5px;border-radius:3px}
 
 /* ── Title (scrollable, centered) ── */
 .stitle{text-align:center;padding:24px 22px 18px;border-bottom:1px solid var(--bd)}
@@ -152,6 +165,27 @@ select.bs{flex:1;min-width:75px;padding:5px 7px;border-radius:5px;border:1px sol
 </head>
 <body>
 <div id="toasts"></div>
+
+<!-- ── Topbar ── -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-box">🖨</div>實威國際
+    <div class="logo-sep"></div>
+    <span class="logo-sub">3D Print Studio</span>
+  </div>
+  <div class="tr">
+    <button class="tbtn" onclick="toggleTheme()" id="themeBtn">🌙 暗色</button>
+    <span class="vbg">v1.0</span>
+  </div>
+</div>
+
+<!-- ── Navtab ── -->
+<div id="navtab">
+  <div class="ntab" onclick="location.href='tab-home.html'">🏠 首頁</div>
+  <div class="ntab" onclick="location.href='tab-daily.html'">📰 每日焦點</div>
+  <div class="ntab on">📦 3D列印</div>
+  <div class="ntab" style="pointer-events:none;opacity:.4">📋 歷史記錄 <span class="sbg">Soon</span></div>
+</div>
 
 <!-- ── Title (scrollable, centered) ── -->
 <div class="stitle">
@@ -388,8 +422,8 @@ function rmB(i){borrowers.splice(i,1);drawBL();}
 function toggleAdmin(){isAdm=!isAdm;document.body.classList.toggle('adm',isAdm);$('abt').textContent=isAdm?'🔓 管理員（開啟中）':'🔐 管理員';$('abt').classList.toggle('on',isAdm);$('acb').style.display=isAdm?'inline-flex':'none';toast(isAdm?'🔓 管理員模式已啟用':'🔒 管理員模式已關閉',isAdm?'ok':'');}
 
 /* Theme */
-function toggleTheme(){document.body.classList.toggle('lm');localStorage.setItem('sw_theme_v9',!document.body.classList.contains('lm')?'dark':'light');}
-(()=>{if(localStorage.getItem('sw_theme_v9')==='light')document.body.classList.add('lm');})();
+function toggleTheme(){document.body.classList.toggle('lm');const d=!document.body.classList.contains('lm');document.getElementById('themeBtn').textContent=d?'🌙 暗色':'☀️ 亮色';localStorage.setItem('sw_theme_v9',d?'dark':'light');}
+(()=>{if(localStorage.getItem('sw_theme_v9')==='light'){document.body.classList.add('lm');const b=document.getElementById('themeBtn');if(b)b.textContent='☀️ 亮色';}})();
 
 /* Toast */
 function toast(msg,type=''){const t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3000);}

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>實威國際 3D列印樣品管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --bg: #eef0f5;
+    --bg2: #e2e5ed;
+    --surface: #ffffff;
+    --border: #d4d8e2;
+    --text-primary: #1c2333;
+    --text-secondary: #5a6278;
+    --text-muted: #9aa0b4;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent2: #f59e0b;
+    --tag-out: #ef4444;
+    --tag-in: #22c55e;
+    --shadow: 0 1px 6px rgba(28,35,51,0.07);
+    --shadow-hover: 0 6px 24px rgba(28,35,51,0.13);
+    --radius: 14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; padding-bottom: 80px; }
+
+  /* ══ HERO HEADER (centered, like reference) ══ */
+  .hero {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 40px 24px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(28,35,51,0.06);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .hero-sub {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 500;
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;
+  }
+  .hero-sub::before, .hero-sub::after { content:''; display:inline-block; width:28px; height:1px; background:var(--border); }
+  .hero-title { font-size: 42px; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; color: var(--text-primary); }
+  .hero-title .highlight { color: var(--accent); }
+  .hero-desc { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+  .hero-meta {
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; flex-wrap: wrap;
+  }
+  .meta-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 14px; border-radius: 20px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 12px; color: var(--text-secondary); font-weight: 500;
+  }
+  .dot-live { width:7px; height:7px; border-radius:50%; background:var(--tag-in); animation:pulse 1.6s infinite; display:inline-block; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+  .hero-actions {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    margin-top: 12px; flex-wrap: wrap;
+  }
+
+  /* ══ BUTTONS ══ */
+  .btn {
+    font-family: 'Noto Sans TC', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+  .btn-ghost { background: var(--bg); color: var(--text-primary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg2); }
+  .btn-warning { background: var(--accent2); color: #fff; }
+  .btn-warning:hover { background: #d97706; }
+  .btn-danger { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-admin-toggle { background: #1c2333; color: #fff; border-radius: 8px; }
+  .btn-admin-toggle:hover { background: #2d3748; }
+  .btn-admin-toggle.active { background: var(--accent); }
+
+  /* ══ MAIN ══ */
+  .main-container { max-width: 1160px; margin: 0 auto; padding: 0 28px; }
+
+  /* Tab Bar */
+  .tab-bar-wrap { padding: 24px 0 0; overflow-x: auto; }
+  .tab-bar { display: flex; min-width: max-content; border-bottom: 2px solid var(--border); }
+  .tab-btn {
+    font-family: 'Noto Sans TC', sans-serif; font-weight: 600; font-size: 14px;
+    padding: 10px 22px; border-radius: 8px 8px 0 0; border: none;
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    transition: all 0.15s; display: flex; align-items: center; gap: 7px;
+    white-space: nowrap; position: relative; bottom: -2px;
+  }
+  .tab-btn:hover { color: var(--accent); background: #f0f4ff; }
+  .tab-btn.active {
+    background: var(--surface); color: var(--accent);
+    border: 2px solid var(--border); border-bottom: 2px solid var(--surface); font-weight: 700;
+  }
+  .tab-count { font-size: 11px; background: var(--bg2); color: var(--text-muted); border-radius: 10px; padding: 1px 8px; font-weight: 400; }
+  .tab-btn.active .tab-count { background: #dbeafe; color: var(--accent); }
+
+  /* Stats Bar */
+  .stats-bar { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 22px; display: flex; align-items: center; gap: 14px;
+    box-shadow: var(--shadow); min-width: 140px;
+  }
+  .stat-icon { font-size: 26px; }
+  .stat-num { font-size: 28px; font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; }
+  .stat-card.out .stat-num { color: var(--tag-out); }
+  .stat-card.in .stat-num { color: var(--tag-in); }
+  .stat-card.total .stat-num { color: var(--accent); }
+
+  /* Admin Toolbar */
+  .admin-toolbar {
+    display: none; margin-top: 16px; padding: 12px 16px;
+    background: #fef9ec; border: 1.5px dashed var(--accent2);
+    border-radius: var(--radius); align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  body.admin-mode .admin-toolbar { display: flex; }
+  .admin-toolbar-label { font-size: 12px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ══ CARD GRID ══ */
+  .card-grid { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 20px; }
+
+  .sample-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; box-shadow: var(--shadow); transition: box-shadow 0.2s, transform 0.2s;
+    display: flex; flex-direction: column;
+  }
+  .sample-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+
+  /* ── Square image ── */
+  .card-img-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* square */
+    background: var(--bg2);
+    overflow: hidden;
+  }
+  .card-img-wrap img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  }
+  .card-img-placeholder {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; opacity: 0.18;
+  }
+  .card-img-upload-btn {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; cursor: pointer;
+    display: none; align-items: center; gap: 4px; font-family: 'Noto Sans TC', sans-serif;
+  }
+  body.admin-mode .card-img-upload-btn { display: flex; }
+
+  .status-badge {
+    position: absolute; top: 10px; left: 10px; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #fff;
+  }
+  .status-badge.borrowed { background: var(--tag-out); }
+  .status-badge.available { background: var(--tag-in); }
+
+  .card-body { padding: 14px 16px 10px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+  .card-meta { display: flex; flex-direction: column; gap: 4px; }
+  .meta-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .meta-label { font-weight: 700; color: var(--text-muted); min-width: 52px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .meta-val { color: var(--text-primary); font-weight: 500; }
+  .card-note { background: #f8faff; border-left: 3px solid #dbeafe; border-radius: 0 6px 6px 0; padding: 7px 11px; font-size: 11px; color: var(--text-secondary); font-style: italic; }
+
+  .admin-panel { display: none; border-top: 1.5px dashed var(--border); margin-top: 8px; padding-top: 10px; }
+  body.admin-mode .admin-panel { display: block; }
+  .admin-panel label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px; }
+  .admin-panel input[type="text"] {
+    width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border);
+    font-size: 12px; margin-bottom: 6px; font-family: 'Noto Sans TC', sans-serif; background: var(--bg);
+  }
+
+  .card-footer { padding: 10px 16px 14px; border-top: 1px solid var(--bg2); }
+  .action-borrow, .action-return { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .borrower-select {
+    flex: 1; min-width: 80px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border);
+    font-family: 'Noto Sans TC', sans-serif; font-size: 12px;
+    background: var(--bg); color: var(--text-primary); outline: none; cursor: pointer;
+  }
+  .date-input-wrap { position: relative; }
+  .date-input-wrap input[type="text"] {
+    padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border);
+    font-family: 'Noto Sans TC', sans-serif; font-size: 12px;
+    background: var(--bg); color: var(--text-primary); outline: none; cursor: pointer; width: 112px;
+  }
+
+  /* Date Picker */
+  #shared-datepicker {
+    display: none; position: fixed; z-index: 400;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-hover); padding: 14px; min-width: 250px;
+  }
+  #shared-datepicker.open { display: block; }
+  .dp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .dp-header button { background: none; border: none; cursor: pointer; font-size: 15px; color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; }
+  .dp-header button:hover { background: var(--bg2); }
+  .dp-month-label { font-weight: 700; font-size: 13px; }
+  .dp-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; text-align: center; }
+  .dp-day-label { font-size: 9px; color: var(--text-muted); padding: 4px 0; font-weight: 700; }
+  .dp-day { font-size: 12px; padding: 5px 0; border-radius: 6px; cursor: pointer; transition: background 0.1s; }
+  .dp-day:hover { background: var(--bg2); }
+  .dp-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
+  .dp-day.empty { cursor: default; }
+
+  /* ══ ANALYTICS ══ */
+  .analytics-section { margin-top: 52px; padding-top: 36px; border-top: 2px solid var(--border); }
+  .section-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .section-title { font-size: 20px; font-weight: 900; }
+  .section-title span { color: var(--accent); }
+
+  /* Mini stat pills in analytics */
+  .analytics-pills { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .an-pill {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
+  }
+  .an-num { font-size: 22px; font-weight: 900; line-height: 1; }
+  .an-sub { font-size: 10px; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .an-pill.ap-out { border-color: #fca5a5; background: #fff5f5; }
+  .an-pill.ap-out .an-num { color: var(--tag-out); }
+  .an-pill.ap-out .an-sub { color: var(--tag-out); }
+  .an-pill.ap-in { border-color: #86efac; background: #f0fff4; }
+  .an-pill.ap-in .an-num { color: var(--tag-in); }
+  .an-pill.ap-in .an-sub { color: var(--tag-in); }
+
+  .sort-toggle { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sort-btn {
+    padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px; font-family: 'Noto Sans TC', sans-serif;
+    cursor: pointer; transition: all 0.12s; color: var(--text-secondary); font-weight: 500;
+  }
+  .sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .analytics-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 28px; }
+  .at-header {
+    display: grid; grid-template-columns: 2fr 1.5fr 1.2fr 0.7fr 1.3fr;
+    background: var(--text-primary); color: #fff;
+    padding: 12px 18px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+  }
+  .at-row {
+    display: grid; grid-template-columns: 2fr 1.5fr 1.2fr 0.7fr 1.3fr;
+    padding: 12px 18px; border-bottom: 1px solid var(--bg2); font-size: 12px;
+    align-items: center; transition: background 0.1s;
+  }
+  .at-row:last-child { border-bottom: none; }
+  .at-row:hover { background: #f0f4ff; }
+  .at-name { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .at-badge { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .at-badge.badge-person { background: #dbeafe; color: var(--accent); }
+  .at-badge.badge-item { background: #fef3c7; color: #92400e; }
+  .at-badge.badge-out { background: #fee2e2; color: var(--tag-out); }
+  .at-badge.badge-in { background: #dcfce7; color: #15803d; }
+  .bar-wrap { background: var(--bg2); border-radius: 4px; height: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-fill.fill-blue { background: var(--accent); }
+  .bar-fill.fill-red { background: var(--tag-out); }
+  .bar-fill.fill-green { background: var(--tag-in); }
+
+  /* ══ MODALS ══ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(28,35,51,0.45); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 28px; min-width: 360px; max-width: 90vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(28,35,51,0.22);
+  }
+  .modal-title { font-size: 18px; font-weight: 900; margin-bottom: 18px; }
+  .modal label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px; margin-top: 12px; }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal input[type="text"], .modal textarea {
+    width: 100%; padding: 9px 12px; border-radius: 7px; border: 1px solid var(--border);
+    font-size: 13px; font-family: 'Noto Sans TC', sans-serif; background: var(--bg); outline: none;
+  }
+  .modal input[type="text"]:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal textarea { min-height: 70px; resize: vertical; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .borrower-list-edit { max-height: 180px; overflow-y: auto; margin-bottom: 12px; }
+  .borrower-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 7px; font-size: 12px; background: var(--bg2); margin-bottom: 5px; }
+  .remove-btn { cursor: pointer; color: var(--tag-out); font-size: 15px; line-height: 1; }
+
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--text-primary); color: #fff;
+    padding: 11px 22px; border-radius: 8px; font-size: 13px;
+    z-index: 1000; opacity: 0; transform: translateY(8px);
+    transition: all 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .empty-panel { padding: 60px 0; text-align: center; color: var(--text-muted); }
+  .empty-panel .ep-icon { font-size: 44px; margin-bottom: 12px; }
+  .empty-panel .ep-title { font-size: 18px; font-weight: 700; }
+  .empty-panel .ep-sub { font-size: 13px; margin-top: 6px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 20px 16px 16px; }
+    .hero-title { font-size: 28px; }
+    .main-container { padding: 0 12px; }
+    .at-header, .at-row { grid-template-columns: 2fr 1fr 1fr; }
+    .at-header > *:nth-child(4), .at-header > *:nth-child(5),
+    .at-row > *:nth-child(4), .at-row > *:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ HERO HEADER (centered) ══ -->
+<header class="hero">
+  <div class="hero-sub">SOLIDWIZARD</div>
+  <div class="hero-title">實威國際<span class="highlight">3D列印</span></div>
+  <div class="hero-desc">統一管理所有 3D 列印樣品借用紀錄</div>
+
+  <div class="hero-meta">
+    <div class="meta-chip">📁 分類 <b>3</b></div>
+    <div class="meta-chip">🔗 樣品 <b id="chip-num">6</b></div>
+    <div class="meta-chip">🕐 <b id="chip-clock">--:--</b></div>
+    <div class="meta-chip"><span class="dot-live"></span> 線上</div>
+  </div>
+
+  <div class="hero-actions">
+    <div class="meta-chip" id="last-sync-chip">● 已同步 GitHub</div>
+    <button class="btn btn-warning" onclick="toggleAdmin()" id="admin-toggle">🔐 管理員</button>
+    <button class="btn btn-primary" id="add-card-btn" onclick="openAddCardModal()" style="display:none">▶ 新增樣品</button>
+  </div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<div class="main-container">
+
+  <div class="tab-bar-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('samples',this)">📦 3D列印樣品 <span class="tab-count" id="tab-count-samples">6</span></button>
+      <button class="tab-btn" onclick="switchTab('quote',this)">💰 3D列印估價 <span class="tab-count">─</span></button>
+      <button class="tab-btn" onclick="switchTab('test',this)">🧪 TEST <span class="tab-count">─</span></button>
+    </div>
+  </div>
+
+  <!-- Panel: samples -->
+  <div id="panel-samples" class="tab-panel active">
+
+    <div class="stats-bar">
+      <div class="stat-card out"><div class="stat-icon">📤</div><div><div class="stat-num" id="stat-borrowed">0</div><div class="stat-label">借出中</div></div></div>
+      <div class="stat-card in"><div class="stat-icon">📥</div><div><div class="stat-num" id="stat-available">0</div><div class="stat-label">在庫</div></div></div>
+      <div class="stat-card total"><div class="stat-icon">📦</div><div><div class="stat-num" id="stat-total">0</div><div class="stat-label">總計</div></div></div>
+    </div>
+
+    <div class="admin-toolbar">
+      <span class="admin-toolbar-label">🔓 管理員模式</span>
+      <button class="btn btn-warning" onclick="openAddCardModal()">＋ 新增樣品卡片</button>
+      <button class="btn btn-ghost" onclick="openBorrowerModal()">👤 管理借用人名單</button>
+    </div>
+
+    <div class="card-grid" id="card-grid"></div>
+
+    <!-- ── Analytics: 依人員 / 依樣品 ── -->
+    <div class="analytics-section">
+      <div class="section-header">
+        <div class="section-title">借用<span> 統計分析</span></div>
+        <div class="sort-toggle">
+          <button class="sort-btn active" onclick="sortAnalytics('person',this)">依人員</button>
+          <button class="sort-btn" onclick="sortAnalytics('item',this)">依樣品</button>
+        </div>
+      </div>
+      <div class="analytics-pills">
+        <div class="an-pill ap-out"><span style="font-size:22px">📤</span><div><div class="an-num" id="an-borrowed">0</div><div class="an-sub">借出中</div></div></div>
+        <div class="an-pill ap-in"><span style="font-size:22px">📥</span><div><div class="an-num" id="an-available">0</div><div class="an-sub">在庫</div></div></div>
+      </div>
+      <div class="analytics-table">
+        <div class="at-header"><div>名稱</div><div>相關樣品／人員</div><div>最近借用</div><div>次數</div><div>使用頻率</div></div>
+        <div id="analytics-body"></div>
+      </div>
+    </div>
+
+    <!-- ── Analytics: 依借出狀態 ── -->
+    <div class="analytics-section">
+      <div class="section-header">
+        <div class="section-title">目前<span> 借出狀態</span></div>
+      </div>
+      <div class="analytics-table">
+        <div class="at-header" style="grid-template-columns:2fr 1.5fr 1.5fr 1fr 1.2fr">
+          <div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>狀態</div><div>借用天數</div>
+        </div>
+        <div id="borrow-status-body"></div>
+      </div>
+    </div>
+
+    <!-- ── Analytics: 依歸還狀態 ── -->
+    <div class="analytics-section">
+      <div class="section-header">
+        <div class="section-title">歸還<span> 歷史紀錄</span></div>
+      </div>
+      <div class="analytics-table">
+        <div class="at-header" style="grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr">
+          <div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>歸還日期</div><div>借用天數</div>
+        </div>
+        <div id="return-status-body"></div>
+      </div>
+    </div>
+
+  </div><!-- /panel-samples -->
+
+  <div id="panel-quote" class="tab-panel">
+    <div class="empty-panel"><div class="ep-icon">💰</div><div class="ep-title">3D列印估價</div><div class="ep-sub">此功能開發中，敬請期待</div></div>
+  </div>
+  <div id="panel-test" class="tab-panel">
+    <div class="empty-panel"><div class="ep-icon">🧪</div><div class="ep-title">TEST 測試區</div><div class="ep-sub">測試用頁面</div></div>
+  </div>
+
+</div><!-- /main-container -->
+
+<!-- MODAL: Borrower -->
+<div class="modal-overlay" id="borrower-modal">
+  <div class="modal">
+    <div class="modal-title">👤 管理借用人名單</div>
+    <div class="borrower-list-edit" id="borrower-list-edit"></div>
+    <label>新增借用人</label>
+    <input type="text" id="new-borrower-input" placeholder="輸入姓名...">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBorrowerModal()">關閉</button>
+      <button class="btn btn-primary" onclick="addBorrower()">＋ 新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Card -->
+<div class="modal-overlay" id="add-card-modal">
+  <div class="modal">
+    <div class="modal-title">➕ 新增樣品卡片</div>
+    <label>樣品名稱 *</label>
+    <input type="text" id="nc-name" placeholder="例：FDM 齒輪組">
+    <label>摘要描述</label>
+    <textarea id="nc-desc" placeholder="簡短說明此樣品特性..."></textarea>
+    <label>備註</label>
+    <input type="text" id="nc-note" placeholder="選填備註...">
+    <label>圖片上傳（選填）</label>
+    <input type="file" id="nc-image" accept="image/*" style="font-size:12px;padding:8px 0;width:100%">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddCardModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmAddCard()">確認新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shared Date Picker -->
+<div id="shared-datepicker">
+  <div class="dp-header">
+    <button onclick="dpPrevMonth()">◀</button>
+    <span class="dp-month-label" id="dp-month-label"></span>
+    <button onclick="dpNextMonth()">▶</button>
+  </div>
+  <div class="dp-grid" id="dp-grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ DATA ══
+let borrowers = ['王小明','李美華','張大偉','陳怡君','林志豪'];
+let nextId = 7;
+let returnHistory = []; // { id, name, borrower, borrowDate, returnDate }
+let samples = [
+  { id:1, name:'FDM 齒輪組',    desc:'PLA材料，標準齒輪示範樣品，適合機構說明展示。',   status:'available', borrower:'',   borrowDate:'',        returnDate:'', note:'請輕拿輕放', image:'' },
+  { id:2, name:'SLA 透明殼體',  desc:'光固化樹脂，展示透明度與精度，含組裝示範。',       status:'borrowed',  borrower:'王小明', borrowDate:'2025-04-10', returnDate:'', note:'需歸還盒裝', image:'' },
+  { id:3, name:'SLS 結構件',    desc:'尼龍粉末燒結，強度測試樣品，展示承重能力。',       status:'available', borrower:'',   borrowDate:'',        returnDate:'', note:'',          image:'' },
+  { id:4, name:'MJF 彩色件',    desc:'多噴嘴熔融，多色一體成型，適合產品外觀展示。',     status:'borrowed',  borrower:'李美華', borrowDate:'2025-04-15', returnDate:'', note:'勿受潮',    image:'' },
+  { id:5, name:'金屬 DMLS 支架',desc:'直接金屬雷射燒結鈦合金，用於結構強度說明。',       status:'available', borrower:'',   borrowDate:'',        returnDate:'', note:'',          image:'' },
+  { id:6, name:'碳纖維複合材',  desc:'連續碳纖維強化，用於輕量化解決方案展示。',         status:'borrowed',  borrower:'張大偉', borrowDate:'2025-04-18', returnDate:'', note:'避免高溫環境', image:'' },
+];
+let analyticsData = {};
+let currentSort = 'person';
+let isAdmin = false;
+let activeDpTarget = null;
+let dpCurrentYear = new Date().getFullYear();
+let dpCurrentMonth = new Date().getMonth();
+
+// ══ CLOCK ══
+function updateClock() {
+  document.getElementById('chip-clock').textContent =
+    new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ══ RENDER CARDS ══
+function renderCards() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  samples.slice(0,10).forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'sample-card'; card.id = `card-${s.id}`;
+    const statusLabel = s.status==='borrowed'?'借出中':'在庫';
+    const statusClass = s.status==='borrowed'?'borrowed':'available';
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        ${s.image?`<img src="${s.image}" alt="${s.name}">`:`<div class="card-img-placeholder">🖨️</div>`}
+        <div class="status-badge ${statusClass}">${statusLabel}</div>
+        <label class="card-img-upload-btn">📷 上傳圖片
+          <input type="file" accept="image/*" style="display:none" onchange="uploadImage(event,${s.id})">
+        </label>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${s.name}</div>
+        <div class="card-desc">${s.desc}</div>
+        <div class="card-meta">
+          <div class="meta-row"><span class="meta-label">借出人</span><span class="meta-val">${s.borrower||'—'}</span></div>
+          <div class="meta-row"><span class="meta-label">借出日</span><span class="meta-val">${s.borrowDate||'—'}</span></div>
+          <div class="meta-row"><span class="meta-label">歸還日</span><span class="meta-val">${s.returnDate||'—'}</span></div>
+        </div>
+        ${s.note?`<div class="card-note">📝 ${s.note}</div>`:''}
+        <div class="admin-panel">
+          <label>備註</label>
+          <input type="text" value="${s.note}" onchange="updateNote(${s.id},this.value)" placeholder="備註...">
+          <button class="btn btn-danger" style="font-size:11px;padding:5px 12px;margin-top:2px" onclick="deleteCard(${s.id})">🗑 刪除卡片</button>
+        </div>
+      </div>
+      <div class="card-footer" id="footer-${s.id}">${renderFooter(s)}</div>
+    `;
+    grid.appendChild(card);
+  });
+  updateStats();
+}
+
+function renderFooter(s) {
+  if (s.status==='available') {
+    const opts = borrowers.map(b=>`<option value="${b}">${b}</option>`).join('');
+    return `<div class="action-borrow">
+      <select class="borrower-select" id="sel-${s.id}"><option value="">選擇借用人</option>${opts}</select>
+      <div class="date-input-wrap"><input type="text" id="bdate-${s.id}" placeholder="借出日期" readonly onclick="openDatePicker(${s.id},'bdate')"></div>
+      <button class="btn btn-primary" style="font-size:12px;padding:7px 12px" onclick="confirmBorrow(${s.id})">確定</button>
+    </div>`;
+  } else {
+    return `<div class="action-return">
+      <span style="font-size:11px;color:var(--text-secondary)">歸還：<b>${s.borrower}</b></span>
+      <div class="date-input-wrap"><input type="text" id="rdate-${s.id}" placeholder="歸還日期" readonly onclick="openDatePicker(${s.id},'rdate')"></div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="confirmReturn(${s.id})">歸還確認</button>
+    </div>`;
+  }
+}
+
+function updateStats() {
+  const borrowed = samples.filter(s=>s.status==='borrowed').length;
+  const available = samples.filter(s=>s.status==='available').length;
+  ['stat-borrowed','an-borrowed'].forEach(id=>document.getElementById(id).textContent=borrowed);
+  ['stat-available','an-available'].forEach(id=>document.getElementById(id).textContent=available);
+  document.getElementById('stat-total').textContent = samples.length;
+  document.getElementById('tab-count-samples').textContent = samples.length;
+  document.getElementById('chip-num').textContent = samples.length;
+}
+
+// ══ BORROW / RETURN ══
+function confirmBorrow(id) {
+  const s = samples.find(x=>x.id===id);
+  const borrower = document.getElementById(`sel-${id}`)?.value;
+  const date = document.getElementById(`bdate-${id}`)?.value;
+  if (!borrower) { showToast('⚠️ 請選擇借用人'); return; }
+  if (!date) { showToast('⚠️ 請選擇借出日期'); return; }
+  s.borrower=borrower; s.borrowDate=date; s.status='borrowed'; s.returnDate='';
+  recordAnalytics(borrower, s.name, date);
+  renderAll(); showToast(`✅ ${s.name} 已借出給 ${borrower}`);
+}
+
+function confirmReturn(id) {
+  const s = samples.find(x=>x.id===id);
+  const date = document.getElementById(`rdate-${id}`)?.value;
+  if (!date) { showToast('⚠️ 請選擇歸還日期'); return; }
+  const prev = s.borrower;
+  // Save to return history
+  returnHistory.push({ id: s.id, name: s.name, borrower: prev, borrowDate: s.borrowDate, returnDate: date });
+  s.returnDate=date; s.status='available'; s.borrower=''; s.borrowDate='';
+  renderAll(); showToast(`✅ ${s.name} 已由 ${prev} 歸還`);
+}
+
+function updateNote(id, val) { samples.find(x=>x.id===id).note=val; renderAll(); }
+function deleteCard(id) {
+  if (!confirm('確定要刪除此樣品卡片？')) return;
+  samples = samples.filter(x=>x.id!==id);
+  renderAll(); showToast('🗑 卡片已刪除');
+}
+function uploadImage(event, id) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { samples.find(x=>x.id===id).image=e.target.result; renderCards(); };
+  reader.readAsDataURL(file);
+}
+function recordAnalytics(borrower, item, date) {
+  if (!analyticsData[borrower]) analyticsData[borrower]=[];
+  analyticsData[borrower].push({ item, date });
+}
+
+// ══ ADD CARD ══
+function openAddCardModal() { document.getElementById('add-card-modal').classList.add('open'); }
+function closeAddCardModal() {
+  document.getElementById('add-card-modal').classList.remove('open');
+  ['nc-name','nc-desc','nc-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nc-image').value='';
+}
+function confirmAddCard() {
+  const name = document.getElementById('nc-name').value.trim();
+  if (!name) { showToast('⚠️ 請填寫樣品名稱'); return; }
+  const desc = document.getElementById('nc-desc').value.trim();
+  const note = document.getElementById('nc-note').value.trim();
+  const imgFile = document.getElementById('nc-image').files[0];
+  const doAdd = (imgData='') => {
+    samples.push({ id:nextId++, name, desc, status:'available', borrower:'', borrowDate:'', returnDate:'', note, image:imgData });
+    closeAddCardModal(); renderAll(); showToast(`✅ 已新增：${name}`);
+  };
+  if (imgFile) { const r=new FileReader(); r.onload=e=>doAdd(e.target.result); r.readAsDataURL(imgFile); }
+  else doAdd();
+}
+
+// ══ ANALYTICS ══
+function daysBetween(d1, d2) {
+  const a = new Date(d1), b = new Date(d2||new Date().toISOString().slice(0,10));
+  return Math.max(0, Math.round((b-a)/(1000*60*60*24)));
+}
+
+function renderAll() { renderCards(); renderAnalytics(); renderBorrowStatus(); renderReturnStatus(); }
+
+function renderAnalytics() {
+  updateStats();
+  const body = document.getElementById('analytics-body');
+  body.innerHTML = '';
+  let rows = [];
+  if (currentSort==='person') {
+    const allB = new Set([...borrowers, ...samples.filter(s=>s.status==='borrowed').map(s=>s.borrower)]);
+    allB.forEach(b => {
+      const hist = analyticsData[b]||[];
+      const curr = samples.filter(s=>s.status==='borrowed'&&s.borrower===b);
+      const items = [...new Set([...hist.map(r=>r.item),...curr.map(s=>s.name)])];
+      if (!items.length) return;
+      const last = hist.length?hist[hist.length-1].date:(curr[0]?.borrowDate||'—');
+      rows.push({ name:b, sub:items.join('、'), last, count:hist.length+curr.length, badgeClass:'badge-person', badgeLabel:'人員' });
+    });
+  } else {
+    samples.forEach(s => {
+      const hist = Object.entries(analyticsData).flatMap(([b,rs])=>rs.filter(r=>r.item===s.name).map(r=>({borrower:b,...r})));
+      if (s.status==='borrowed') hist.push({ borrower:s.borrower, date:s.borrowDate });
+      if (!hist.length) return;
+      const people = [...new Set(hist.map(r=>r.borrower))].join('、');
+      rows.push({ name:s.name, sub:people, last:hist[hist.length-1]?.date||'—', count:hist.length, badgeClass:'badge-item', badgeLabel:'樣品' });
+    });
+  }
+  if (!rows.length) { body.innerHTML=`<div style="padding:28px;text-align:center;color:var(--text-muted);font-size:13px">尚無借用紀錄</div>`; return; }
+  const max = Math.max(...rows.map(r=>r.count),1);
+  rows.sort((a,b)=>b.count-a.count);
+  rows.forEach(r => {
+    const pct = Math.round((r.count/max)*100);
+    const el = document.createElement('div'); el.className='at-row';
+    el.innerHTML=`
+      <div class="at-name">${r.name}<span class="at-badge ${r.badgeClass}">${r.badgeLabel}</span></div>
+      <div style="font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sub}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${r.last}</div>
+      <div style="font-weight:700;font-size:14px;color:var(--accent)">${r.count}</div>
+      <div><div class="bar-wrap"><div class="bar-fill fill-blue" style="width:${pct}%"></div></div></div>
+    `;
+    body.appendChild(el);
+  });
+}
+
+function sortAnalytics(type, btn) {
+  currentSort=type;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderAnalytics();
+}
+
+// ── Borrow Status Table ──
+function renderBorrowStatus() {
+  const body = document.getElementById('borrow-status-body');
+  body.innerHTML = '';
+  const cols = 'grid-template-columns:2fr 1.5fr 1.5fr 1fr 1.2fr';
+  const borrowed = samples.filter(s=>s.status==='borrowed');
+  if (!borrowed.length) {
+    body.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">目前無借出中樣品</div>`;
+    return;
+  }
+  borrowed.forEach(s => {
+    const days = daysBetween(s.borrowDate, '');
+    const el = document.createElement('div');
+    el.className='at-row'; el.style.cssText=cols;
+    el.innerHTML=`
+      <div class="at-name">${s.name}<span class="at-badge badge-out">借出中</span></div>
+      <div style="font-weight:600">${s.borrower}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${s.borrowDate}</div>
+      <div><span style="background:#fee2e2;color:var(--tag-out);font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">借出中</span></div>
+      <div style="font-weight:700;color:var(--tag-out)">${days} 天</div>
+    `;
+    body.appendChild(el);
+  });
+}
+
+// ── Return History Table ──
+function renderReturnStatus() {
+  const body = document.getElementById('return-status-body');
+  body.innerHTML = '';
+  const cols = 'grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr';
+  // combine returnHistory + samples with returnDate filled
+  const records = [
+    ...returnHistory,
+    ...samples.filter(s=>s.returnDate).map(s=>({ id:s.id, name:s.name, borrower:s.borrower||'—', borrowDate:s.borrowDate, returnDate:s.returnDate }))
+  ];
+  if (!records.length) {
+    body.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">尚無歸還紀錄</div>`;
+    return;
+  }
+  records.slice().reverse().forEach(r => {
+    const days = daysBetween(r.borrowDate, r.returnDate);
+    const el = document.createElement('div');
+    el.className='at-row'; el.style.cssText=cols;
+    el.innerHTML=`
+      <div class="at-name">${r.name}<span class="at-badge badge-in">已歸還</span></div>
+      <div style="font-weight:600">${r.borrower}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${r.borrowDate}</div>
+      <div style="font-size:11px;color:var(--tag-in);font-weight:600">${r.returnDate}</div>
+      <div style="font-weight:700;color:var(--text-secondary)">${days} 天</div>
+    `;
+    body.appendChild(el);
+  });
+}
+
+// ══ DATE PICKER ══
+function openDatePicker(id, type) {
+  const inputEl = document.getElementById(type==='bdate'?`bdate-${id}`:`rdate-${id}`);
+  if (!inputEl) return;
+  activeDpTarget = inputEl;
+  dpCurrentYear = new Date().getFullYear(); dpCurrentMonth = new Date().getMonth();
+  renderCalendar();
+  const dp = document.getElementById('shared-datepicker');
+  const rect = inputEl.getBoundingClientRect();
+  dp.style.top = (rect.bottom+6)+'px'; dp.style.left = rect.left+'px';
+  dp.classList.add('open');
+}
+document.addEventListener('click', e => {
+  const dp = document.getElementById('shared-datepicker');
+  if (!dp.contains(e.target) && !e.target.closest('.date-input-wrap')) dp.classList.remove('open');
+});
+function renderCalendar() {
+  document.getElementById('dp-month-label').textContent=`${dpCurrentYear} 年 ${dpCurrentMonth+1} 月`;
+  const grid=document.getElementById('dp-grid'); grid.innerHTML='';
+  ['日','一','二','三','四','五','六'].forEach(d=>{const el=document.createElement('div');el.className='dp-day-label';el.textContent=d;grid.appendChild(el);});
+  const fd=new Date(dpCurrentYear,dpCurrentMonth,1).getDay();
+  const dim=new Date(dpCurrentYear,dpCurrentMonth+1,0).getDate();
+  for(let i=0;i<fd;i++){const el=document.createElement('div');el.className='dp-day empty';grid.appendChild(el);}
+  for(let d=1;d<=dim;d++){
+    const el=document.createElement('div');el.className='dp-day';el.textContent=d;
+    const ds=`${dpCurrentYear}-${String(dpCurrentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    el.onclick=()=>selectDate(ds); grid.appendChild(el);
+  }
+}
+function selectDate(ds){if(activeDpTarget)activeDpTarget.value=ds;document.getElementById('shared-datepicker').classList.remove('open');}
+function dpPrevMonth(){dpCurrentMonth--;if(dpCurrentMonth<0){dpCurrentMonth=11;dpCurrentYear--;}renderCalendar();}
+function dpNextMonth(){dpCurrentMonth++;if(dpCurrentMonth>11){dpCurrentMonth=0;dpCurrentYear++;}renderCalendar();}
+
+// ══ BORROWER MODAL ══
+function openBorrowerModal(){renderBorrowerList();document.getElementById('borrower-modal').classList.add('open');}
+function closeBorrowerModal(){document.getElementById('borrower-modal').classList.remove('open');renderCards();}
+function renderBorrowerList(){
+  document.getElementById('borrower-list-edit').innerHTML=borrowers.map((b,i)=>
+    `<div class="borrower-item"><span>${b}</span><span class="remove-btn" onclick="removeBorrower(${i})">✕</span></div>`
+  ).join('');
+}
+function addBorrower(){
+  const input=document.getElementById('new-borrower-input');
+  const name=input.value.trim(); if(!name)return;
+  if(borrowers.includes(name)){showToast('⚠️ 已存在此借用人');return;}
+  borrowers.push(name); input.value=''; renderBorrowerList(); showToast(`✅ 已新增借用人：${name}`);
+}
+function removeBorrower(i){borrowers.splice(i,1);renderBorrowerList();}
+
+// ══ TAB ══
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`panel-${name}`)?.classList.add('active');
+}
+
+// ══ ADMIN ══
+function toggleAdmin(){
+  isAdmin=!isAdmin;
+  document.body.classList.toggle('admin-mode',isAdmin);
+  const btn=document.getElementById('admin-toggle');
+  btn.textContent=isAdmin?'🔓 管理員（開啟中）':'🔐 管理員';
+  document.getElementById('add-card-btn').style.display=isAdmin?'inline-flex':'none';
+  showToast(isAdmin?'🔓 管理員模式已啟用':'🔒 管理員模式已關閉');
+}
+
+// ══ UTILS ══
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══ INIT ══
+renderAll();
+document.getElementById('last-sync-chip').textContent =
+  `● 已同步 ${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
+</script>
+</body>
+</html>

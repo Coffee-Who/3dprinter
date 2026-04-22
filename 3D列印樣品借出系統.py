@@ -1,188 +1,162 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
-import os
-import altair as alt
+from datetime import date
 
-# 設定網頁標題與寬度佈局
-st.set_page_config(page_title="3D 列印樣品管理系統專業版", layout="wide")
+st.set_page_config(page_title="3D列印樣品管理", layout="wide")
 
-# --- 1. 配置與資料初始化 ---
-IMAGE_FOLDER = "image"
-RECORD_FILE = "loan_records.csv"
-USER_FILE = "users.csv"
+# =========================
+# SESSION STATE
+# =========================
+if "samples" not in st.session_state:
+    st.session_state.samples = [
+        {"id":1,"name":"FDM 齒輪組","desc":"PLA材料","status":"available","borrower":"","borrow_date":"","return_date":"","note":"請輕拿輕放","image":""},
+        {"id":2,"name":"SLA 透明殼體","desc":"光固化樹脂","status":"borrowed","borrower":"王小明","borrow_date":"2025-04-10","return_date":"","note":"需歸還盒裝","image":""},
+        {"id":3,"name":"SLS 結構件","desc":"尼龍粉末","status":"available","borrower":"","borrow_date":"","return_date":"","note":"","image":""},
+        {"id":4,"name":"MJF 彩色件","desc":"多噴嘴列印","status":"borrowed","borrower":"李美華","borrow_date":"2025-04-15","return_date":"","note":"勿受潮","image":""},
+    ]
 
-# 建立圖片存放資料夾
-if not os.path.exists(IMAGE_FOLDER):
-    os.makedirs(IMAGE_FOLDER)
+if "borrowers" not in st.session_state:
+    st.session_state.borrowers = ["王小明","李美華","張大偉","陳怡君"]
 
-def load_data(file, columns):
-    if os.path.exists(file):
-        try:
-            return pd.read_csv(file).fillna("")
-        except:
-            return pd.DataFrame(columns=columns)
-    return pd.DataFrame(columns=columns)
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-def save_data(df, file):
-    df.to_csv(file, index=False)
+if "admin" not in st.session_state:
+    st.session_state.admin = False
 
-# 載入現有資料
-records = load_data(RECORD_FILE, ["項次", "樣品名稱", "借出人員", "借出日期", "歸還日期", "備註", "狀態"])
-user_df = load_data(USER_FILE, ["姓名"])
-if user_df.empty:
-    user_df = pd.DataFrame({"姓名": ["管理員"]})
-    save_data(user_df, USER_FILE)
 
-# --- 2. 側邊欄：管理功能 ---
-with st.sidebar:
-    st.title("⚙️ 系統管理面板")
-    
-    # A. 新增樣品
-    st.subheader("📷 新增樣品圖片")
-    uploaded_file = st.file_uploader("上傳圖片 (jpg/png)", type=['png', 'jpg', 'jpeg'])
-    if uploaded_file:
-        with open(os.path.join(IMAGE_FOLDER, uploaded_file.name), "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"樣品 {uploaded_file.name} 已新增")
-        st.rerun()
+# =========================
+# TITLE
+# =========================
+st.title("🧩 實威國際 3D列印樣品管理系統")
 
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("總樣品", len(st.session_state.samples))
+col2.metric("借出中", len([s for s in st.session_state.samples if s["status"]=="borrowed"]))
+col3.metric("在庫", len([s for s in st.session_state.samples if s["status"]=="available"]))
+col4.button("🔐 管理員切換", on_click=lambda: st.session_state.update(admin=not st.session_state.admin))
+
+
+st.divider()
+
+
+# =========================
+# TABS
+# =========================
+tab1, tab2, tab3 = st.tabs(["📦 樣品管理", "📤 借用/歸還", "📊 分析"])
+
+
+# =========================
+# TAB 1 - SAMPLE CARDS
+# =========================
+with tab1:
+    st.subheader("樣品卡片")
+
+    for s in st.session_state.samples:
+
+        with st.container(border=True):
+
+            colA, colB = st.columns([1,3])
+
+            with colA:
+                if s["image"]:
+                    st.image(s["image"])
+                else:
+                    st.write("🖨️")
+
+                if st.session_state.admin:
+                    img = st.file_uploader("上傳圖片", key=f"img_{s['id']}")
+                    if img:
+                        s["image"] = img.getvalue()
+
+            with colB:
+                st.markdown(f"### {s['name']}")
+                st.write(s["desc"])
+
+                status = "📤 借出中" if s["status"]=="borrowed" else "📥 在庫"
+                st.write(status)
+
+                st.write(f"借用人：{s['borrower'] or '-'}")
+                st.write(f"借出日：{s['borrow_date'] or '-'}")
+                st.write(f"歸還日：{s['return_date'] or '-'}")
+
+                if st.session_state.admin:
+                    s["note"] = st.text_input("備註", value=s["note"], key=f"note_{s['id']}")
+                    if st.button("🗑 刪除", key=f"del_{s['id']}"):
+                        st.session_state.samples.remove(s)
+                        st.rerun()
+
+
+# =========================
+# TAB 2 - BORROW / RETURN
+# =========================
+with tab2:
+    st.subheader("借用 / 歸還")
+
+    sample_name = st.selectbox("選擇樣品", [s["name"] for s in st.session_state.samples])
+    user = st.selectbox("借用人", st.session_state.borrowers)
+    action = st.radio("動作", ["借用","歸還"])
+    d = st.date_input("日期", date.today())
+
+    if st.button("送出"):
+
+        for s in st.session_state.samples:
+            if s["name"] == sample_name:
+
+                if action == "借用":
+                    s["status"] = "borrowed"
+                    s["borrower"] = user
+                    s["borrow_date"] = str(d)
+
+                else:
+                    s["status"] = "available"
+                    s["return_date"] = str(d)
+
+                    st.session_state.history.append({
+                        "name": s["name"],
+                        "user": s["borrower"],
+                        "borrow": s["borrow_date"],
+                        "return": str(d)
+                    })
+
+                    s["borrower"] = ""
+                    s["borrow_date"] = ""
+
+        st.success("已更新")
+
+
+# =========================
+# TAB 3 - ANALYTICS
+# =========================
+with tab3:
+    st.subheader("借用分析")
+
+    df = pd.DataFrame(st.session_state.history)
+
+    if not df.empty:
+        st.dataframe(df)
+
+        st.subheader("依人員統計")
+        st.bar_chart(df["user"].value_counts())
+
+        st.subheader("依樣品統計")
+        st.bar_chart(df["name"].value_counts())
+    else:
+        st.info("尚無紀錄")
+
+
+# =========================
+# BORROWER MANAGEMENT
+# =========================
+if st.session_state.admin:
     st.divider()
+    st.subheader("👤 借用人管理")
 
-    # B. 人員名單管理 (新增/修改/刪除)
-    st.subheader("👥 人員名單維護")
-    new_user = st.text_input("輸入新姓名", placeholder="例如：王小明")
-    if st.button("➕ 新增人員", use_container_width=True):
-        if new_user and new_user not in user_df["姓名"].values:
-            user_df = pd.concat([user_df, pd.DataFrame({"姓名": [new_user]})], ignore_index=True)
-            save_data(user_df, USER_FILE)
+    new_user = st.text_input("新增借用人")
+    if st.button("新增人員"):
+        if new_user and new_user not in st.session_state.borrowers:
+            st.session_state.borrowers.append(new_user)
+            st.success("已新增")
             st.rerun()
 
-    if not user_df.empty:
-        target_user = st.selectbox("選取編輯對象", user_df["姓名"])
-        edit_name = st.text_input("修改姓名為", value=target_user)
-        col_edit, col_del = st.columns(2)
-        with col_edit:
-            if st.button("📝 修改", use_container_width=True):
-                user_df.loc[user_df["姓名"] == target_user, "姓名"] = edit_name
-                save_data(user_df, USER_FILE)
-                st.rerun()
-        with col_del:
-            if st.button("🗑️ 刪除人員", use_container_width=True):
-                user_df = user_df[user_df["姓名"] != target_user]
-                save_data(user_df, USER_FILE)
-                st.rerun()
-
-# --- 3. 主介面：借還登記區 ---
-st.title("📦 3D 列印樣品借出登記系統")
-st.write("---")
-
-image_files = sorted([f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))])
-user_list = user_df["姓名"].tolist()
-
-# 定義標題列比例
-h_num, h_img, h_info, h_form, h_manage = st.columns([0.5, 1.5, 2, 4.5, 1])
-h_num.markdown("**項次**")
-h_img.markdown("**樣品圖片**")
-h_info.markdown("**狀態資訊**")
-h_form.markdown("**登記與歸還操作**")
-h_manage.markdown("**管理**")
-st.write("---")
-
-if not image_files:
-    st.info("💡 目前沒有樣品，請從左側側邊欄上傳圖片。")
-else:
-    for i, img_name in enumerate(image_files, start=1):
-        col_n, col_i, col_s, col_f, col_m = st.columns([0.5, 1.5, 2, 4.5, 1])
-        
-        # 1. 純數字項次
-        col_n.write(f"### {i}")
-        
-        # 2. 圖片固定寬度 150px
-        col_i.image(os.path.join(IMAGE_FOLDER, img_name), width=150)
-        
-        # 3. 狀態判斷
-        sample_history = records[records["樣品名稱"] == img_name]
-        is_loaned = False
-        if not sample_history.empty:
-            last_rec = sample_history.iloc[-1]
-            if last_rec["狀態"] == "借出中" and not last_rec["歸還日期"]:
-                is_loaned = True
-        
-        with col_s:
-            st.write(f"**{img_name}**")
-            if is_loaned:
-                st.error(f"❌ 已借出\n\n借用人：{last_rec['借出人員']}")
-            else:
-                st.success("✅ 在庫可借")
-
-        # 4. 操作表單
-        with col_f:
-            if is_loaned:
-                if st.button(f"確認辦理歸還 (項次 {i})", key=f"ret_{i}", use_container_width=True):
-                    idx = sample_history.index[-1]
-                    records.at[idx, "歸還日期"] = datetime.now().strftime("%Y-%m-%d")
-                    records.at[idx, "狀態"] = "已歸還"
-                    save_data(records, RECORD_FILE)
-                    st.rerun()
-            else:
-                with st.form(key=f"form_{i}", clear_on_submit=True):
-                    f1, f2, f3 = st.columns([2, 2, 3])
-                    borrower = f1.selectbox("借用人", ["請選擇"] + user_list, key=f"sel_{i}")
-                    l_date = f2.date_input("日期", datetime.now(), key=f"date_{i}")
-                    note = f3.text_input("備註", key=f"note_{i}", placeholder="用途...")
-                    if st.form_submit_button(f"登記借出 (項次 {i})", use_container_width=True):
-                        if borrower == "請選擇":
-                            st.error("請選擇借用人員")
-                        else:
-                            new_row = {"項次": i, "樣品名稱": img_name, "借出人員": borrower,
-                                       "借出日期": l_date.strftime("%Y-%m-%d"), "歸還日期": "",
-                                       "備註": note, "狀態": "借出中"}
-                            records = pd.concat([records, pd.DataFrame([new_row])], ignore_index=True)
-                            save_data(records, RECORD_FILE)
-                            st.rerun()
-
-        # 5. 刪除項次按鈕
-        with col_m:
-            st.write("") # 對齊
-            if st.button("🗑️", key=f"del_item_{i}", help="刪除此樣品及所有相關紀錄"):
-                # 刪除實體圖片
-                os.remove(os.path.join(IMAGE_FOLDER, img_name))
-                # 刪除 CSV 中的樣品紀錄
-                records = records[records["樣品名稱"] != img_name]
-                save_data(records, RECORD_FILE)
-                st.rerun()
-        st.write("---")
-
-# --- 4. 歷史紀錄與數據分析 ---
-st.header("📊 歷史紀錄與數據分析")
-tab1, tab2 = st.tabs(["📋 流向紀錄總表", "📈 借出數據分析"])
-
-with tab1:
-    st.dataframe(records, use_container_width=True, height=400)
-    csv = records.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 匯出資料 (CSV)", csv, "3d_loan_history.csv", "text/csv")
-
-with tab2:
-    if not records.empty:
-        # a. 樣品統計
-        st.markdown("### a. 各樣品借出次數統計")
-        s_counts = records["樣品名稱"].value_counts().reset_index()
-        s_counts.columns = ["樣品", "次數"]
-        chart_a = alt.Chart(s_counts).mark_bar(color="#29b5e8").encode(
-            x=alt.X("樣品:N", title="樣品名稱", sort='-y'),
-            y=alt.Y("次數:Q", title="次數", axis=alt.Axis(tickMinStep=1, format='d'))
-        ).properties(height=300)
-        st.altair_chart(chart_a, use_container_width=True)
-
-        # b. 人員統計
-        st.markdown("### b. 熱門借用人員排行")
-        u_counts = records["借出人員"].value_counts().reset_index()
-        u_counts.columns = ["人員", "次數"]
-        chart_b = alt.Chart(u_counts).mark_bar(color="#ff4b4b").encode(
-            x=alt.X("人員:N", title="人員姓名", sort='-y'),
-            y=alt.Y("次數:Q", title="次數", axis=alt.Axis(tickMinStep=1, format='d'))
-        ).properties(height=300)
-        st.altair_chart(chart_b, use_container_width=True)
-    else:
-        st.info("尚無足夠數據分析。")
+    st.write(st.session_state.borrowers)

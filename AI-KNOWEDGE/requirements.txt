@@ -6,3 +6,4 @@ llama-index-embeddings-huggingface
 PyPDF2
 docx2txt
 beautifulsoup4
+requests

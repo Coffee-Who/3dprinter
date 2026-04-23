@@ -5,3 +5,4 @@ llama-index-readers-web
 llama-index-embeddings-huggingface
 PyPDF2
 docx2txt
+beautifulsoup4

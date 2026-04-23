@@ -1,121 +1,114 @@
 import streamlit as st
 import os
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, StorageContext, Settings
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.readers.web import SimpleWebPageReader
 from llama_index.llms.groq import Groq
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-# --- 1. 基本頁面設定 ---
-st.set_page_config(page_title="AI 知識庫助手", layout="wide")
-st.title("🤖 3D Printer 知識庫搜尋")
+# --- 1. 初始化設定 ---
+st.set_page_config(page_title="3D Printer 知識庫", layout="wide")
+st.title("🤖 3D Printer 專屬知識搜尋")
 
-# --- 2. 設定模型 (LLM 與 中文優化 Embedding) ---
-# 從 Streamlit Secrets 讀取 API Key
+# 讀取 Secrets
 if "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 else:
-    st.error("請在 Streamlit Secrets 中設定 GROQ_API_KEY")
+    st.error("❌ 錯誤：未在 Streamlit Secrets 中設定 GROQ_API_KEY")
     st.stop()
 
-# 設定大腦 (Groq LLM)
-Settings.llm = Groq(model="llama3-70b-8192", api_key=api_key)
+# 設定 LLM (使用 Groq)
+Settings.llm = Groq(model="llama3-70b-8192", api_key=GROQ_API_KEY)
 
-# 設定搜尋索引大腦 (針對中文優化的 Embedding 模型)
-# 使用 BAAI/bge-small-zh-v1.5，這對中文語意搜尋效果非常好
+# 設定中文優化 Embedding 模型
 @st.cache_resource
-def load_embed_model():
+def get_embed_model():
     return HuggingFaceEmbedding(model_name="BAAI/bge-small-zh-v1.5")
 
-Settings.embed_model = load_embed_model()
+Settings.embed_model = get_embed_model()
 
-# --- 3. 資料載入與索引建立 ---
-@st.cache_resource(show_spinner="正在載入知識庫資料，請稍候...")
-def initialize_index():
+# --- 2. 資料路徑與檔案檢查 ---
+# 取得目前程式執行所在的絕對路徑
+base_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(base_dir, "data")
+url_file = os.path.join(base_dir, "urls.txt")
+
+# --- 3. 核心功能：建立索引 ---
+@st.cache_resource(show_spinner="正在建立知識庫索引...")
+def build_index():
     all_docs = []
     
-    # A. 讀取 data/ 資料夾內的所有文件 (PDF, Docx, TXT)
-    data_dir = "./data"
+    # A. 檢查並讀取資料夾
     if os.path.exists(data_dir) and os.listdir(data_dir):
-        file_docs = SimpleDirectoryReader(data_dir).load_data()
-        all_docs.extend(file_docs)
-        st.sidebar.success(f"成功載入 {len(os.listdir(data_dir))} 份文件")
-    else:
-        st.sidebar.warning("警告：data 資料夾是空的或不存在")
-
-    # B. 讀取 urls.txt 內的網址內容
-    url_file = "urls.txt"
+        try:
+            reader = SimpleDirectoryReader(input_dir=data_dir, recursive=True)
+            all_docs.extend(reader.load_data())
+        except Exception as e:
+            st.error(f"讀取文件時發生錯誤: {e}")
+    
+    # B. 檢查並讀取網址
     if os.path.exists(url_file):
         with open(url_file, "r", encoding="utf-8") as f:
             urls = [line.strip() for line in f if line.strip().startswith("http")]
-        
         if urls:
             try:
                 web_docs = SimpleWebPageReader(html_to_text=True).load_data(urls)
                 all_docs.extend(web_docs)
-                st.sidebar.success(f"成功載入 {len(urls)} 個網址內容")
             except Exception as e:
-                st.sidebar.error(f"網址載入失敗: {e}")
+                st.warning(f"部分網址載入失敗: {e}")
 
     if not all_docs:
-        st.error("目前沒有任何資料可供搜尋，請檢查 GitHub 上的 data/ 或 urls.txt")
         return None
 
-    # 建立向量索引
-    index = VectorStoreIndex.from_documents(all_docs)
-    return index
+    return VectorStoreIndex.from_documents(all_docs)
 
-# 初始化索引
-index = initialize_index()
+# --- 4. 側邊欄診斷資訊 ---
+with st.sidebar:
+    st.header("📋 系統狀態")
+    
+    # 檢查 data 目錄
+    if not os.path.exists(data_dir):
+        st.error("❌ 找不到 'data' 資料夾")
+    else:
+        files = os.listdir(data_dir)
+        if not files:
+            st.warning("⚠️ 'data' 資料夾內沒有檔案")
+        else:
+            st.success(f"✅ 偵測到 {len(files)} 個檔案")
+            with st.expander("檔案清單"):
+                for f in files: st.write(f"- {f}")
 
-# --- 4. 對話介面實作 ---
+    # 檢查網址檔案
+    if os.path.exists(url_file):
+        with open(url_file, "r") as f:
+            count = len([l for l in f if l.strip()])
+        st.success(f"✅ 偵測到 {count} 個待爬取網址")
+    
+    st.info("💡 提示：更新 GitHub 上的檔案後，重新整理網頁即可生效。")
+
+# --- 5. 對話邏輯 ---
+index = build_index()
+
 if index:
-    # 建立查詢引擎 (similarity_top_k=5 代表搜尋最相關的 5 個段落)
+    # 建立搜尋引擎
     query_engine = index.as_query_engine(similarity_top_k=5)
 
-    # 初始化對話紀錄
+    # 聊天紀錄管理
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # 顯示歷史訊息
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-    # 使用者輸入框
-    if prompt := st.chat_input("請輸入關於 3D Printer 的問題..."):
-        # 顯示使用者訊息
+    if prompt := st.chat_input("請輸入問題..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # 產生 AI 回答
         with st.chat_message("assistant"):
-            with st.spinner("思考中..."):
+            with st.spinner("正在搜尋文件..."):
                 response = query_engine.query(prompt)
-                full_response = str(response)
-                st.markdown(full_response)
-                
-                # 將來源加入展開視窗 (可選)
-                if hasattr(response, 'source_nodes'):
-                    with st.expander("查看參考來源"):
-                        for node in response.source_nodes:
-                            st.write(f"相關度評分: {node.score:.2f}")
-                            st.text(node.node.get_content()[:200] + "...")
-
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+                st.markdown(str(response))
+                st.session_state.messages.append({"role": "assistant", "content": str(response)})
 else:
-    st.info("請在 GitHub 儲存庫中建立 'data' 資料夾並放入文件，即可開始使用。")
-
-# --- 5. 側邊欄狀態顯示 ---
-with st.sidebar:
-    st.divider()
-    st.caption("資料更新說明：")
-    st.info("若要新增資料，請直接上傳檔案至 GitHub 的 data/ 資料夾，或修改 urls.txt。重新整理此頁面即可生效。")
-    st.sidebar.write("目前伺服器目錄內容：")
-st.sidebar.write(os.listdir(".")) # 這會列出根目錄所有檔案
-
-if os.path.exists("data"):
-    st.sidebar.write("data 資料夾內容：")
-    st.sidebar.write(os.listdir("data"))
-else:
-    st.sidebar.error("資料夾 'data' 真的不存在於根目錄中")
+    st.warning("知識庫目前是空的。請確保 GitHub 上的 'data' 資料夾內有 PDF/TXT 檔案，且 'urls.txt' 內有網址。")

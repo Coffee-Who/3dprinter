@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>知識庫搜尋 · 測試頁</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#000;--bg1:#0d1117;--bg2:#161b22;--bg3:#21262d;
+  --border:#21262d;--border2:#30363d;
+  --t1:#e6edf3;--t2:#8b949e;--t3:#484f58;
+  --accent:#2563EB;--accent2:#1d4ed8;
+  --green:#3fb950;--red:#f85149;--yellow:#d29922;
+  --sh:0 4px 24px rgba(0,0,0,.5);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'DM Sans','Noto Sans TC',sans-serif;
+  background:var(--bg0);color:var(--t1);
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:52px;background:var(--bg1);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;flex-shrink:0;position:sticky;top:0;z-index:50;
+}
+.logo{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo-sep{width:1px;height:14px;background:var(--border2)}
+.logo-sub{font-size:11px;color:var(--t2);font-weight:400}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.badge{font-size:10px;color:var(--t3);background:var(--bg2);border:1px solid var(--border);padding:3px 8px;border-radius:4px}
+.status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--t3)}
+.dot.ok{background:var(--green)}
+.dot.err{background:var(--red)}
+.dot.loading{background:var(--yellow);animation:blink .8s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── MAIN ── */
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:60px 24px 80px}
+
+/* ── CONFIG BANNER ── */
+.config-banner{
+  width:100%;max-width:680px;
+  background:rgba(37,99,235,.08);
+  border:1px solid rgba(37,99,235,.25);
+  border-radius:10px;padding:14px 18px;
+  margin-bottom:40px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.config-banner-title{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.config-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.config-label{font-size:11px;color:var(--t2);white-space:nowrap;width:70px;flex-shrink:0}
+.config-input{
+  flex:1;min-width:200px;
+  background:var(--bg2);border:1px solid var(--border2);
+  color:var(--t1);padding:6px 10px;border-radius:6px;
+  font-size:12px;font-family:inherit;outline:none;
+  transition:border-color .15s;
+}
+.config-input:focus{border-color:var(--accent)}
+.config-input::placeholder{color:var(--t3)}
+.config-save{
+  background:var(--accent);color:#fff;border:none;
+  border-radius:6px;padding:6px 14px;font-size:12px;
+  font-weight:600;cursor:pointer;font-family:inherit;
+  transition:background .15s;white-space:nowrap;
+}
+.config-save:hover{background:var(--accent2)}
+.config-note{font-size:11px;color:var(--t3);line-height:1.5}
+
+/* ── HERO ── */
+.hero{text-align:center;margin-bottom:40px;width:100%;max-width:680px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:11px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:14px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:24px;height:1px;background:var(--accent);opacity:.4}
+.hero h1{font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:-1px;line-height:1.1;color:var(--t1)}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p{color:var(--t2);font-size:13px;margin-top:10px;line-height:1.6}
+
+/* ── SEARCH BOX ── */
+.search-wrap{width:100%;max-width:680px;margin-bottom:32px}
+.search-box{
+  display:flex;align-items:center;gap:0;
+  background:var(--bg1);border:1.5px solid var(--border2);
+  border-radius:14px;overflow:hidden;
+  box-shadow:var(--sh);transition:border-color .2s;
+}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12),var(--sh)}
+.search-icon{padding:0 14px;color:var(--t3);font-size:15px;flex-shrink:0}
+.search-input{
+  flex:1;background:transparent;border:none;
+  color:var(--t1);font-size:15px;font-family:inherit;
+  padding:15px 0;outline:none;
+}
+.search-input::placeholder{color:var(--t3)}
+.search-btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:14px 22px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.search-btn:hover{background:var(--accent2)}
+.search-btn:disabled{background:var(--t3);cursor:not-allowed}
+.search-hint{
+  display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;
+}
+.hint-chip{
+  font-size:11px;color:var(--t3);background:var(--bg2);
+  border:1px solid var(--border);border-radius:20px;
+  padding:3px 11px;cursor:pointer;transition:.15s;
+}
+.hint-chip:hover{color:var(--t1);border-color:var(--border2)}
+
+/* ── RESULT PANEL ── */
+.result-wrap{width:100%;max-width:680px;display:none}
+.result-wrap.show{display:block}
+
+.result-card{
+  background:var(--bg1);border:1px solid var(--border2);
+  border-radius:14px;overflow:hidden;
+  box-shadow:var(--sh);margin-bottom:12px;
+  animation:fadeUp .25s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.result-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+.result-header-l{display:flex;align-items:center;gap:8px}
+.result-tag{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  background:rgba(37,99,235,.15);color:var(--accent);
+  border:1px solid rgba(37,99,235,.25);border-radius:4px;padding:2px 7px;
+}
+.result-query{font-size:12px;color:var(--t2)}
+.result-query strong{color:var(--t1)}
+.result-close{
+  cursor:pointer;color:var(--t3);font-size:18px;line-height:1;
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;transition:.15s;
+}
+.result-close:hover{background:var(--bg3);color:var(--t1)}
+
+.result-body{
+  padding:20px 18px;font-size:13px;line-height:1.8;
+  color:var(--t1);white-space:pre-wrap;max-height:500px;overflow-y:auto;
+}
+.result-body::-webkit-scrollbar{width:4px}
+.result-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.result-sources{
+  padding:11px 18px;border-top:1px solid var(--border);
+  background:var(--bg2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.src-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)}
+.src-chip{
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;color:#58a6ff;
+  background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);
+  border-radius:20px;padding:2px 10px;
+}
+.src-score{color:var(--t3);font-size:10px}
+
+/* ── LOADING ── */
+.loading-card{
+  background:var(--bg1);border:1px solid var(--border2);
+  border-radius:14px;padding:28px 18px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:var(--sh);animation:fadeUp .2s ease;
+}
+.spinner{
+  width:20px;height:20px;flex-shrink:0;
+  border:2px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .65s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--t2)}
+.loading-sub{font-size:11px;color:var(--t3);margin-top:3px}
+
+/* ── EMPTY ── */
+.empty-card{
+  background:var(--bg1);border:1px solid var(--border);
+  border-radius:14px;padding:48px 18px;text-align:center;
+  box-shadow:var(--sh);
+}
+.empty-icon{font-size:32px;margin-bottom:10px;opacity:.3}
+.empty-text{font-size:13px;color:var(--t3)}
+
+/* ── ERROR ── */
+.error-card{
+  background:rgba(248,81,73,.06);border:1px solid rgba(248,81,73,.25);
+  border-radius:14px;padding:16px 18px;
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--red);
+}
+
+/* ── NOT CONFIGURED ── */
+.warn-card{
+  background:rgba(210,153,34,.06);border:1px solid rgba(210,153,34,.25);
+  border-radius:10px;padding:12px 16px;
+  font-size:12px;color:var(--yellow);
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;
+}
+
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:20px;
+  border-top:1px solid var(--border);
+  font-size:11px;color:var(--t3);
+}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">🖨</div>
+    實威國際
+    <div class="logo-sep"></div>
+    <span class="logo-sub">知識庫搜尋 · 測試頁</span>
+  </div>
+  <div class="topbar-right">
+    <div class="status">
+      <span class="dot" id="connDot"></span>
+      <span id="connTxt">未設定</span>
+    </div>
+    <span class="badge">Dify RAG</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- CONFIG -->
+  <div class="config-banner" id="configBanner">
+    <div>
+      <div class="config-banner-title">⚙️ Dify API 設定</div>
+      <div class="config-note">填入後點「儲存」，設定會記在瀏覽器，之後重開不用再填。</div>
+    </div>
+    <div class="config-row">
+      <span class="config-label">API Key</span>
+      <input class="config-input" type="password" id="cfgKey" placeholder="app-xxxxxxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <div class="config-row">
+      <span class="config-label">API URL</span>
+      <input class="config-input" type="text" id="cfgUrl" placeholder="https://api.dify.ai/v1/chat-messages">
+    </div>
+    <div class="config-row">
+      <button class="config-save" onclick="saveConfig()">💾 儲存設定</button>
+      <span id="cfgStatus" style="font-size:11px;color:var(--t3)"></span>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Knowledge Base</div>
+    <h1>實威國際<em>知識庫</em></h1>
+    <p>所有答案只來自你上傳的文件與網站<br>由 Dify + Claude 語意搜尋，精準找到相關內容</p>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="searchInput"
+        placeholder="輸入你的問題…"
+        onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">
+        搜尋知識庫
+      </button>
+    </div>
+    <div class="search-hint">
+      <span class="hint-chip" onclick="useHint(this)">光固化擺放角度</span>
+      <span class="hint-chip" onclick="useHint(this)">支撐密度怎麼設定</span>
+      <span class="hint-chip" onclick="useHint(this)">樹脂材料如何儲存</span>
+      <span class="hint-chip" onclick="useHint(this)">Formlabs 機台維護</span>
+    </div>
+  </div>
+
+  <!-- RESULT AREA -->
+  <div class="result-wrap" id="resultWrap"></div>
+
+</main>
+
+<footer>
+  © 2025 實威國際股份有限公司 ·
+  <a href="https://dify.ai" target="_blank">Dify.ai</a> ·
+  <a href="tab-home.html">← 回入口網站</a>
+</footer>
+
+<script>
+/* ── CONFIG ── */
+const LS_KEY='sw_dify_key', LS_URL='sw_dify_url';
+let DIFY_KEY='', DIFY_URL='';
+
+function loadConfig(){
+  DIFY_KEY = localStorage.getItem(LS_KEY)||'';
+  DIFY_URL = localStorage.getItem(LS_URL)||'https://api.dify.ai/v1/chat-messages';
+  if(DIFY_KEY){
+    document.getElementById('cfgKey').value = DIFY_KEY;
+    document.getElementById('cfgUrl').value = DIFY_URL;
+    setConn('ok','已設定');
+    // 已設定就收起 banner（可展開）
+    document.getElementById('configBanner').style.borderColor='rgba(63,185,80,.3)';
+    document.getElementById('configBanner').style.background='rgba(63,185,80,.04)';
+  }
+}
+
+function saveConfig(){
+  const k = document.getElementById('cfgKey').value.trim();
+  const u = document.getElementById('cfgUrl').value.trim();
+  if(!k){ alert('請填入 API Key'); return; }
+  DIFY_KEY = k;
+  DIFY_URL = u || 'https://api.dify.ai/v1/chat-messages';
+  localStorage.setItem(LS_KEY, DIFY_KEY);
+  localStorage.setItem(LS_URL, DIFY_URL);
+  document.getElementById('cfgStatus').textContent = '✅ 已儲存';
+  document.getElementById('cfgStatus').style.color = 'var(--green)';
+  setConn('ok','已設定');
+  document.getElementById('configBanner').style.borderColor='rgba(63,185,80,.3)';
+  document.getElementById('configBanner').style.background='rgba(63,185,80,.04)';
+  setTimeout(()=>{ document.getElementById('cfgStatus').textContent=''; }, 3000);
+}
+
+function setConn(state, msg){
+  const dot = document.getElementById('connDot');
+  dot.className = 'dot ' + state;
+  document.getElementById('connTxt').textContent = msg;
+}
+
+/* ── SEARCH ── */
+function useHint(el){
+  document.getElementById('searchInput').value = el.textContent;
+  doSearch();
+}
+
+async function doSearch(){
+  const q = document.getElementById('searchInput').value.trim();
+  if(!q) return;
+
+  if(!DIFY_KEY){
+    showWarn('請先填入 Dify API Key（上方設定欄）');
+    return;
+  }
+
+  showLoading(q);
+
+  try{
+    const resp = await fetch(DIFY_URL, {
+      method: 'POST',
+      headers:{
+        'Authorization': 'Bearer ' + DIFY_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: {},
+        query: q,
+        response_mode: 'blocking',
+        conversation_id: '',
+        user: 'kb-test-user'
+      })
+    });
+
+    if(!resp.ok){
+      const err = await resp.json().catch(()=>({}));
+      showError(
+        'API 回傳錯誤 ' + resp.status + '：' +
+        (err.message || err.code || '請確認 API Key 與 URL 是否正確')
+      );
+      setConn('err','連線失敗');
+      return;
+    }
+
+    const data = await resp.json();
+    const answer = data.answer || '（無回答內容）';
+    const refs   = data.metadata?.retriever_resources || [];
+
+    setConn('ok','連線正常');
+    showResult(q, answer, refs);
+
+  } catch(e){
+    showError('連線失敗：' + e.message + '（請確認網路與 API URL）');
+    setConn('err','連線失敗');
+  }
+}
+
+/* ── RENDER ── */
+function wrap(){ return document.getElementById('resultWrap'); }
+
+function showLoading(q){
+  const w = wrap();
+  w.className = 'result-wrap show';
+  w.innerHTML = `
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div>
+        <div class="loading-text">正在搜尋知識庫…</div>
+        <div class="loading-sub">語意比對「${esc(q)}」相關文件</div>
+      </div>
+    </div>`;
+}
+
+function showResult(q, answer, refs){
+  const w = wrap();
+  const refHtml = refs.length
+    ? refs.map(r=>
+        `<span class="src-chip">
+          📄 ${esc(r.document_name||r.dataset_name||'文件')}
+          <span class="src-score">${Math.round((r.score||0)*100)}%</span>
+        </span>`
+      ).join('')
+    : `<span class="src-chip" style="color:var(--t3);border-color:var(--border)">⚠️ 無明確來源文件</span>`;
+
+  w.className = 'result-wrap show';
+  w.innerHTML = `
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-header-l">
+          <span class="result-tag">AI 回答</span>
+          <span class="result-query">搜尋：<strong>${esc(q)}</strong></span>
+        </div>
+        <span class="result-close" onclick="clearResult()">✕</span>
+      </div>
+      <div class="result-body">${esc(answer).replace(/\n/g,'<br>')}</div>
+      <div class="result-sources">
+        <span class="src-label">引用來源</span>
+        ${refHtml}
+      </div>
+    </div>`;
+}
+
+function showError(msg){
+  const w = wrap();
+  w.className = 'result-wrap show';
+  w.innerHTML = `
+    <div class="error-card">
+      <span>❌</span>
+      <div>
+        <div style="font-weight:600;margin-bottom:4px">搜尋失敗</div>
+        <div style="font-size:12px;opacity:.8">${esc(msg)}</div>
+      </div>
+    </div>`;
+}
+
+function showWarn(msg){
+  const w = wrap();
+  w.className = 'result-wrap show';
+  w.innerHTML = `<div class="warn-card">⚠️ ${esc(msg)}</div>`;
+}
+
+function clearResult(){
+  const w = wrap();
+  w.className = 'result-wrap';
+  w.innerHTML = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchInput').focus();
+}
+
+function esc(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ── INIT ── */
+loadConfig();
+document.getElementById('searchInput').focus();
+</script>
+</body>
+</html>

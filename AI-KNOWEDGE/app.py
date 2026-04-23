@@ -111,3 +111,11 @@ with st.sidebar:
     st.divider()
     st.caption("資料更新說明：")
     st.info("若要新增資料，請直接上傳檔案至 GitHub 的 data/ 資料夾，或修改 urls.txt。重新整理此頁面即可生效。")
+    st.sidebar.write("目前伺服器目錄內容：")
+st.sidebar.write(os.listdir(".")) # 這會列出根目錄所有檔案
+
+if os.path.exists("data"):
+    st.sidebar.write("data 資料夾內容：")
+    st.sidebar.write(os.listdir("data"))
+else:
+    st.sidebar.error("資料夾 'data' 真的不存在於根目錄中")

@@ -1,108 +1,135 @@
 import streamlit as st
 import os
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.readers.web import SimpleWebPageReader
 from llama_index.llms.groq import Groq
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-# --- 1. 初始化頁面設定 ---
-st.set_page_config(page_title="3D Printer 知識庫", layout="wide")
-st.title("🤖 3D Printer 專屬知識搜尋")
+# --- 1. 頁面與核心配置 ---
+st.set_page_config(page_title="3D Printer 智能爬蟲知識庫", layout="wide")
+st.title("🤖 3D Printer 知識庫 (含網頁自動爬取)")
 
-# --- 2. 核心模型配置 (解決 BadRequestError) ---
+# 讀取 Secrets
 if "GROQ_API_KEY" in st.secrets:
     api_key = st.secrets["GROQ_API_KEY"]
 else:
-    st.error("❌ 找不到 GROQ_API_KEY！請在 Streamlit Secrets 中設定。")
+    st.error("❌ 未設定 GROQ_API_KEY，請在 Streamlit Secrets 中配置。")
     st.stop()
 
-# 使用 Groq 最新穩定模型名稱，避免相容性錯誤
+# 模型設定：使用 Groq 最新模型 & 中文優化 Embedding
 Settings.llm = Groq(model="llama-3.3-70b-versatile", api_key=api_key)
 
-# 使用中文優化 Embedding 模型 (完全免費，解決搜尋不到中文的問題)
 @st.cache_resource
-def load_embedding():
+def load_embed_model():
     return HuggingFaceEmbedding(model_name="BAAI/bge-small-zh-v1.5")
 
-Settings.embed_model = load_embedding()
+Settings.embed_model = load_embed_model()
 
-# --- 3. 資料路徑與檔案檢查 ---
-base_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(base_dir, "data")
-url_file = os.path.join(base_dir, "urls.txt")
+# --- 2. 自動爬蟲邏輯 (抓取同站連結) ---
+def get_internal_links(base_url):
+    """獲取同域名下的所有子連結 (限一層)"""
+    internal_links = {base_url}
+    try:
+        response = requests.get(base_url, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        domain = urlparse(base_url).netloc
+        
+        for a in soup.find_all('a', href=True):
+            link = urljoin(base_url, a['href'])
+            parsed_link = urlparse(link)
+            # 規則：同域名、必須是 http(s)、排除非 HTML 檔案格式
+            if parsed_link.netloc == domain and parsed_link.scheme in ["http", "https"]:
+                clean_link = link.split('#')[0].rstrip('/') # 移除錨點與結尾斜線避免重複
+                if not clean_link.lower().endswith(('.pdf', '.jpg', '.png', '.zip', '.docx')):
+                    internal_links.add(clean_link)
+        return list(internal_links)
+    except Exception as e:
+        st.sidebar.warning(f"掃描網址失敗 {base_url}: {e}")
+        return [base_url]
 
-# --- 4. 建立索引功能 ---
-@st.cache_resource(show_spinner="正在讀取知識庫...")
-def initialize_knowledge_base():
+# --- 3. 初始化知識庫 (文件 + 網頁) ---
+@st.cache_resource(show_spinner="正在同步雲端資料並爬取網頁...")
+def initialize_index():
     all_docs = []
-    
-    # A. 讀取 data 資料夾
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(base_dir, "data")
+    url_file = os.path.join(base_dir, "urls.txt")
+
+    # A. 讀取本地文件 (data/ 資料夾)
     if os.path.exists(data_dir) and os.listdir(data_dir):
         try:
-            # 支援 PDF, Docx, TXT 等格式
             reader = SimpleDirectoryReader(input_dir=data_dir, recursive=True)
             all_docs.extend(reader.load_data())
         except Exception as e:
-            st.error(f"讀取文件發生錯誤: {e}")
-    
-    # B. 讀取 urls.txt
+            st.error(f"文件讀取失敗: {e}")
+
+    # B. 讀取並爬取網頁內容
     if os.path.exists(url_file):
         with open(url_file, "r", encoding="utf-8") as f:
-            urls = [line.strip() for line in f if line.strip().startswith("http")]
-        if urls:
-            try:
-                web_docs = SimpleWebPageReader(html_to_text=True).load_data(urls)
-                all_docs.extend(web_docs)
-            except Exception as e:
-                st.sidebar.warning(f"部分網址無法存取: {e}")
+            seeds = [line.strip() for line in f if line.strip().startswith("http")]
+        
+        if seeds:
+            total_urls = []
+            with st.sidebar.status("🌐 網頁爬蟲進行中...", expanded=True) as status:
+                for seed in seeds:
+                    st.write(f"正在搜尋: {seed}")
+                    links = get_internal_links(seed)
+                    total_urls.extend(links)
+                
+                final_urls = list(set(total_urls)) # 去重
+                st.write(f"總計發現 {len(final_urls)} 個相關頁面")
+                
+                try:
+                    # 讀取所有爬到的網頁內容
+                    web_docs = SimpleWebPageReader(html_to_text=True).load_data(final_urls)
+                    all_docs.extend(web_docs)
+                    status.update(label="✅ 網頁爬取完成！", state="complete")
+                except Exception as e:
+                    st.error(f"讀取網頁內容出錯: {e}")
 
     if not all_docs:
         return None
 
     return VectorStoreIndex.from_documents(all_docs)
 
-# --- 5. 介面與對話邏輯 ---
+# --- 4. 側邊欄狀態顯示 ---
 with st.sidebar:
-    st.header("📋 知識庫狀態")
-    if os.path.exists(data_dir):
-        file_count = len(os.listdir(data_dir))
-        st.success(f"已偵測到 {file_count} 份文件")
+    st.header("📊 知識庫狀態")
+    index = initialize_index()
+    if index:
+        st.success("🧠 AI 大腦已就緒")
     else:
-        st.warning("找不到 data 資料夾")
+        st.warning("⚠️ 知識庫目前無資料")
     
-    st.info("💡 提示：在 GitHub 上傳新文件後，重新整理網頁即可更新內容。")
+    st.divider()
+    st.caption("自動爬蟲模式：開啟")
+    st.info("系統會自動抓取 urls.txt 中網址的「所有同站子連結」。")
 
-# 建立索引
-index = initialize_knowledge_base()
-
+# --- 5. 對話介面 ---
 if index:
-    # 建立搜尋引擎 (設定 top_k=5 以增加搜尋深度)
+    # 建立查詢引擎
     query_engine = index.as_query_engine(similarity_top_k=5)
 
-    # 對話紀錄管理
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # 顯示歷史對話
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # 使用者提問
-    if prompt := st.chat_input("請輸入您的問題..."):
+    if prompt := st.chat_input("請問關於 3D Printer 的任何事？"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("正在搜尋資料庫..."):
-                try:
-                    response = query_engine.query(prompt)
-                    answer = str(response)
-                    st.markdown(answer)
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
-                except Exception as e:
-                    st.error(f"發生錯誤：{e}")
-                    st.info("這通常與 API 額度或格式有關，請稍後再試。")
+            with st.spinner("正在檢索文件與網頁..."):
+                response = query_engine.query(prompt)
+                st.markdown(str(response))
+                st.session_state.messages.append({"role": "assistant", "content": str(response)})
 else:
-    st.warning("目前的知識庫是空的。請在 GitHub 的 'data' 資料夾放檔案或在 'urls.txt' 放網址。")
+    st.info("請上傳檔案到 GitHub 的 data/ 資料夾，或在 urls.txt 寫入網址以啟用功能。")

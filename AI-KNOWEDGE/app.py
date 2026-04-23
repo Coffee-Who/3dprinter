@@ -1,48 +1,61 @@
-from fastapi import FastAPI
-import chromadb
-from sentence_transformers import SentenceTransformer
-import anthropic
+import streamlit as st
 import os
-from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Document
+from llama_index.readers.web import SimpleWebPageReader
+from llama_index.llms.groq import Groq
+from llama_index.core import Settings
 
-load_dotenv()
+# --- 配置區 ---
+GROQ_API_KEY = "你的_GROQ_API_KEY" # 建議從 Streamlit Secrets 讀取以保安全
+st.set_page_config(page_title="GitHub 知識庫", layout="wide")
 
-app = FastAPI()
+# 初始化 LLM (使用免費又極快的 Groq)
+Settings.llm = Groq(model="llama3-70b-8192", api_key=GROQ_API_KEY)
+# 使用本地輕量化 Embedding (這部分完全免費且在雲端跑得動)
+Settings.embed_model = "local:BAAI/bge-small-en-v1.5"
 
-client = chromadb.Client()
-collection = client.get_or_create_collection("docs")
+@st.cache_resource(show_spinner="正在載入知識庫...")
+def initialize_index():
+    # A. 讀取 data/ 資料夾內的文件
+    documents = []
+    if os.path.exists("./data") and os.listdir("./data"):
+        documents.extend(SimpleDirectoryReader("./data").load_data())
+    
+    # B. 讀取 urls.txt 內的網址
+    if os.path.exists("urls.txt"):
+        with open("urls.txt", "r") as f:
+            urls = [line.strip() for line in f if line.strip().startswith("http")]
+        if urls:
+            web_docs = SimpleWebPageReader(html_to_text=True).load_data(urls)
+            documents.extend(web_docs)
+    
+    # 建立搜尋索引
+    return VectorStoreIndex.from_documents(documents)
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# --- 網頁介面 ---
+st.title("🤖 GitHub 知識庫助手")
 
-claude = anthropic.Anthropic(
-    api_key=os.getenv("ANTHROPIC_API_KEY")
-)
+try:
+    index = initialize_index()
+    query_engine = index.as_query_engine()
 
-@app.get("/ask")
-def ask(q: str):
-    query_vec = model.encode(q).tolist()
+    # 聊天介面
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    results = collection.query(
-        query_embeddings=[query_vec],
-        n_results=3
-    )
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-    context = "\n".join(results["documents"][0])
+    if prompt := st.chat_input("請輸入問題..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-    prompt = f"""
-你是公司內部知識庫助理，請根據以下內容回答：
+        with st.chat_message("assistant"):
+            response = query_engine.query(prompt)
+            st.markdown(str(response))
+            st.session_state.messages.append({"role": "assistant", "content": str(response)})
 
-{context}
-
-問題：{q}
-
-如果找不到答案，請回覆：此問題超出知識庫範圍
-"""
-
-    response = claude.messages.create(
-        model="claude-3-haiku-20240307",
-        max_tokens=500,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    return {"answer": response.content[0].text}
+except Exception as e:
+    st.error(f"載入失敗，請確認是否已上傳文件或 API Key 正確。錯誤: {e}")

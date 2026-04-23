@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -28,10 +29,7 @@ body{font-family:'DM Sans','Noto Sans TC',-apple-system,sans-serif;color:var(--t
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg1)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-select,input[type=number],input[type=text],input[type=url],input[type=password],textarea{
-  width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--t1);
-  padding:7px 10px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;transition:border-color .15s
-}
+select,input[type=number],input[type=text],input[type=url],input[type=password],textarea{width:100%;background:var(--bg2);border:1px solid var(--border2);color:var(--t1);padding:7px 10px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;transition:border-color .15s}
 select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.12)}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg2);color:var(--t1);transition:.15s;font-family:inherit;white-space:nowrap}
 .btn:hover{background:var(--bg3)}
@@ -40,8 +38,6 @@ select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .btn.dngr{background:rgba(248,81,73,.1);color:var(--red);border-color:var(--red)}
 .btn.sm{padding:5px 11px;font-size:12px}
 .btn.warn{background:rgba(210,153,34,.12);color:var(--yellow);border-color:var(--yellow)}
-
-/* MODALS */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s}
 .mover.on{opacity:1;pointer-events:all}
 .mbox{background:var(--bg1);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:460px;box-shadow:var(--sh);transform:translateY(10px);transition:transform .2s;max-height:90vh;overflow-y:auto}
@@ -53,15 +49,11 @@ select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .ma{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
 .img-preview{width:100%;height:120px;object-fit:cover;border-radius:8px;margin-top:8px;display:none;border:1px solid var(--border2)}
 .img-preview.show{display:block}
-
-/* TOAST */
 #toasts{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:7px;z-index:999;pointer-events:none}
 .toast{background:var(--bg1);border:1px solid var(--border2);border-radius:8px;padding:11px 16px;font-size:13px;font-weight:500;box-shadow:var(--sh);display:flex;align-items:center;gap:6px;min-width:200px;animation:tIn .2s ease;color:var(--t1)}
 .toast.ok{border-left:3px solid var(--accent)}
 .toast.err{border-left:3px solid var(--red)}
 @keyframes tIn{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
-
-/* SHELL */
 #shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 #topbar{background:var(--bg1);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:20}
 .logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px;color:var(--t1)}
@@ -80,8 +72,6 @@ select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 #pages{flex:1;overflow:hidden;position:relative}
 .pg{display:none;position:absolute;inset:0;overflow-y:auto}
 .pg.on{display:block}
-
-/* HOME PAGE */
 .hw{padding:0 20px 60px;max-width:1280px;margin:0 auto}
 .hw-hero{text-align:center;padding:36px 0 20px}
 .eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
@@ -89,11 +79,16 @@ select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .hw-hero h1{font-size:clamp(24px,5vw,42px);font-weight:700;letter-spacing:-1px;line-height:1.1;color:var(--t1)}
 .hw-hero h1 em{font-style:normal;color:var(--accent)}
 .hw-hero p{color:var(--t2);font-size:14px;margin-top:8px}
+.hw-hero .kb-desc{color:var(--t3);font-size:12px;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px}
 .srch-bar{display:flex;align-items:center;gap:8px;max-width:500px;margin:18px auto 0;background:var(--bg1);border:1.5px solid var(--border2);border-radius:40px;padding:6px 6px 6px 18px;box-shadow:var(--sh)}
 .srch-bar input{flex:1;border:none;background:transparent;font-family:inherit;font-size:14px;color:var(--t1);outline:none}
 .srch-bar input::placeholder{color:var(--t3)}
 .srch-bar button{background:var(--accent);color:#fff;border:none;border-radius:30px;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
 .srch-bar button:hover{background:var(--accent2)}
+.srch-mode{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.srch-mode-toggle{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 11px;cursor:pointer;transition:.15s;user-select:none}
+.srch-mode-toggle:hover{color:var(--t1);border-color:var(--border2)}
+.srch-mode-toggle input{accent-color:var(--accent);cursor:pointer;width:auto;background:none;border:none;padding:0;margin:0}
 .stats-row{display:flex;gap:7px;margin:14px 0 0;flex-wrap:wrap;justify-content:center}
 .sc{background:var(--bg1);border:1px solid var(--border);border-radius:30px;padding:4px 13px;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:5px}
 .sc strong{color:var(--accent);font-weight:700}
@@ -127,21 +122,31 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 .add-lcard:hover{border-color:var(--accent);color:var(--accent);background:var(--abg)}
 .hw-footer{text-align:center;padding:24px 0 0;border-top:1px solid var(--border);margin-top:50px;color:var(--t3);font-size:12px}
 .hw-footer a{color:var(--accent);text-decoration:none}
-
-/* GitHub sync indicator */
 .sync-bar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t2);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 11px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0}
 .sync-dot.ok{background:#3fb950}
 .sync-dot.err{background:var(--red)}
 .sync-dot.loading{background:var(--yellow);animation:pulse .8s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── 知識庫結果面板 ── */
+#kb-panel{margin:16px 0 0;border:1px solid var(--border2);border-radius:12px;background:var(--bg1);overflow:hidden;display:none;max-width:700px;margin-left:auto;margin-right:auto}
+.kb-ph{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.kb-ph-l{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--accent)}
+.kb-close{cursor:pointer;color:var(--t3);font-size:16px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:.15s}
+.kb-close:hover{background:var(--bg3);color:var(--t1)}
+.kb-body{padding:16px;font-size:13px;line-height:1.8;color:var(--t1);white-space:pre-wrap;max-height:380px;overflow-y:auto}
+.kb-srcs{padding:10px 16px;border-top:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.kb-src-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)}
+.kb-src-chip{font-size:11px;color:var(--blue);background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);border-radius:20px;padding:2px 10px}
+.kb-loading{display:flex;align-items:center;gap:10px;padding:18px 16px;color:var(--t2);font-size:13px}
+.kb-spin{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-
 <div id="toasts"></div>
 
-<!-- Pass Modal -->
 <div class="mover" id="passOv">
   <div class="mbox" style="max-width:320px;text-align:center">
     <div style="font-size:32px;margin-bottom:10px">🔐</div>
@@ -156,7 +161,6 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
   </div>
 </div>
 
-<!-- Add/Edit Card Modal -->
 <div class="mover" id="cardOv">
   <div class="mbox">
     <div class="mt" id="cardOvTitle">➕ 新增連結</div>
@@ -183,7 +187,6 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
   </div>
 </div>
 
-<!-- Add Category Modal -->
 <div class="mover" id="catOv">
   <div class="mbox" style="max-width:360px">
     <div class="mt" id="catOvTitle">➕ 新增大類</div>
@@ -197,7 +200,6 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
   </div>
 </div>
 
-<!-- Edit Category Modal -->
 <div class="mover" id="editCatOv">
   <div class="mbox" style="max-width:360px">
     <div class="mt">✏️ 編輯分類名稱</div>
@@ -214,7 +216,6 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
   </div>
 </div>
 
-<!-- GitHub Token Modal -->
 <div class="mover" id="tokenOv">
   <div class="mbox" style="max-width:420px">
     <div class="mt">🔑 GitHub Token 設定</div>
@@ -260,10 +261,28 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
         <div class="eyebrow">SOLIDWIZARD</div>
         <h1>實威國際<em>入口網站</em></h1>
         <p>統一管理所有常用系統、工具與資源的快速入口</p>
+        <p class="kb-desc">📚 所有答案只來自你上傳的文件與網站，由 Dify + Claude 語意搜尋，精準找到相關內容</p>
         <div class="srch-bar">
-          <input type="text" id="srch" placeholder="搜尋連結名稱…" oninput="filterCards(this.value)">
-          <button onclick="filterCards(document.getElementById('srch').value)">搜尋</button>
+          <input type="text" id="srch" placeholder="搜尋連結或詢問知識庫…" onkeydown="if(event.key==='Enter')handleSearch(this.value)" oninput="onSrchInput(this.value)">
+          <button onclick="handleSearch(document.getElementById('srch').value)">搜尋</button>
         </div>
+        <div class="srch-mode">
+          <label class="srch-mode-toggle">
+            <input type="checkbox" id="kbMode" onchange="onModeChange()">
+            🤖 知識庫模式
+          </label>
+        </div>
+
+        <!-- 知識庫結果面板 -->
+        <div id="kb-panel">
+          <div class="kb-ph">
+            <div class="kb-ph-l">🤖 AI 知識庫回答 · <span id="kb-q-lbl" style="font-weight:400;color:var(--t2)"></span></div>
+            <span class="kb-close" onclick="closeKb()">✕</span>
+          </div>
+          <div id="kb-body" class="kb-body"></div>
+          <div id="kb-srcs" class="kb-srcs"></div>
+        </div>
+
         <div class="stats-row">
           <div class="sc">📂 分類 <strong id="stCat">—</strong></div>
           <div class="sc">🔗 連結 <strong id="stLinks">—</strong></div>
@@ -296,14 +315,14 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 </div>
 
 <script>
-/* ════════════════════════════════════════
-   GITHUB SYNC — image/data.json
-════════════════════════════════════════ */
-const GH_USER='Coffee-Who', GH_REPO='3dprinter', GH_PATH='image/data.json';
-const GH_RAW=`https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${GH_PATH}`;
-const LS_CACHE='sw_portal_v9_home', LS_TOKEN='sw_gh_token_v9';
-let GH_TOKEN=localStorage.getItem(LS_TOKEN)||'';
+/* ════ DIFY 設定 — 修改這裡 ════ */
+const DIFY_WORKER_URL = 'https://fancy-frog-4023.barry00000000.workers.dev';
 
+/* ════ GITHUB SYNC ════ */
+const GH_USER='Coffee-Who',GH_REPO='3dprinter',GH_PATH='image/data.json';
+const GH_RAW=`https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${GH_PATH}`;
+const LS_CACHE='sw_portal_v9_home',LS_TOKEN='sw_gh_token_v9';
+let GH_TOKEN=localStorage.getItem(LS_TOKEN)||'';
 const DEFAULT_DATA={categories:[
   {id:'int',name:'A · 內部系統',emoji:'🏢',cards:[
     {id:'i1',title:'CRM',url:'http://192.168.100.85/WebCRM/',img:'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=70'},
@@ -331,98 +350,91 @@ const DEFAULT_DATA={categories:[
     {id:'sc1',title:'SCANOLOGY 官網',url:'https://www.scanology.com/',img:'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=70'},
   ]},
 ]};
-
 let PORTAL=JSON.parse(JSON.stringify(DEFAULT_DATA));
-let isAdmin=false,srchQ='',editingCardId=null,editingCatId=null;
+let isAdmin=false,srchQ='',editingCardId=null;
 const PASS='0000';
 
-function setSyncStatus(state,msg){
-  const dot=document.getElementById('syncDot');
-  const txt=document.getElementById('syncTxt');
-  dot.className='sync-dot '+state;
-  txt.textContent=msg;
+/* ════ 搜尋模式 ════ */
+function onModeChange(){
+  const on=document.getElementById('kbMode').checked;
+  document.getElementById('srch').placeholder=on?'輸入問題，AI 將從知識庫回答…':'搜尋連結名稱…';
+  if(!on){closeKb();filterCards('');}
+}
+function onSrchInput(v){
+  if(!document.getElementById('kbMode').checked) filterCards(v);
+}
+function handleSearch(v){
+  const q=v.trim();
+  if(!q)return;
+  if(document.getElementById('kbMode').checked) runKbSearch(q);
+  else filterCards(q);
 }
 
+/* ════ 知識庫搜尋 ════ */
+async function runKbSearch(query){
+  const panel=document.getElementById('kb-panel');
+  const body=document.getElementById('kb-body');
+  const srcs=document.getElementById('kb-srcs');
+  document.getElementById('kb-q-lbl').textContent='「'+query+'」';
+  panel.style.display='block';
+  body.innerHTML='<div class="kb-loading"><div class="kb-spin"></div>正在搜尋知識庫…</div>';
+  srcs.innerHTML='';
+  try{
+    const resp=await fetch(DIFY_WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query})
+    });
+    const data=await resp.json();
+    if(!resp.ok){body.innerHTML='<span style="color:var(--red)">❌ '+esc(data.message||'API 錯誤')+'</span>';return;}
+    const answer=data.answer||'（知識庫中找不到相關資料）';
+    body.innerHTML=esc(answer).replace(/\n/g,'<br>');
+    const refs=data.metadata?.retriever_resources||[];
+    if(refs.length){
+      srcs.innerHTML='<span class="kb-src-lbl">來源</span>'+refs.map(r=>`<span class="kb-src-chip">📄 ${esc(r.document_name||'文件')} ${Math.round((r.score||0)*100)}%</span>`).join('');
+    }else{
+      srcs.innerHTML='<span class="kb-src-lbl">來源</span><span class="kb-src-chip" style="color:var(--t3)">⚠️ 無明確來源文件</span>';
+    }
+  }catch(e){
+    body.innerHTML='<span style="color:var(--red)">❌ 連線失敗，請稍後再試</span>';
+  }
+}
+function closeKb(){document.getElementById('kb-panel').style.display='none';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ════ GITHUB SYNC ════ */
+function setSyncStatus(state,msg){
+  document.getElementById('syncDot').className='sync-dot '+state;
+  document.getElementById('syncTxt').textContent=msg;
+}
 async function loadFromGH(){
   setSyncStatus('loading','連線中…');
   try{
     const r=await fetch(GH_RAW+'?t='+Date.now(),{cache:'no-store'});
-    if(r.ok){
-      const d=await r.json();
-      PORTAL=d;
-      localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));
-      setSyncStatus('ok','已同步 GitHub');
-      renderPortal();return;
-    }
+    if(r.ok){PORTAL=await r.json();localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));setSyncStatus('ok','已同步 GitHub');renderPortal();return;}
   }catch(e){}
-  // fallback to localStorage cache
   const c=localStorage.getItem(LS_CACHE);
   if(c){try{PORTAL=JSON.parse(c);setSyncStatus('err','使用本機快取');renderPortal();return;}catch(e){}}
-  PORTAL=JSON.parse(JSON.stringify(DEFAULT_DATA));
-  setSyncStatus('err','使用預設資料');
-  renderPortal();
+  PORTAL=JSON.parse(JSON.stringify(DEFAULT_DATA));setSyncStatus('err','使用預設資料');renderPortal();
 }
-
 async function saveToGH(){
-  if(!GH_TOKEN){
-    document.getElementById('tokenOv').classList.add('on');
-    return false;
-  }
+  if(!GH_TOKEN){document.getElementById('tokenOv').classList.add('on');return false;}
   setSyncStatus('loading','儲存中…');
   const json=JSON.stringify(PORTAL,null,2);
   let sha='';
+  try{const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,{headers:{Authorization:`token ${GH_TOKEN}`,Accept:'application/vnd.github.v3+json'}});if(r.ok){const d=await r.json();sha=d.sha;}}catch(e){}
+  const body={message:`Portal update ${new Date().toISOString().slice(0,19)}`,content:btoa(unescape(encodeURIComponent(json))),...(sha?{sha}:{})};
   try{
-    const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,
-      {headers:{Authorization:`token ${GH_TOKEN}`,Accept:'application/vnd.github.v3+json'}});
-    if(r.ok){const d=await r.json();sha=d.sha;}
+    const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,{method:'PUT',headers:{Authorization:`token ${GH_TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},body:JSON.stringify(body)});
+    if(r.ok){localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));setSyncStatus('ok','已同步至 GitHub ✓');return true;}
   }catch(e){}
-  const body={
-    message:`Portal update ${new Date().toISOString().slice(0,19)}`,
-    content:btoa(unescape(encodeURIComponent(json))),
-    ...(sha?{sha}:{})
-  };
-  try{
-    const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,{
-      method:'PUT',
-      headers:{Authorization:`token ${GH_TOKEN}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},
-      body:JSON.stringify(body)
-    });
-    if(r.ok){
-      localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));
-      setSyncStatus('ok','已同步至 GitHub ✓');
-      return true;
-    }
-  }catch(e){}
-  setSyncStatus('err','GitHub 儲存失敗，已存本機');
-  localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));
-  return false;
+  setSyncStatus('err','GitHub 儲存失敗，已存本機');localStorage.setItem(LS_CACHE,JSON.stringify(PORTAL));return false;
 }
-
-/* TOKEN MODAL */
 function closeToken(){document.getElementById('tokenOv').classList.remove('on');}
-function saveToken(){
-  const t=document.getElementById('tokenInp').value.trim();
-  if(!t){toast('❌ 請輸入 Token','err');return;}
-  GH_TOKEN=t;localStorage.setItem(LS_TOKEN,GH_TOKEN);
-  closeToken();toast('✅ Token 已儲存，請重新操作','ok');
-}
-
-/* THEME */
-function toggleTheme(){
-  document.body.classList.toggle('lm');
-  const dark=!document.body.classList.contains('lm');
-  document.getElementById('themeBtn').textContent=dark?'🌙 暗色':'☀️ 亮色';
-  localStorage.setItem('sw_theme_v9',dark?'dark':'light');
-}
+function saveToken(){const t=document.getElementById('tokenInp').value.trim();if(!t){toast('❌ 請輸入 Token','err');return;}GH_TOKEN=t;localStorage.setItem(LS_TOKEN,GH_TOKEN);closeToken();toast('✅ Token 已儲存','ok');}
+function toggleTheme(){document.body.classList.toggle('lm');const dark=!document.body.classList.contains('lm');document.getElementById('themeBtn').textContent=dark?'🌙 暗色':'☀️ 亮色';localStorage.setItem('sw_theme_v9',dark?'dark':'light');}
 (()=>{const t=localStorage.getItem('sw_theme_v9');if(t==='light'){document.body.classList.add('lm');document.getElementById('themeBtn').textContent='☀️ 亮色';}})();
-
-/* TOAST */
-function toast(msg,type=''){
-  const t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;
-  document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3000);
-}
-
-/* RENDER */
+function toast(msg,type=''){const t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3000);}
 function renderPortal(){
   const c=document.getElementById('sectionsC');c.innerHTML='';
   let tot=0;PORTAL.categories.forEach(cat=>tot+=cat.cards.length);
@@ -432,18 +444,7 @@ function renderPortal(){
     const f=srchQ?cat.cards.filter(c=>c.title.toLowerCase().includes(srchQ)||c.url.toLowerCase().includes(srchQ)):cat.cards;
     if(srchQ&&!f.length)return;
     const sec=document.createElement('div');sec.className='hw-sec';
-    sec.innerHTML=`<div class="hw-sec-h">
-      <div class="hw-sec-t">
-        <span style="font-size:18px">${cat.emoji}</span>
-        <span class="hw-sec-name">${cat.name}</span>
-        <span class="hw-sec-cnt">${f.length} 個</span>
-      </div>
-      <div class="hw-sec-actions">
-        ${isAdmin?`<button class="btn sm warn" onclick="openEditCat('${cat.id}')">✏️ 編輯分類</button>
-        <button class="btn sm prim" onclick="openCard('${cat.id}')">＋ 新增連結</button>`:''}
-      </div>
-    </div>
-    <div class="card-grid" id="cg-${cat.id}"></div>`;
+    sec.innerHTML=`<div class="hw-sec-h"><div class="hw-sec-t"><span style="font-size:18px">${cat.emoji}</span><span class="hw-sec-name">${cat.name}</span><span class="hw-sec-cnt">${f.length} 個</span></div><div class="hw-sec-actions">${isAdmin?`<button class="btn sm warn" onclick="openEditCat('${cat.id}')">✏️ 編輯分類</button><button class="btn sm prim" onclick="openCard('${cat.id}')">＋ 新增連結</button>`:''}</div></div><div class="card-grid" id="cg-${cat.id}"></div>`;
     c.appendChild(sec);
     const grid=document.getElementById('cg-'+cat.id);
     f.forEach(card=>{
@@ -451,173 +452,34 @@ function renderPortal(){
       el.onclick=e=>{if(e.target.closest('.lcard-actions'))return;window.open(card.url,'_blank');};
       let dom='';try{dom=new URL(card.url).hostname;}catch{dom=card.url;}
       const imgSrc=card.img||'';
-      el.innerHTML=`
-        ${imgSrc?`<img class="lcard-img" src="${imgSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
-        <div class="lcard-ph" style="${imgSrc?'display:none':''}">🔗</div>
-        <div class="lcard-b"><div class="lcard-t">${card.title}</div><div class="lcard-u">${dom}</div></div>
-        ${isAdmin?`<div class="lcard-actions vis">
-          <div class="lcard-act-btn" onclick="openCard('${cat.id}','${card.id}')" title="編輯">✏️</div>
-          <div class="lcard-act-btn del" onclick="delCard('${cat.id}','${card.id}')" title="刪除">✕</div>
-        </div>`:''}
-      `;
+      el.innerHTML=`${imgSrc?`<img class="lcard-img" src="${imgSrc}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}<div class="lcard-ph" style="${imgSrc?'display:none':''}">🔗</div><div class="lcard-b"><div class="lcard-t">${card.title}</div><div class="lcard-u">${dom}</div></div>${isAdmin?`<div class="lcard-actions vis"><div class="lcard-act-btn" onclick="openCard('${cat.id}','${card.id}')" title="編輯">✏️</div><div class="lcard-act-btn del" onclick="delCard('${cat.id}','${card.id}')" title="刪除">✕</div></div>`:''}`;
       grid.appendChild(el);
     });
-    if(isAdmin&&!srchQ){
-      const a=document.createElement('div');a.className='add-lcard';
-      a.onclick=()=>openCard(cat.id);
-      a.innerHTML='<div style="font-size:24px">➕</div><div style="font-size:13px;font-weight:600">新增連結</div>';
-      grid.appendChild(a);
-    }
+    if(isAdmin&&!srchQ){const a=document.createElement('div');a.className='add-lcard';a.onclick=()=>openCard(cat.id);a.innerHTML='<div style="font-size:24px">➕</div><div style="font-size:13px;font-weight:600">新增連結</div>';grid.appendChild(a);}
   });
 }
 function filterCards(q){srchQ=q.trim().toLowerCase();renderPortal();}
-
-/* ADMIN */
-function requestAdmin(){
-  if(isAdmin){exitAdmin();return;}
-  document.getElementById('passOv').classList.add('on');
-  document.getElementById('passInp').value='';
-  document.getElementById('passErr').textContent='';
-  setTimeout(()=>document.getElementById('passInp').focus(),200);
-}
+function requestAdmin(){if(isAdmin){exitAdmin();return;}document.getElementById('passOv').classList.add('on');document.getElementById('passInp').value='';document.getElementById('passErr').textContent='';setTimeout(()=>document.getElementById('passInp').focus(),200);}
 function closePass(){document.getElementById('passOv').classList.remove('on');}
-function verifyPass(){
-  if(document.getElementById('passInp').value===PASS){
-    isAdmin=true;closePass();
-    document.getElementById('adminBar').classList.add('on');
-    document.getElementById('adminBtn').textContent='✅ 管理中';
-    toast('✅ 管理員模式已啟用','ok');renderPortal();
-  }else{
-    document.getElementById('passErr').textContent='❌ 密碼錯誤';
-    document.getElementById('passInp').value='';
-    document.getElementById('passInp').focus();
-  }
-}
-function exitAdmin(){
-  isAdmin=false;
-  document.getElementById('adminBar').classList.remove('on');
-  document.getElementById('adminBtn').textContent='🔐 管理員';
-  toast('已退出管理員模式');renderPortal();
-}
-
-/* CARD MODAL */
-function openCard(catId,cardId){
-  editingCardId=cardId||null;
-  const sel=document.getElementById('cardCat');
-  sel.innerHTML=PORTAL.categories.map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.emoji} ${c.name}</option>`).join('');
-  if(cardId){
-    const cat=PORTAL.categories.find(c=>c.id===catId);
-    const card=cat&&cat.cards.find(c=>c.id===cardId);
-    if(card){
-      document.getElementById('cardTit').value=card.title;
-      document.getElementById('cardUrl').value=card.url;
-      document.getElementById('cardImgUrl').value=card.img&&!card.img.startsWith('data:')?card.img:'';
-      const prev=document.getElementById('cardImgPreview');
-      if(card.img){prev.src=card.img;prev.classList.add('show');}else prev.classList.remove('show');
-      document.getElementById('cardOvTitle').textContent='✏️ 編輯連結';
-      document.getElementById('cardOvSub').textContent='修改此連結的資料';
-      document.getElementById('cardSaveBtn').textContent='儲存變更';
-    }
-  }else{
-    ['cardTit','cardUrl','cardImgUrl'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('cardImgPreview').classList.remove('show');
-    document.getElementById('cardOvTitle').textContent='➕ 新增連結';
-    document.getElementById('cardOvSub').textContent='新增快速連結到分類';
-    document.getElementById('cardSaveBtn').textContent='新增';
-  }
-  document.getElementById('cardOv').classList.add('on');
-  setTimeout(()=>document.getElementById('cardTit').focus(),200);
-}
+function verifyPass(){if(document.getElementById('passInp').value===PASS){isAdmin=true;closePass();document.getElementById('adminBar').classList.add('on');document.getElementById('adminBtn').textContent='✅ 管理中';toast('✅ 管理員模式已啟用','ok');renderPortal();}else{document.getElementById('passErr').textContent='❌ 密碼錯誤';document.getElementById('passInp').value='';document.getElementById('passInp').focus();}}
+function exitAdmin(){isAdmin=false;document.getElementById('adminBar').classList.remove('on');document.getElementById('adminBtn').textContent='🔐 管理員';toast('已退出管理員模式');renderPortal();}
+function openCard(catId,cardId){editingCardId=cardId||null;const sel=document.getElementById('cardCat');sel.innerHTML=PORTAL.categories.map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.emoji} ${c.name}</option>`).join('');if(cardId){const cat=PORTAL.categories.find(c=>c.id===catId);const card=cat&&cat.cards.find(c=>c.id===cardId);if(card){document.getElementById('cardTit').value=card.title;document.getElementById('cardUrl').value=card.url;document.getElementById('cardImgUrl').value=card.img&&!card.img.startsWith('data:')?card.img:'';const prev=document.getElementById('cardImgPreview');if(card.img){prev.src=card.img;prev.classList.add('show');}else prev.classList.remove('show');document.getElementById('cardOvTitle').textContent='✏️ 編輯連結';document.getElementById('cardOvSub').textContent='修改此連結的資料';document.getElementById('cardSaveBtn').textContent='儲存變更';}}else{['cardTit','cardUrl','cardImgUrl'].forEach(id=>document.getElementById(id).value='');document.getElementById('cardImgPreview').classList.remove('show');document.getElementById('cardOvTitle').textContent='➕ 新增連結';document.getElementById('cardOvSub').textContent='新增快速連結到分類';document.getElementById('cardSaveBtn').textContent='新增';}document.getElementById('cardOv').classList.add('on');setTimeout(()=>document.getElementById('cardTit').focus(),200);}
 function closeCard(){document.getElementById('cardOv').classList.remove('on');editingCardId=null;}
 function previewImgUrl(url){const prev=document.getElementById('cardImgPreview');if(url){prev.src=url;prev.classList.add('show');}else prev.classList.remove('show');}
-function handleImgUpload(inp){
-  if(!inp.files[0])return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const b64=e.target.result;
-    document.getElementById('cardImgPreview').src=b64;
-    document.getElementById('cardImgPreview').classList.add('show');
-    document.getElementById('cardImgUrl').value='';
-    inp._b64=b64;
-  };reader.readAsDataURL(inp.files[0]);
-}
-async function saveCard(){
-  const title=document.getElementById('cardTit').value.trim();
-  const url=document.getElementById('cardUrl').value.trim();
-  const imgUrl=document.getElementById('cardImgUrl').value.trim();
-  const fileInp=document.getElementById('cardImgFile');
-  const img=fileInp._b64||imgUrl||null;
-  const catId=document.getElementById('cardCat').value;
-  if(!title||!url){toast('❌ 標題和網址為必填','err');return;}
-  const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;
-  if(editingCardId){
-    let found=false;
-    PORTAL.categories.forEach(cc=>{const card=cc.cards.find(c=>c.id===editingCardId);if(card){card.title=title;card.url=url.startsWith('http')?url:'https://'+url;card.img=img;found=true;}});
-    if(!found)cat.cards.push({id:editingCardId,title,url:url.startsWith('http')?url:'https://'+url,img});
-    toast('✅ 已更新：'+title,'ok');
-  }else{
-    cat.cards.push({id:'c'+Date.now(),title,url:url.startsWith('http')?url:'https://'+url,img});
-    toast('✅ 已新增：'+title,'ok');
-  }
-  fileInp._b64=null;fileInp.value='';closeCard();renderPortal();
-  await saveToGH();
-}
-function delCard(catId,cardId){
-  const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;
-  const card=cat.cards.find(c=>c.id===cardId);if(!card||!confirm('確定刪除「'+card.title+'」？'))return;
-  cat.cards=cat.cards.filter(c=>c.id!==cardId);
-  toast('🗑️ 已刪除：'+card.title);renderPortal();
-  saveToGH();
-}
-
-/* CATEGORY MODALS */
+function handleImgUpload(inp){if(!inp.files[0])return;const reader=new FileReader();reader.onload=e=>{const b64=e.target.result;document.getElementById('cardImgPreview').src=b64;document.getElementById('cardImgPreview').classList.add('show');document.getElementById('cardImgUrl').value='';inp._b64=b64;};reader.readAsDataURL(inp.files[0]);}
+async function saveCard(){const title=document.getElementById('cardTit').value.trim();const url=document.getElementById('cardUrl').value.trim();const imgUrl=document.getElementById('cardImgUrl').value.trim();const fileInp=document.getElementById('cardImgFile');const img=fileInp._b64||imgUrl||null;const catId=document.getElementById('cardCat').value;if(!title||!url){toast('❌ 標題和網址為必填','err');return;}const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;if(editingCardId){PORTAL.categories.forEach(cc=>{const card=cc.cards.find(c=>c.id===editingCardId);if(card){card.title=title;card.url=url.startsWith('http')?url:'https://'+url;card.img=img;}});toast('✅ 已更新：'+title,'ok');}else{cat.cards.push({id:'c'+Date.now(),title,url:url.startsWith('http')?url:'https://'+url,img});toast('✅ 已新增：'+title,'ok');}fileInp._b64=null;fileInp.value='';closeCard();renderPortal();await saveToGH();}
+function delCard(catId,cardId){const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;const card=cat.cards.find(c=>c.id===cardId);if(!card||!confirm('確定刪除「'+card.title+'」？'))return;cat.cards=cat.cards.filter(c=>c.id!==cardId);toast('🗑️ 已刪除：'+card.title);renderPortal();saveToGH();}
 function openCat(){document.getElementById('catEmoji').value='';document.getElementById('catName').value='';document.getElementById('catOv').classList.add('on');setTimeout(()=>document.getElementById('catEmoji').focus(),200);}
 function closeCat(){document.getElementById('catOv').classList.remove('on');}
-async function saveCat(){
-  const emoji=document.getElementById('catEmoji').value.trim()||'📁';
-  const name=document.getElementById('catName').value.trim();
-  if(!name){toast('❌ 請輸入分類名稱','err');return;}
-  PORTAL.categories.push({id:'cat'+Date.now(),name,emoji,cards:[]});
-  closeCat();toast('✅ 已新增分類：'+name,'ok');renderPortal();
-  await saveToGH();
-}
-function openEditCat(catId){
-  const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;
-  document.getElementById('editCatId').value=catId;
-  document.getElementById('editCatEmoji').value=cat.emoji;
-  document.getElementById('editCatName').value=cat.name;
-  document.getElementById('editCatOv').classList.add('on');
-  setTimeout(()=>document.getElementById('editCatName').focus(),200);
-}
+async function saveCat(){const emoji=document.getElementById('catEmoji').value.trim()||'📁';const name=document.getElementById('catName').value.trim();if(!name){toast('❌ 請輸入分類名稱','err');return;}PORTAL.categories.push({id:'cat'+Date.now(),name,emoji,cards:[]});closeCat();toast('✅ 已新增分類：'+name,'ok');renderPortal();await saveToGH();}
+function openEditCat(catId){const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;document.getElementById('editCatId').value=catId;document.getElementById('editCatEmoji').value=cat.emoji;document.getElementById('editCatName').value=cat.name;document.getElementById('editCatOv').classList.add('on');setTimeout(()=>document.getElementById('editCatName').focus(),200);}
 function closeEditCat(){document.getElementById('editCatOv').classList.remove('on');}
-async function saveEditCat(){
-  const catId=document.getElementById('editCatId').value;
-  const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;
-  cat.emoji=document.getElementById('editCatEmoji').value.trim()||cat.emoji;
-  cat.name=document.getElementById('editCatName').value.trim()||cat.name;
-  closeEditCat();toast('✅ 分類已更新','ok');renderPortal();
-  await saveToGH();
-}
-async function deleteCat(){
-  const catId=document.getElementById('editCatId').value;
-  const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;
-  if(!confirm('確定刪除整個分類「'+cat.name+'」及其所有連結？'))return;
-  PORTAL.categories=PORTAL.categories.filter(c=>c.id!==catId);
-  closeEditCat();toast('🗑️ 分類已刪除');renderPortal();
-  await saveToGH();
-}
-
-/* MODAL OVERLAY CLOSE */
-['passOv','cardOv','catOv','editCatOv','tokenOv'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('on');});
-});
+async function saveEditCat(){const catId=document.getElementById('editCatId').value;const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;cat.emoji=document.getElementById('editCatEmoji').value.trim()||cat.emoji;cat.name=document.getElementById('editCatName').value.trim()||cat.name;closeEditCat();toast('✅ 分類已更新','ok');renderPortal();await saveToGH();}
+async function deleteCat(){const catId=document.getElementById('editCatId').value;const cat=PORTAL.categories.find(c=>c.id===catId);if(!cat)return;if(!confirm('確定刪除整個分類「'+cat.name+'」及其所有連結？'))return;PORTAL.categories=PORTAL.categories.filter(c=>c.id!==catId);closeEditCat();toast('🗑️ 分類已刪除');renderPortal();await saveToGH();}
+['passOv','cardOv','catOv','editCatOv','tokenOv'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('on');});});
 document.getElementById('passInp').addEventListener('keydown',e=>{if(e.key==='Enter')verifyPass();});
-
-/* CLOCK */
 function tick(){const n=new Date();document.getElementById('stTime').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
 tick();setInterval(tick,60000);
-
-/* INIT */
 loadFromGH();
 </script>
 </body>

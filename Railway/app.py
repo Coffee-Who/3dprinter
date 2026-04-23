@@ -3,9 +3,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 import requests
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = FastAPI()
 
@@ -41,16 +38,16 @@ def ask(q: str):
         n_results=3
     )
 
-    context = "\n".join(results["documents"][0])
+    context = "\n".join(results["documents"][0]) if results["documents"] else ""
 
     prompt = f"""
-你是公司知識庫AI，請依據內容回答：
+請根據以下內容回答（用中文）：
 
 {context}
 
 問題：{q}
 
-請用中文回答，並整理重點。
+如果沒有資料請回答：查無相關資料
 """
 
     answer = ask_groq(prompt)

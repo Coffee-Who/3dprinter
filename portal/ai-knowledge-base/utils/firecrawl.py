@@ -14,23 +14,29 @@ def crawl_website(url: str, max_pages: int = 10) -> list:
 
     result = app.crawl_url(
         url,
-        params={
-            'limit': max_pages,
-            'scrapeOptions': {
-                'formats': ['markdown'],
-                'onlyMainContent': True,
-            }
-        }
+        limit=max_pages,
+        scrape_formats=['markdown']
     )
 
     pages = []
-    if result and result.get('data'):
-        for page in result['data']:
-            content = page.get('markdown', '') or page.get('content', '')
+    if result and hasattr(result, 'data') and result.data:
+        for page in result.data:
+            content = ''
+            if hasattr(page, 'markdown'):
+                content = page.markdown or ''
+            elif hasattr(page, 'content'):
+                content = page.content or ''
+
             if content and len(content.strip()) > 100:
+                title = url
+                page_url = url
+                if hasattr(page, 'metadata') and page.metadata:
+                    title = getattr(page.metadata, 'title', url) or url
+                    page_url = getattr(page.metadata, 'source_url', url) or url
+
                 pages.append({
-                    'title': page.get('metadata', {}).get('title', url),
-                    'url': page.get('metadata', {}).get('sourceURL', url),
+                    'title': title,
+                    'url': page_url,
                     'content': content
                 })
 
@@ -39,15 +45,19 @@ def crawl_website(url: str, max_pages: int = 10) -> list:
 def scrape_single_page(url: str) -> dict:
     """爬取單一網頁"""
     app = get_firecrawl()
-    result = app.scrape_url(url, params={
-        'formats': ['markdown'],
-        'onlyMainContent': True,
-    })
+    result = app.scrape_url(url, formats=['markdown'])
 
     if result:
+        content = ''
+        title = url
+        if hasattr(result, 'markdown'):
+            content = result.markdown or ''
+        if hasattr(result, 'metadata') and result.metadata:
+            title = getattr(result.metadata, 'title', url) or url
+
         return {
-            'title': result.get('metadata', {}).get('title', url),
+            'title': title,
             'url': url,
-            'content': result.get('markdown', '')
+            'content': content
         }
     return None

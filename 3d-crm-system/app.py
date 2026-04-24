@@ -4,7 +4,17 @@ import pandas as pd
 
 st.title("🚀 自動CRM系統")
 
-with open("data/customers.json", encoding="utf-8") as f:
+import os
+import json
+import streamlit as st
+
+file_path = "data/customers.json"
+
+if not os.path.exists(file_path):
+    st.error("❌ 找不到 customers.json（請確認 GitHub 是否有 data/customers.json）")
+    st.stop()
+
+with open(file_path, encoding="utf-8") as f:
     data = json.load(f)
 
 df = pd.DataFrame(data)

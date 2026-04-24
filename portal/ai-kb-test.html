@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>實威國際 AI 知識庫</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f5f3;
+  --white:#ffffff;
+  --black:#111110;
+  --gray1:#f0efed;
+  --gray2:#e8e7e4;
+  --gray3:#c9c8c4;
+  --gray4:#8f8e8a;
+  --gray5:#6f6e69;
+  --blue:#2563eb;
+  --blue-light:#eff6ff;
+  --blue-border:#bfdbfe;
+  --green:#059669;
+  --green-light:#ecfdf5;
+  --green-border:#a7f3d0;
+  --red:#dc2626;
+  --red-light:#fef2f2;
+  --radius:12px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 6px rgba(0,0,0,.05),0 10px 40px rgba(0,0,0,.1);
+}
+
+body{
+  font-family:'Noto Sans TC',sans-serif;
+  background:var(--bg);
+  color:var(--black);
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  line-height:1.6;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--white);
+  border-bottom:1px solid var(--gray2);
+  padding:0 24px;
+  height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:28px;height:28px;border-radius:7px;
+  background:var(--blue);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;
+}
+.logo-text{font-size:14px;font-weight:700;color:var(--black);letter-spacing:-.3px}
+.logo-text span{color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--gray3);
+  transition:.3s;
+}
+.status-dot.online{background:var(--green);box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+.status-text{font-size:12px;color:var(--gray4)}
+.admin-link{
+  font-size:12px;color:var(--gray4);text-decoration:none;
+  padding:4px 10px;border-radius:6px;border:1px solid var(--gray2);
+  transition:.15s;
+}
+.admin-link:hover{color:var(--blue);border-color:var(--blue-border);background:var(--blue-light)}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;
+  padding:64px 24px 40px;
+  max-width:680px;margin:0 auto;width:100%;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--blue-light);color:var(--blue);
+  border:1px solid var(--blue-border);
+  border-radius:20px;padding:4px 12px;
+  font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  margin-bottom:20px;
+}
+.hero-badge::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--blue);animation:blink 1.5s ease infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-size:clamp(26px,5vw,42px);
+  font-weight:700;letter-spacing:-1.5px;
+  color:var(--black);margin-bottom:12px;
+  line-height:1.15;
+}
+.hero h1 em{
+  font-style:normal;color:var(--blue);
+}
+.hero-desc{
+  font-size:14px;color:var(--gray5);
+  max-width:480px;margin:0 auto 32px;
+  line-height:1.8;
+}
+
+/* ── STATS ── */
+.stats{
+  display:flex;justify-content:center;gap:8px;
+  margin-bottom:32px;flex-wrap:wrap;
+}
+.stat-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--white);border:1px solid var(--gray2);
+  border-radius:20px;padding:5px 12px;
+  font-size:12px;color:var(--gray5);
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.stat-pill strong{color:var(--black);font-weight:600}
+
+/* ── SEARCH ── */
+.search-section{
+  width:100%;max-width:640px;
+  margin:0 auto;padding:0 16px 48px;
+}
+.search-box{
+  background:var(--white);
+  border:1.5px solid var(--gray2);
+  border-radius:var(--radius);
+  display:flex;align-items:center;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+  margin-bottom:12px;
+}
+.search-box:focus-within{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(37,99,235,.1),var(--shadow);
+}
+.search-icon{
+  padding:0 14px;color:var(--gray3);font-size:18px;flex-shrink:0;
+}
+.search-input{
+  flex:1;border:none;outline:none;
+  font-size:15px;font-family:'Noto Sans TC',sans-serif;
+  color:var(--black);background:transparent;
+  padding:14px 0;
+}
+.search-input::placeholder{color:var(--gray3)}
+.search-btn{
+  background:var(--blue);color:#fff;border:none;
+  padding:10px 20px;margin:6px;border-radius:8px;
+  font-size:13px;font-weight:600;font-family:'Noto Sans TC',sans-serif;
+  cursor:pointer;transition:.15s;white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.search-btn:hover{background:#1d4ed8}
+.search-btn:disabled{background:var(--gray3);cursor:not-allowed}
+
+/* 範例問題 */
+.hints{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.hint{
+  font-size:12px;color:var(--gray5);
+  background:var(--white);border:1px solid var(--gray2);
+  border-radius:20px;padding:4px 12px;
+  cursor:pointer;transition:.15s;
+  font-family:'Noto Sans TC',sans-serif;
+}
+.hint:hover{color:var(--blue);border-color:var(--blue-border);background:var(--blue-light)}
+
+/* ── RESULT ── */
+.result-section{
+  width:100%;max-width:640px;
+  margin:0 auto;padding:0 16px 64px;
+}
+
+/* 載入中 */
+.loading-card{
+  background:var(--white);border:1px solid var(--gray2);
+  border-radius:var(--radius);padding:24px 20px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:var(--shadow);
+  animation:fadeUp .2s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.spinner{
+  width:18px;height:18px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--gray2);border-top-color:var(--blue);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--gray5)}
+.loading-sub{font-size:11px;color:var(--gray3);margin-top:3px}
+
+/* 回答卡片 */
+.answer-card{
+  background:var(--white);
+  border:1px solid var(--gray2);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  animation:fadeUp .25s ease;
+}
+.answer-header{
+  background:var(--gray1);
+  border-bottom:1px solid var(--gray2);
+  padding:12px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+}
+.answer-tag{
+  background:var(--blue-light);color:var(--blue);
+  border:1px solid var(--blue-border);
+  border-radius:5px;font-size:10px;font-weight:700;
+  padding:2px 8px;text-transform:uppercase;letter-spacing:.5px;
+}
+.answer-query{font-size:12px;color:var(--gray4)}
+.answer-query strong{color:var(--gray5)}
+.answer-close{
+  cursor:pointer;color:var(--gray3);font-size:18px;
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:4px;transition:.15s;line-height:1;
+}
+.answer-close:hover{background:var(--gray2);color:var(--black)}
+
+.answer-body{
+  padding:22px 22px;
+  font-size:14px;line-height:1.85;color:#1f2937;
+  max-height:480px;overflow-y:auto;
+}
+.answer-body::-webkit-scrollbar{width:3px}
+.answer-body::-webkit-scrollbar-thumb{background:var(--gray2);border-radius:2px}
+.answer-body h4{
+  font-size:13px;font-weight:700;color:var(--blue);
+  margin:14px 0 6px;letter-spacing:.2px;
+}
+.answer-body p{margin-bottom:10px}
+.answer-body ul{padding-left:18px;margin-bottom:10px}
+.answer-body li{margin-bottom:4px}
+.answer-body strong{color:var(--black);font-weight:600}
+.answer-body code{
+  font-family:'DM Mono',monospace;font-size:12px;
+  background:var(--gray1);border:1px solid var(--gray2);
+  padding:1px 5px;border-radius:3px;color:#c2410c;
+}
+
+.answer-footer{
+  background:var(--gray1);border-top:1px solid var(--gray2);
+  padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+}
+.sources{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.src-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray3)}
+.src-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--green-light);color:var(--green);
+  border:1px solid var(--green-border);
+  border-radius:20px;padding:2px 9px;font-size:11px;
+}
+.src-chip a{color:var(--green);text-decoration:none}
+.src-chip a:hover{text-decoration:underline}
+.answer-meta{font-size:11px;color:var(--gray3)}
+
+/* 錯誤卡片 */
+.err-card{
+  background:var(--red-light);border:1px solid #fecaca;
+  border-radius:var(--radius);padding:16px 18px;
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--red);
+  animation:fadeUp .2s ease;
+}
+.err-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.err-title{font-weight:600;margin-bottom:3px}
+.err-msg{font-size:12px;opacity:.85}
+
+/* 段落展開 */
+.chunks-toggle{
+  margin-top:12px;
+  background:var(--white);border:1px solid var(--gray2);
+  border-radius:8px;overflow:hidden;
+}
+.chunks-toggle summary{
+  padding:10px 16px;font-size:12px;color:var(--gray4);
+  cursor:pointer;user-select:none;list-style:none;
+  display:flex;align-items:center;gap:6px;
+}
+.chunks-toggle summary:hover{background:var(--gray1)}
+.chunks-toggle summary::before{content:'▸';font-size:10px;transition:.15s}
+.chunks-toggle[open] summary::before{content:'▾'}
+.chunk-item{
+  padding:12px 16px;border-top:1px solid var(--gray2);
+  font-size:12px;color:var(--gray5);line-height:1.7;
+}
+.chunk-meta{font-weight:600;color:var(--gray4);margin-bottom:4px;font-size:11px}
+
+/* ── FOOTER ── */
+footer{
+  margin-top:auto;
+  text-align:center;padding:20px;
+  border-top:1px solid var(--gray2);
+  font-size:11px;color:var(--gray3);
+  background:var(--white);
+}
+
+/* ── 響應式 ── */
+@media(max-width:480px){
+  .hero{padding:40px 16px 28px}
+  .hero h1{font-size:24px}
+  .search-btn span{display:none}
+  .answer-body{padding:16px;font-size:13px}
+  .answer-header,.answer-footer{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">🧠</div>
+    <div class="logo-text">實威國際 <span>AI</span> 知識庫</div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">連線中</span>
+    <a href="https://your-admin.streamlit.app" target="_blank" class="admin-link">⚙ 後台</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">AI Semantic Search</div>
+  <h1>智能<em>知識庫</em>查詢</h1>
+  <p class="hero-desc">
+    所有答案只來自你上傳的文件與網站，由 Groq Llama3 語意搜尋，精準找到相關內容。
+  </p>
+
+  <!-- 統計 -->
+  <div class="stats" id="statsArea">
+    <div class="stat-pill">📂 分類 <strong id="statTotal">—</strong></div>
+    <div class="stat-pill">📄 文件 <strong id="statFiles">—</strong></div>
+    <div class="stat-pill">🌐 網站 <strong id="statWebs">—</strong></div>
+    <div class="stat-pill">🕐 <strong id="statTime">—</strong></div>
+    <div class="stat-pill" id="onlinePill">🟢 <strong>線上</strong></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" id="queryInput"
+      placeholder="搜尋連結或詢問知識庫…"
+      onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="search-btn" id="searchBtn" onclick="doSearch()">
+      搜尋 <span>→</span>
+    </button>
+  </div>
+  <div class="hints">
+    <span class="hint" onclick="useHint(this)">光固化擺放角度</span>
+    <span class="hint" onclick="useHint(this)">Formlabs 維護步驟</span>
+    <span class="hint" onclick="useHint(this)">resin support settings</span>
+    <span class="hint" onclick="useHint(this)">樹脂材料儲存</span>
+    <span class="hint" onclick="useHint(this)">列印失敗排查</span>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="result-section" id="resultSection"></div>
+
+<!-- FOOTER -->
+<footer>
+  © 2025 實威國際股份有限公司 · Powered by Groq Llama3 + Supabase pgvector
+</footer>
+
+<script>
+const API = 'https://ai-kb-api.onrender.com';
+
+/* ── 時間 ── */
+function updateTime(){
+  const now = new Date();
+  document.getElementById('statTime').textContent =
+    now.getHours().toString().padStart(2,'0') + ':' +
+    now.getMinutes().toString().padStart(2,'0');
+}
+updateTime();
+setInterval(updateTime, 60000);
+
+/* ── 載入統計 ── */
+async function loadStats(){
+  try{
+    const r = await fetch(`${API}/stats`, {signal: AbortSignal.timeout(8000)});
+    const d = await r.json();
+    if(d.success){
+      document.getElementById('statTotal').textContent = d.total;
+      document.getElementById('statFiles').textContent = d.files;
+      document.getElementById('statWebs').textContent  = d.websites;
+      document.getElementById('statusDot').className   = 'status-dot online';
+      document.getElementById('statusText').textContent = '線上';
+    }
+  } catch(e){
+    document.getElementById('statusDot').className = 'status-dot';
+    document.getElementById('statusText').textContent = '離線';
+    document.getElementById('onlinePill').innerHTML = '🔴 <strong>離線</strong>';
+  }
+}
+loadStats();
+
+/* ── 搜尋 ── */
+function useHint(el){ document.getElementById('queryInput').value = el.textContent; doSearch(); }
+
+async function doSearch(){
+  const q = document.getElementById('queryInput').value.trim();
+  if(!q) return;
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = '搜尋中…';
+
+  const result = document.getElementById('resultSection');
+  result.innerHTML = `
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div>
+        <div class="loading-text">AI 正在語意搜尋知識庫…</div>
+        <div class="loading-sub">「${esc(q)}」</div>
+      </div>
+    </div>`;
+  result.scrollIntoView({behavior:'smooth', block:'start'});
+
+  const t0 = Date.now();
+  try{
+    const r = await fetch(`${API}/search`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query: q, match_count: 5, threshold: 0.3}),
+      signal: AbortSignal.timeout(30000)
+    });
+    const d = await r.json();
+    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+
+    if(!d.success) throw new Error(d.error || '未知錯誤');
+
+    // 來源 chips
+    let srcHtml = '';
+    if(d.sources && d.sources.length){
+      d.sources.forEach(s => {
+        const icon = s.type === 'website' ? '🌐' : '📄';
+        const label = s.title.length > 30 ? s.title.slice(0,30)+'…' : s.title;
+        srcHtml += s.url
+          ? `<span class="src-chip">${icon} <a href="${s.url}" target="_blank">${esc(label)}</a></span>`
+          : `<span class="src-chip">${icon} ${esc(label)}</span>`;
+      });
+    } else {
+      srcHtml = '<span class="src-chip" style="background:#f9fafb;color:#9ca3af;border-color:#e5e7eb">AI 推理</span>';
+    }
+
+    // 段落展開
+    let chunksHtml = '';
+    if(d.chunk_count > 0){
+      chunksHtml = `<details class="chunks-toggle">
+        <summary>📋 查看 ${d.chunk_count} 個相關段落</summary>
+        <div class="chunk-item" style="color:var(--gray4);font-style:italic">段落內容由後台提供</div>
+      </details>`;
+    }
+
+    result.innerHTML = `
+      <div class="answer-card">
+        <div class="answer-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="answer-tag">AI 回答</span>
+            <span class="answer-query">搜尋：<strong>${esc(q.slice(0,50))}</strong></span>
+          </div>
+          <span class="answer-close" onclick="clearResult()">✕</span>
+        </div>
+        <div class="answer-body" id="answerBody"></div>
+        <div class="answer-footer">
+          <div class="sources">
+            <span class="src-label">來源</span>
+            ${srcHtml}
+          </div>
+          <span class="answer-meta">${elapsed}s · ${d.chunk_count} 段落</span>
+        </div>
+      </div>
+      ${chunksHtml}`;
+
+    renderAnswer(d.answer);
+
+  } catch(e){
+    result.innerHTML = `
+      <div class="err-card">
+        <span class="err-icon">✕</span>
+        <div>
+          <div class="err-title">搜尋失敗</div>
+          <div class="err-msg">${esc(e.message)}</div>
+        </div>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '搜尋 <span>→</span>';
+  }
+}
+
+function renderAnswer(text){
+  const el = document.getElementById('answerBody');
+  if(!el) return;
+  let html = esc(text)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^### (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^## (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^# (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^[\-\*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m=>`<ul>${m}</ul>`)
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  el.innerHTML = '<p>'+html+'</p>';
+}
+
+function clearResult(){
+  document.getElementById('resultSection').innerHTML='';
+  document.getElementById('queryInput').value='';
+  document.getElementById('queryInput').focus();
+}
+
+function esc(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

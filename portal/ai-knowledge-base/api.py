@@ -1,14 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
+import os, requests
 from supabase import create_client
 from groq import Groq
-from sentence_transformers import SentenceTransformer
 
 app = FastAPI()
 
-# ── CORS（允許 GitHub Pages 呼叫）──
+# ── CORS ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,23 +19,29 @@ app.add_middleware(
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+HF_API_KEY   = os.environ.get("HF_API_KEY")
 
-# ── 模型載入（只載入一次）──
-_model = None
-def get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-    return _model
+HF_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+HF_URL   = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+
+# ── 向量化（不用 numpy）──
+def get_embedding(text: str) -> list:
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+    response = requests.post(HF_URL, headers=headers, json={"inputs": text}, timeout=30)
+    result = response.json()
+    if isinstance(result, list) and len(result) > 0:
+        if isinstance(result[0], list):
+            vectors = result[0]
+            length = len(vectors[0])
+            avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(length)]
+            norm = sum(x**2 for x in avg) ** 0.5
+            return [x / (norm + 1e-9) for x in avg]
+        return result
+    raise Exception(f"HF API 錯誤：{result}")
 
 # ── Supabase ──
 def get_db():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# ── 向量化 ──
-def get_embedding(text: str) -> list:
-    model = get_model()
-    return model.encode(text, normalize_embeddings=True).tolist()
 
 # ── 向量搜尋 ──
 def search_chunks(query_embedding: list, match_count: int = 5, threshold: float = 0.3) -> list:
@@ -64,17 +69,16 @@ def generate_answer(query: str, context_chunks: list) -> str:
 你只能根據提供的知識庫內容回答問題，不可以使用知識庫以外的知識。
 
 規則：
-1. 只能使用提供的知識庫內容回答，並標明來源
-2. 如果知識庫內容不足以回答，請直接說「知識庫中沒有找到相關資料，請聯繫客服」
-3. 絕對不可以自行補充或推測知識庫以外的資訊
-4. 使用者用中文問，就用中文回答
-5. 回答要清楚有條理，適當使用標題和條列"""
+1. 只能使用知識庫內容回答並標明來源
+2. 找不到資料就說「知識庫中沒有找到相關資料，請聯繫客服」
+3. 不可自行補充知識庫以外的資訊
+4. 用中文回答，條理清晰"""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"知識庫內容：\n{context}\n\n使用者問題：{query}"}
+            {"role": "user", "content": f"知識庫內容：\n{context}\n\n問題：{query}"}
         ],
         max_tokens=2048,
         temperature=0.3
@@ -104,10 +108,10 @@ def search(req: SearchRequest):
         # 1. 向量化
         embedding = get_embedding(req.query)
 
-        # 2. 搜尋
+        # 2. 向量搜尋
         chunks = search_chunks(embedding, req.match_count, req.threshold)
 
-        # 3. 取得來源
+        # 3. 取得來源資訊
         sources = []
         if chunks:
             db = get_db()
@@ -120,16 +124,16 @@ def search(req: SearchRequest):
                 c['source_title'] = doc.get('title', '未知來源')
                 c['source_type']  = doc.get('source_type', 'file')
                 c['source_url']   = doc.get('source_url', '')
-                title = c['source_title']
-                if title not in seen:
-                    seen.add(title)
+                t = c['source_title']
+                if t not in seen:
+                    seen.add(t)
                     sources.append({
-                        "title": title,
+                        "title": t,
                         "type": c['source_type'],
                         "url": c['source_url']
                     })
 
-        # 4. AI 回答
+        # 4. AI 生成回答
         answer = generate_answer(req.query, chunks)
 
         return {
@@ -148,13 +152,11 @@ def stats():
         db = get_db()
         docs = db.table("documents").select("source_type").execute()
         data = docs.data or []
-        file_count = len([d for d in data if d['source_type'] == 'file'])
-        web_count  = len([d for d in data if d['source_type'] == 'website'])
         return {
             "success": True,
             "total": len(data),
-            "files": file_count,
-            "websites": web_count
+            "files": len([d for d in data if d['source_type'] == 'file']),
+            "websites": len([d for d in data if d['source_type'] == 'website'])
         }
     except Exception as e:
         return {"success": False, "error": str(e)}

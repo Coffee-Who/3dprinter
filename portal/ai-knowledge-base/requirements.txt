@@ -1,8 +1,6 @@
-streamlit==1.32.0
-supabase==2.4.0
-groq==0.4.2
-firecrawl-py==0.0.16
-sentence-transformers==2.7.0
-pypdf==4.1.0
-python-dotenv==1.0.1
-torch==2.2.1
+streamlit
+supabase
+groq
+firecrawl-py
+sentence-transformers
+pypdf

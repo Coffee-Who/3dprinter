@@ -33,7 +33,7 @@ async def preflight(rest_of_path: str):
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-JINA_API_KEY = os.environ.get("JINA_API_KEY", "")
+JINA_API_KEY = "jina_ea129d66ed154c3595c2f7c3f6cffe1biNBryTf2VV0b60NfVp5hEoEDhX71"
 
 # ── 向量化（Jina AI - 免費 1M tokens/月）──
 def get_embedding(text: str) -> list:

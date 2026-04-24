@@ -1,6 +1,6 @@
 streamlit
 supabase
 groq
-firecrawl-py
+firecrawl
 sentence-transformers
 pypdf

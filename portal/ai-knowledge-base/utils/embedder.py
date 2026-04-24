@@ -24,13 +24,19 @@ def get_embedding(text: str) -> list:
     norm = sum(x**2 for x in embedding) ** 0.5 or 1.0
     return [x / norm for x in embedding]
 
-def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list:
-    """將長文字切成段落"""
+def chunk_text(text: str, chunk_size: int = 300, overlap: int = 30) -> list:
+    """中文友善的段落切割"""
     chunks = []
-    words = text.split()
-    i = 0
-    while i < len(words):
-        chunk = ' '.join(words[i:i + chunk_size])
-        chunks.append(chunk)
-        i += chunk_size - overlap
-    return chunks
+    # 先按段落切
+    paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
+    current = ""
+    for para in paragraphs:
+        if len(current) + len(para) < chunk_size:
+            current += para + "\n"
+        else:
+            if current:
+                chunks.append(current.strip())
+            current = para + "\n"
+    if current:
+        chunks.append(current.strip())
+    return chunks if chunks else [text[:chunk_size]]

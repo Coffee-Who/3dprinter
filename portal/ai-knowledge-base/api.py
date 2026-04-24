@@ -33,73 +33,34 @@ async def preflight(rest_of_path: str):
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-HF_API_KEY   = os.environ.get("HF_API_KEY")
+JINA_API_KEY = os.environ.get("JINA_API_KEY", "")
 
-# 正確的 HF API URL
-HF_URL = "https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-
-# ── 向量化 ──
+# ── 向量化（Jina AI - 免費 1M tokens/月）──
 def get_embedding(text: str) -> list:
     headers = {
-        "Authorization": f"Bearer {HF_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {JINA_API_KEY}" if JINA_API_KEY else ""
     }
 
-    for attempt in range(5):
-        response = requests.post(
-            HF_URL,
-            headers=headers,
-            json={
-                "inputs": text,
-                "options": {"wait_for_model": True, "use_cache": True}
-            },
-            timeout=60
-        )
+    response = requests.post(
+        "https://api.jina.ai/v1/embeddings",
+        headers=headers,
+        json={
+            "input": [text],
+            "model": "jina-embeddings-v2-base-zh"  # 支援中文
+        },
+        timeout=30
+    )
 
-        # 模型還在載入
-        if response.status_code == 503:
-            time.sleep(20)
-            continue
+    if response.status_code != 200:
+        raise Exception(f"Jina API 錯誤 {response.status_code}: {response.text[:200]}")
 
-        if response.status_code != 200:
-            raise Exception(f"HF 錯誤 {response.status_code}: {response.text[:200]}")
+    result = response.json()
+    embedding = result["data"][0]["embedding"]
 
-        raw = response.text.strip()
-        if not raw:
-            time.sleep(10)
-            continue
-
-        result = json.loads(raw)
-
-        # sentence-transformers 回傳格式: [[token_vec, ...], ...] 或 [float, ...]
-        if isinstance(result, list) and len(result) > 0:
-            first = result[0]
-
-            if isinstance(first, float):
-                # 直接是 [float, float, ...] embedding 向量
-                norm = sum(x**2 for x in result) ** 0.5 or 1.0
-                return [x / norm for x in result]
-
-            elif isinstance(first, list):
-                if isinstance(first[0], float):
-                    # [[float, float, ...]] — mean pooling
-                    vectors = result
-                    dim = len(first)
-                    avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
-                    norm = sum(x**2 for x in avg) ** 0.5 or 1.0
-                    return [x / norm for x in avg]
-
-                elif isinstance(first[0], list):
-                    # [[[float, ...]]] — batch mean pooling
-                    vectors = first
-                    dim = len(vectors[0])
-                    avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
-                    norm = sum(x**2 for x in avg) ** 0.5 or 1.0
-                    return [x / norm for x in avg]
-
-        raise Exception(f"無法解析格式: {str(result)[:300]}")
-
-    raise Exception("HF API 重試 5 次後仍失敗")
+    # 正規化
+    norm = sum(x**2 for x in embedding) ** 0.5 or 1.0
+    return [x / norm for x in embedding]
 
 # ── Supabase ──
 def get_db():

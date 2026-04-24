@@ -17,19 +17,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.admin-title { font-size:1.6rem; font-weight:700; color:#4f7cff; }
-.section-card {
-    background:#0d1020; border:1px solid #1e2440;
-    border-radius:12px; padding:1.2rem 1.4rem; margin-bottom:1rem;
-}
-.doc-row {
-    background:#131628; border:1px solid #1a1f35;
-    border-radius:8px; padding:0.7rem 1rem; margin-bottom:0.5rem;
-    display:flex; align-items:center; justify-content:space-between;
-}
-.status-ok  { color:#00d68f; font-weight:600; }
-.status-run { color:#ffb347; font-weight:600; }
-.status-err { color:#ff4d6a; font-weight:600; }
+.admin-title { font-size:1.6rem; font-weight:700; color:#2563eb; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,36 +61,41 @@ with tab1:
             for file in uploaded_files:
                 with st.status(f"處理中：{file.name}...", expanded=True) as status:
                     try:
-                        # 讀取文字
                         st.write("📖 讀取文件內容...")
+
                         if file.name.endswith(".pdf"):
                             pdf_reader = pypdf.PdfReader(io.BytesIO(file.read()))
                             text = "\n".join(p.extract_text() or "" for p in pdf_reader.pages)
                         else:
+                            # 自動偵測編碼
                             raw = file.read()
-                            for enc in ["utf-8", "utf-8-sig", "big5", "gbk", "cp950"]:
+                            text = None
+                            for enc in ["utf-8", "utf-8-sig", "big5", "cp950", "gbk"]:
                                 try:
                                     text = raw.decode(enc)
+                                    st.write(f"   編碼：{enc}")
                                     break
                                 except:
                                     continue
-                            else:
+                            if text is None:
                                 text = raw.decode("utf-8", errors="ignore")
 
                         if not text.strip():
                             st.error("文件內容為空，跳過")
                             continue
 
-                        # 切段落
                         st.write("✂️ 切割段落...")
-                        chunks = chunk_text(text, chunk_size=400, overlap=50)
+                        chunks = chunk_text(text, chunk_size=300, overlap=30)
                         st.write(f"   共 {len(chunks)} 個段落")
 
-                        # 向量化
-                        st.write("🔢 向量化中...")
-                        embeddings = [get_embedding(c) for c in chunks]
+                        st.write("🔢 向量化中（Jina AI）...")
+                        embeddings = []
+                        for i, c in enumerate(chunks):
+                            emb = get_embedding(c)
+                            embeddings.append(emb)
+                            if (i+1) % 5 == 0:
+                                st.write(f"   已完成 {i+1}/{len(chunks)}")
 
-                        # 存入資料庫
                         st.write("💾 存入 Supabase...")
                         doc_id = insert_document(
                             title=file.name,
@@ -110,7 +103,10 @@ with tab1:
                         )
                         insert_chunks(doc_id, chunks, embeddings)
 
-                        status.update(label=f"✅ {file.name} 完成！{len(chunks)} 段落已建立索引", state="complete")
+                        status.update(
+                            label=f"✅ {file.name} 完成！{len(chunks)} 段落已建立索引",
+                            state="complete"
+                        )
 
                     except Exception as e:
                         status.update(label=f"❌ {file.name} 失敗：{e}", state="error")
@@ -170,7 +166,7 @@ with tab2:
                     total_chunks = 0
                     for i, page in enumerate(pages):
                         st.write(f"🔢 向量化第 {i+1}/{len(pages)} 頁：{page['title'][:40]}...")
-                        chunks = chunk_text(page['content'], chunk_size=400, overlap=50)
+                        chunks = chunk_text(page['content'], chunk_size=300, overlap=30)
                         embeddings = [get_embedding(c) for c in chunks]
                         doc_id = insert_document(
                             title=page['title'],
@@ -200,20 +196,18 @@ with tab2:
     else:
         for job in jobs:
             status_map = {
-                "done":    ("✅ 完成", "status-ok"),
-                "running": ("⏳ 進行中", "status-run"),
-                "failed":  ("❌ 失敗", "status-err"),
-                "pending": ("⏸ 等待中", "status-run"),
+                "done":    ("✅ 完成", "color:green"),
+                "running": ("⏳ 進行中", "color:orange"),
+                "failed":  ("❌ 失敗", "color:red"),
+                "pending": ("⏸ 等待中", "color:gray"),
             }
-            s_text, s_cls = status_map.get(job['status'], ("未知", ""))
-            col1, col2, col3 = st.columns([5, 2, 1])
+            s_text, s_style = status_map.get(job['status'], ("未知", ""))
+            col1, col2 = st.columns([6, 2])
             with col1:
                 st.markdown(f"🌐 **{job['url']}**")
                 st.caption(f"建立時間：{job['created_at'][:19]}")
             with col2:
-                st.markdown(f"`{job['pages_done']}/{job['max_pages']} 頁` · <span class='{s_cls}'>{s_text}</span>", unsafe_allow_html=True)
-            with col3:
-                pass
+                st.markdown(f"`{job['pages_done']}/{job['max_pages']} 頁` · <span style='{s_style}'>{s_text}</span>", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### 已爬取網站文件")

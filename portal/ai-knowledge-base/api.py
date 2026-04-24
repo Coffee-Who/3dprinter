@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import os, requests, json
+import os, requests, json, time
 from supabase import create_client
 from groq import Groq
 
@@ -35,79 +35,69 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 HF_API_KEY   = os.environ.get("HF_API_KEY")
 
-# ── 向量化（使用 HF Inference API 正確格式）──
-def get_embedding(text: str) -> list:
-    import time
+# 正確的 HF API URL
+HF_URL = "https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
-    # 方法一：使用 feature-extraction pipeline
-    url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+# ── 向量化 ──
+def get_embedding(text: str) -> list:
     headers = {
         "Authorization": f"Bearer {HF_API_KEY}",
         "Content-Type": "application/json"
     }
 
     for attempt in range(5):
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                json={
-                    "inputs": text,
-                    "options": {"wait_for_model": True, "use_cache": True}
-                },
-                timeout=60
-            )
+        response = requests.post(
+            HF_URL,
+            headers=headers,
+            json={
+                "inputs": text,
+                "options": {"wait_for_model": True, "use_cache": True}
+            },
+            timeout=60
+        )
 
-            if response.status_code == 503:
-                time.sleep(15)
-                continue
+        # 模型還在載入
+        if response.status_code == 503:
+            time.sleep(20)
+            continue
 
-            if response.status_code != 200:
-                raise Exception(f"HF 狀態碼 {response.status_code}: {response.text[:200]}")
+        if response.status_code != 200:
+            raise Exception(f"HF 錯誤 {response.status_code}: {response.text[:200]}")
 
-            raw = response.text.strip()
-            if not raw:
-                time.sleep(10)
-                continue
+        raw = response.text.strip()
+        if not raw:
+            time.sleep(10)
+            continue
 
-            result = json.loads(raw)
+        result = json.loads(raw)
 
-            # result 可能是 [[...]] 或 [...] 
-            if isinstance(result, list) and len(result) > 0:
-                # 如果是 token embeddings [[v1, v2, ...], ...]，做 mean pooling
-                if isinstance(result[0], list) and isinstance(result[0][0], list):
-                    # shape: [batch, tokens, dim]
-                    vectors = result[0]
+        # sentence-transformers 回傳格式: [[token_vec, ...], ...] 或 [float, ...]
+        if isinstance(result, list) and len(result) > 0:
+            first = result[0]
+
+            if isinstance(first, float):
+                # 直接是 [float, float, ...] embedding 向量
+                norm = sum(x**2 for x in result) ** 0.5 or 1.0
+                return [x / norm for x in result]
+
+            elif isinstance(first, list):
+                if isinstance(first[0], float):
+                    # [[float, float, ...]] — mean pooling
+                    vectors = result
+                    dim = len(first)
+                    avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
+                    norm = sum(x**2 for x in avg) ** 0.5 or 1.0
+                    return [x / norm for x in avg]
+
+                elif isinstance(first[0], list):
+                    # [[[float, ...]]] — batch mean pooling
+                    vectors = first
                     dim = len(vectors[0])
                     avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
                     norm = sum(x**2 for x in avg) ** 0.5 or 1.0
                     return [x / norm for x in avg]
 
-                elif isinstance(result[0], list) and isinstance(result[0][0], float):
-                    # shape: [tokens, dim] - mean pooling
-                    vectors = result[0]
-                    dim = len(vectors[0]) if isinstance(vectors[0], list) else len(result[0])
-                    if isinstance(result[0][0], float):
-                        # shape: [dim] - 直接是向量
-                        vec = result[0]
-                        norm = sum(x**2 for x in vec) ** 0.5 or 1.0
-                        return [x / norm for x in vec]
-                    avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(dim)]
-                    norm = sum(x**2 for x in avg) ** 0.5 or 1.0
-                    return [x / norm for x in avg]
-
-                elif isinstance(result[0], float):
-                    # 直接是 embedding 向量
-                    norm = sum(x**2 for x in result) ** 0.5 or 1.0
-                    return [x / norm for x in result]
-
-            raise Exception(f"無法解析 HF 回應格式：{str(result)[:200]}")
-
-        except json.JSONDecodeError as e:
-            if attempt < 4:
-                time.sleep(10)
-                continue
-            raise Exception(f"HF JSON 解析失敗（嘗試 {attempt+1} 次）：{response.text[:200]}")
+        raise Exception(f"無法解析格式: {str(result)[:300]}")
 
     raise Exception("HF API 重試 5 次後仍失敗")
 
@@ -168,11 +158,10 @@ def root():
 def health():
     return {"status": "ok"}
 
-# 測試 HF embedding
 @app.get("/test-embedding")
 def test_embedding():
     try:
-        vec = get_embedding("測試")
+        vec = get_embedding("測試文字")
         return {"success": True, "dim": len(vec), "sample": vec[:5]}
     except Exception as e:
         return {"success": False, "error": str(e)}

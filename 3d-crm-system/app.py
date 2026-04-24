@@ -10,6 +10,16 @@ import pandas as pd
 st.title("🚀 自動CRM系統")
 
 import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(BASE_DIR, "data", "customers.json")
+
+if not os.path.exists(file_path):
+    st.error(f"❌ 找不到檔案：{file_path}")
+    st.stop()
+
+with open(file_path, encoding="utf-8") as f:
+    data = json.load(f)
 import json
 import streamlit as st
 

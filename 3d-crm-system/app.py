@@ -1,3 +1,8 @@
+import os
+import streamlit as st
+
+st.write("目前工作目錄：", os.getcwd())
+st.write("目前檔案列表：", os.listdir())
 import streamlit as st
 import json
 import pandas as pd

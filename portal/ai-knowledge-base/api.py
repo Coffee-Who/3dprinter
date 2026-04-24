@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import os, requests
 from supabase import create_client
@@ -7,13 +8,26 @@ from groq import Groq
 
 app = FastAPI()
 
-# ── CORS ──
+# ── CORS 完整設定 ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+@app.options("/{rest_of_path:path}")
+async def preflight(rest_of_path: str):
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # ── 環境變數 ──
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -24,7 +38,7 @@ HF_API_KEY   = os.environ.get("HF_API_KEY")
 HF_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 HF_URL   = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
 
-# ── 向量化（不用 numpy）──
+# ── 向量化 ──
 def get_embedding(text: str) -> list:
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
     response = requests.post(HF_URL, headers=headers, json={"inputs": text}, timeout=30)
@@ -105,13 +119,9 @@ class SearchRequest(BaseModel):
 @app.post("/search")
 def search(req: SearchRequest):
     try:
-        # 1. 向量化
         embedding = get_embedding(req.query)
-
-        # 2. 向量搜尋
         chunks = search_chunks(embedding, req.match_count, req.threshold)
 
-        # 3. 取得來源資訊
         sources = []
         if chunks:
             db = get_db()
@@ -133,7 +143,6 @@ def search(req: SearchRequest):
                         "url": c['source_url']
                     })
 
-        # 4. AI 生成回答
         answer = generate_answer(req.query, chunks)
 
         return {

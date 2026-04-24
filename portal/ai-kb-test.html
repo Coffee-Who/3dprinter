@@ -436,10 +436,16 @@ async function doSearch(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({query: q, match_count: 5, threshold: 0.3}),
-      signal: AbortSignal.timeout(30000)
+      signal: AbortSignal.timeout(60000)
     });
-    const d = await r.json();
     const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+    const rawText = await r.text();
+    if(!rawText || rawText.trim()===''){
+      throw new Error(`API 回傳空白（狀態碼 ${r.status}），請稍後再試`);
+    }
+    let d;
+    try{ d = JSON.parse(rawText); }
+    catch(pe){ throw new Error(`回應格式錯誤：${rawText.slice(0,120)}`); }
 
     if(!d.success) throw new Error(d.error || '未知錯誤');
 

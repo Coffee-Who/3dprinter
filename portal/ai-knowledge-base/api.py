@@ -41,17 +41,33 @@ HF_URL   = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{H
 # ── 向量化 ──
 def get_embedding(text: str) -> list:
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-    response = requests.post(HF_URL, headers=headers, json={"inputs": text}, timeout=30)
-    result = response.json()
-    if isinstance(result, list) and len(result) > 0:
-        if isinstance(result[0], list):
-            vectors = result[0]
-            length = len(vectors[0])
-            avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(length)]
-            norm = sum(x**2 for x in avg) ** 0.5
-            return [x / (norm + 1e-9) for x in avg]
-        return result
-    raise Exception(f"HF API 錯誤：{result}")
+    
+    for attempt in range(3):
+        response = requests.post(
+            HF_URL, headers=headers,
+            json={"inputs": text, "options": {"wait_for_model": True}},
+            timeout=60
+        )
+        
+        if response.status_code == 503:
+            import time
+            time.sleep(10)
+            continue
+            
+        result = response.json()
+        
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list):
+                vectors = result[0]
+                length = len(vectors[0])
+                avg = [sum(v[i] for v in vectors) / len(vectors) for i in range(length)]
+                norm = sum(x**2 for x in avg) ** 0.5
+                return [x / (norm + 1e-9) for x in avg]
+            return result
+        
+        raise Exception(f"HF API 錯誤：{result}")
+    
+    raise Exception("HF 模型載入超時，請稍後再試")
 
 # ── Supabase ──
 def get_db():

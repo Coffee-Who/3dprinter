@@ -79,7 +79,15 @@ with tab1:
                             pdf_reader = pypdf.PdfReader(io.BytesIO(file.read()))
                             text = "\n".join(p.extract_text() or "" for p in pdf_reader.pages)
                         else:
-                            text = file.read().decode("utf-8", errors="ignore")
+                            raw = file.read()
+                            for enc in ["utf-8", "utf-8-sig", "big5", "gbk", "cp950"]:
+                                try:
+                                    text = raw.decode(enc)
+                                    break
+                                except:
+                                    continue
+                            else:
+                                text = raw.decode("utf-8", errors="ignore")
 
                         if not text.strip():
                             st.error("文件內容為空，跳過")

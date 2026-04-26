@@ -1,0 +1,18 @@
+{
+  "keywords": [
+    "Python工程師",
+    "資料分析師"
+  ],
+  "use_104": true,
+  "use_1111": true,
+  "max_pages": 3,
+  "dedup": true,
+  "exclude_keywords": [],
+  "salary_min": 0,
+  "locations": [],
+  "schedule_hour": 9,
+  "schedule_min": 0,
+  "auto_export": true,
+  "keep_days": 30,
+  "last_run": ""
+}

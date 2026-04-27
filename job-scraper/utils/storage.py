@@ -2,7 +2,7 @@
 import json, os
 from pathlib import Path
 
-DATA_DIR = Path("data")
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 JOBS_FILE   = DATA_DIR / "jobs.json"
 CONFIG_FILE = DATA_DIR / "config.json"
 

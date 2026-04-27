@@ -73,13 +73,13 @@ def scrape_104(keyword, max_pages=3):
                         if not company and co_el:
                             company = _clean(co_el.get_text())
 
-                        # 地點、薪資、年資、學歷（info-tags）
+                        # 地點、年資、學歷、薪資（info-tags 實際順序）
                         tag_spans = card.select("div.info-tags span.info-tags__text")
                         tag_texts = [_clean(t.get_text()) for t in tag_spans if _clean(t.get_text())]
                         location  = tag_texts[0] if len(tag_texts) > 0 else ""
-                        salary    = tag_texts[1] if len(tag_texts) > 1 else "面議"
-                        exp       = tag_texts[2] if len(tag_texts) > 2 else ""
-                        edu       = tag_texts[3] if len(tag_texts) > 3 else ""
+                        exp       = tag_texts[1] if len(tag_texts) > 1 else ""
+                        edu       = tag_texts[2] if len(tag_texts) > 2 else ""
+                        salary    = tag_texts[3] if len(tag_texts) > 3 else "面議"
                         # 若薪資看起來像地址就換成面議
                         if salary and ("市" in salary or "縣" in salary or "區" in salary):
                             salary = "面議"

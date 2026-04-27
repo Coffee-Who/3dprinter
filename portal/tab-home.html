@@ -223,24 +223,23 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 .kb-msg.ok{background:rgba(63,185,80,.08);color:#3fb950;border:1px solid rgba(63,185,80,.2)}
 .kb-msg.err{background:rgba(248,81,73,.06);color:var(--red);border:1px solid rgba(248,81,73,.2)}
 .kb-empty{text-align:center;padding:28px;color:var(--t3);font-size:13px}
-/* Streamlit 連結卡片 */
-.kb-streamlit-info{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
-.kb-sl-icon{font-size:24px;flex-shrink:0;line-height:1}
-.kb-sl-desc{font-size:12px;color:var(--t2);line-height:1.6}
-.kb-sl-tip{font-size:11px;color:var(--t3);margin-top:8px;text-align:center}
 /* 搜尋參數滑桿 */
 .kb-params{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.kb-param-item{flex:1;min-width:260px;background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-.kb-param-header{margin-bottom:10px}
+.kb-param-item{flex:1;min-width:240px;background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
 .kb-param-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t1);margin-bottom:6px}
 .kb-param-val{margin-left:auto;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:36px;text-align:center}
-.kb-param-tip{font-size:12px;color:var(--t2);line-height:1.6;border-left:2px solid var(--border2);padding-left:8px}
+.kb-param-tip{font-size:12px;color:var(--t2);line-height:1.6;border-left:2px solid var(--border2);padding-left:8px;margin-bottom:10px}
 .kb-tip-range{display:block;margin-top:4px;font-size:11px;color:var(--t3)}
 .kb-tip-range b{color:var(--accent)}
-.kb-slider{width:100%;margin:10px 0 4px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer}
-.kb-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg1);box-shadow:0 1px 4px rgba(37,99,235,.3)}
+.kb-slider{width:100%;margin:0 0 4px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer}
+.kb-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg1)}
 .kb-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg1)}
 .kb-slider-ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--t3)}
+/* Streamlit 連結卡片 */
+.kb-sl-info{display:flex;gap:12px;align-items:flex-start;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kb-sl-icon{font-size:22px;flex-shrink:0;line-height:1}
+.kb-sl-desc{font-size:12px;color:var(--t2);line-height:1.6}
+.kb-sl-tip{font-size:11px;color:var(--t3);margin-top:8px;text-align:center}
 /* Settings modal */
 .kb-modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:flex-end;padding:60px 16px 0}
 .kb-modal-overlay.on{display:flex}
@@ -493,44 +492,25 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 <span class="kb-hint" onclick="kbUseHint(this)">樹脂材料如何儲存</span>
 <span class="kb-hint" onclick="kbUseHint(this)">Formlabs 機台維護</span>
 </div>
-
-<!-- 搜尋參數 -->
+<!-- 搜尋參數滑桿 -->
 <div class="kb-params">
-  <div class="kb-param-item">
-    <div class="kb-param-header">
-      <div class="kb-param-label">
-        📄 段落數
-        <span class="kb-param-val" id="kbCountVal">5</span>
-      </div>
-      <div class="kb-param-tip">
-        每次搜尋從知識庫撈出幾段最相關的內容交給 AI 參考。
-        數字越大，AI 參考資料越多，回答越完整，但速度略慢。
-        <span class="kb-tip-range">建議：一般問題用 <b>3–5</b>，複雜問題用 <b>7–10</b></span>
-      </div>
-    </div>
-    <input class="kb-slider" type="range" min="3" max="10" value="5" step="1"
-      oninput="kbUpdateCount(this.value)">
-    <div class="kb-slider-ticks"><span>3</span><span>5</span><span>7</span><span>10</span></div>
-  </div>
-
-  <div class="kb-param-item">
-    <div class="kb-param-header">
-      <div class="kb-param-label">
-        🎯 相似度門檻
-        <span class="kb-param-val" id="kbThreshVal">0.30</span>
-      </div>
-      <div class="kb-param-tip">
-        決定搜尋結果的「最低相似度」，低於此分數的段落會被過濾掉。
-        數字越高，結果越精準但可能找不到；越低，答案越多但可能不相關。
-        <span class="kb-tip-range">建議：精準查詢用 <b>0.5+</b>，探索性問題用 <b>0.2–0.3</b></span>
-      </div>
-    </div>
-    <input class="kb-slider" type="range" min="0.1" max="0.9" value="0.3" step="0.05"
-      oninput="kbUpdateThreshold(this.value)">
-    <div class="kb-slider-ticks"><span>0.1</span><span>0.3</span><span>0.6</span><span>0.9</span></div>
-  </div>
+<div class="kb-param-item">
+<div class="kb-param-header">
+<div class="kb-param-label">📄 段落數 <span class="kb-param-val" id="kbCountVal">5</span></div>
+<div class="kb-param-tip">每次搜尋從知識庫撈出幾段最相關的內容交給 AI 參考。數字越大回答越完整，但速度略慢。<span class="kb-tip-range">建議：一般問題用 <b>3–5</b>，複雜問題用 <b>7–10</b></span></div>
 </div>
-
+<input class="kb-slider" type="range" min="3" max="10" value="5" step="1" oninput="kbUpdateCount(this.value)">
+<div class="kb-slider-ticks"><span>3</span><span>5</span><span>7</span><span>10</span></div>
+</div>
+<div class="kb-param-item">
+<div class="kb-param-header">
+<div class="kb-param-label">🎯 相似度門檻 <span class="kb-param-val" id="kbThreshVal">0.30</span></div>
+<div class="kb-param-tip">低於此分數的段落會被過濾掉。數字越高結果越精準但可能找不到；越低答案越多但可能不相關。<span class="kb-tip-range">建議：精準查詢用 <b>0.5+</b>，探索性問題用 <b>0.2–0.3</b></span></div>
+</div>
+<input class="kb-slider" type="range" min="0.1" max="0.9" value="0.3" step="0.05" oninput="kbUpdateThreshold(this.value)">
+<div class="kb-slider-ticks"><span>0.1</span><span>0.3</span><span>0.6</span><span>0.9</span></div>
+</div>
+</div>
 <div id="kbResultWrap"></div>
 </div>
 
@@ -541,51 +521,30 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 <div class="kb-stat"><div class="kb-stat-num" id="kbStatWords">—</div><div class="kb-stat-lbl">文件來源</div></div>
 <div class="kb-stat"><div class="kb-stat-num" id="kbStatChunks">—</div><div class="kb-stat-lbl">網站來源</div></div>
 </div>
-
-<!-- 上傳入口（連結到 Streamlit）-->
 <div class="kb-admin-grid">
 <div class="kb-card">
 <div class="kb-card-head">📄 上傳文件</div>
 <div class="kb-card-body">
-<div class="kb-streamlit-info">
-<div class="kb-sl-icon">🐍</div>
-<div class="kb-sl-desc">
-文件上傳需要 Python 後端處理（文字擷取 → Jina 向量化 → 存入 Supabase），
-請前往管理後台進行操作。
-</div>
-</div>
-<a class="kb-btn-prim" href="https://ai-kb-admi.streamlit.app/" target="_blank" style="text-decoration:none;margin-top:12px">
-↗ 前往知識庫管理後台
-</a>
+<div class="kb-sl-info"><div class="kb-sl-icon">🐍</div><div class="kb-sl-desc">文件上傳需要 Python 後端處理（文字擷取 → Jina 向量化 → 存入 Supabase），請前往管理後台進行操作。</div></div>
+<a class="kb-btn-prim" href="https://ai-kb-admi.streamlit.app/" target="_blank" style="text-decoration:none;margin-top:12px">↗ 前往知識庫管理後台</a>
 <div class="kb-sl-tip">支援 PDF · TXT · MD · DOCX · XLSX · CSV · HTML</div>
 </div>
 </div>
-
 <div class="kb-card">
 <div class="kb-card-head">🌐 新增網址</div>
 <div class="kb-card-body">
-<div class="kb-streamlit-info">
-<div class="kb-sl-icon">🕷️</div>
-<div class="kb-sl-desc">
-網址爬取需要 Python 後端執行（抓取網頁內容 → 分段 → 向量化 → 存入 Supabase），
-請前往管理後台進行操作。
-</div>
-</div>
-<a class="kb-btn-prim" href="https://ai-kb-admi.streamlit.app/" target="_blank" style="text-decoration:none;margin-top:12px">
-↗ 前往知識庫管理後台
-</a>
+<div class="kb-sl-info"><div class="kb-sl-icon">🕷️</div><div class="kb-sl-desc">網址爬取需要 Python 後端執行（抓取網頁 → 分段 → 向量化 → 存入 Supabase），請前往管理後台進行操作。</div></div>
+<a class="kb-btn-prim" href="https://ai-kb-admi.streamlit.app/" target="_blank" style="text-decoration:none;margin-top:12px">↗ 前往知識庫管理後台</a>
 <div class="kb-sl-tip">爬取後自動分段並建立語意索引</div>
 </div>
 </div>
-
-<!-- 文件列表（直接讀 Supabase）-->
 <div class="kb-card full">
 <div class="kb-card-head">
-<span>📋 知識庫文件列表</span>
+<span>📋 文件列表</span>
 <button onclick="kbLoadDocs()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--t2)">🔄</button>
 </div>
 <div class="kb-card-body">
-<div id="kbDocList"><div class="kb-empty">請先在 ⚙️ 設定中填入 Supabase 資訊，再點 🔄 重新整理</div></div>
+<div id="kbDocList"><div class="kb-empty">請先在 ⚙️ 設定中填入管理 API 資訊</div></div>
 <div class="kb-msg" id="kbDocMsg"></div>
 </div>
 </div>
@@ -825,14 +784,9 @@ function renderPortal(){
 }
 
 /* ════ 知識庫 JS — Jina + Supabase + Groq ════ */
-const KLS={
-  JINA:'sw_jina_key',
-  SUPA_URL:'sw_supabase_url',
-  SUPA_KEY:'sw_supabase_key',
-  GROQ:'sw_groq_key'
-};
+const KLS={JINA:'sw_jina_key',SUPA_URL:'sw_supabase_url',SUPA_KEY:'sw_supabase_key',GROQ:'sw_groq_key'};
 let KC={jina:'',supaUrl:'',supaKey:'',groq:''};
-let kbResultCount=5, kbThreshold=0.3;
+let kbResultCount=5,kbThreshold=0.3;
 
 function kbLoadCfg(){
   KC.jina=localStorage.getItem(KLS.JINA)||'';
@@ -849,10 +803,8 @@ function kbSaveCfg(){
   KC.supaUrl=document.getElementById('kbCfgSupaUrl').value.trim();
   KC.supaKey=document.getElementById('kbCfgSupaKey').value.trim();
   KC.groq=document.getElementById('kbCfgGroq').value.trim();
-  localStorage.setItem(KLS.JINA,KC.jina);
-  localStorage.setItem(KLS.SUPA_URL,KC.supaUrl);
-  localStorage.setItem(KLS.SUPA_KEY,KC.supaKey);
-  localStorage.setItem(KLS.GROQ,KC.groq);
+  localStorage.setItem(KLS.JINA,KC.jina);localStorage.setItem(KLS.SUPA_URL,KC.supaUrl);
+  localStorage.setItem(KLS.SUPA_KEY,KC.supaKey);localStorage.setItem(KLS.GROQ,KC.groq);
   const el=document.getElementById('kbSaveSt');el.textContent='✅ 已儲存';
   setTimeout(()=>el.textContent='',2500);
 }
@@ -867,213 +819,77 @@ function kbClearCfg(){
 function kbOpenSettings(){kbLoadCfg();document.getElementById('kbModal').classList.add('on');}
 function kbCloseSettings(){document.getElementById('kbModal').classList.remove('on');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')kbCloseSettings();});
+function kbUpdateCount(v){kbResultCount=parseInt(v);document.getElementById('kbCountVal').textContent=v;}
+function kbUpdateThreshold(v){kbThreshold=parseFloat(v);document.getElementById('kbThreshVal').textContent=parseFloat(v).toFixed(2);}
 
 function kbSwitch(name){
   document.querySelectorAll('.kb-pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.kb-sub-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('kbPg-'+name).classList.add('on');
   document.getElementById('kbTab-'+name).classList.add('on');
-  if(name==='search')document.getElementById('kbSearchInput').focus();
   if(name==='admin')kbLoadDocs();
+  if(name==='search')document.getElementById('kbSearchInput').focus();
 }
 
 function kbUseHint(el){document.getElementById('kbSearchInput').value=el.textContent;kbSearch();}
 function kbE(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-/* 滑桿更新 */
-function kbUpdateCount(v){kbResultCount=parseInt(v);document.getElementById('kbCountVal').textContent=v;}
-function kbUpdateThreshold(v){kbThreshold=parseFloat(v);document.getElementById('kbThreshVal').textContent=parseFloat(v).toFixed(2);}
-
-/* Step 1: Jina embedding */
 async function kbGetEmbedding(text){
-  const r=await fetch('https://api.jina.ai/v1/embeddings',{
-    method:'POST',
+  const r=await fetch('https://api.jina.ai/v1/embeddings',{method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+KC.jina},
-    body:JSON.stringify({input:[text],model:'jina-embeddings-v2-base-zh'})
-  });
+    body:JSON.stringify({input:[text],model:'jina-embeddings-v2-base-zh'})});
   if(!r.ok)throw new Error('Jina API 錯誤 '+r.status);
-  const d=await r.json();
-  const emb=d.data[0].embedding;
+  const d=await r.json();const emb=d.data[0].embedding;
   const norm=Math.sqrt(emb.reduce((s,x)=>s+x*x,0))||1;
   return emb.map(x=>x/norm);
 }
-
-/* Step 2: Supabase pgvector search */
 async function kbSearchChunks(embedding){
-  const r=await fetch(`${KC.supaUrl}/rest/v1/rpc/match_chunks`,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'apikey':KC.supaKey,
-      'Authorization':'Bearer '+KC.supaKey
-    },
-    body:JSON.stringify({
-      query_embedding:embedding,
-      match_threshold:kbThreshold,
-      match_count:kbResultCount
-    })
-  });
+  const r=await fetch(`${KC.supaUrl}/rest/v1/rpc/match_chunks`,{method:'POST',
+    headers:{'Content-Type':'application/json','apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey},
+    body:JSON.stringify({query_embedding:embedding,match_threshold:kbThreshold,match_count:kbResultCount})});
   if(!r.ok)throw new Error('Supabase 搜尋錯誤 '+r.status);
   return await r.json();
 }
-
-/* Step 3: 取得文件資訊 */
-async function kbGetDocInfo(docIds){
-  if(!docIds.length)return {};
-  const ids=docIds.map(id=>`"${id}"`).join(',');
-  const r=await fetch(`${KC.supaUrl}/rest/v1/documents?id=in.(${ids})&select=id,title,source_type,source_url`,{
-    headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey}
-  });
-  if(!r.ok)return {};
-  const docs=await r.json();
-  return Object.fromEntries(docs.map(d=>[d.id,d]));
-}
-
-/* Step 4: Groq Llama3 生成回答 */
 async function kbGenerateAnswer(query,chunks){
   const context=chunks.length
-    ? chunks.map(c=>`【來源：${c.source_title||'未知'}】\n${c.content}`).join('\n\n---\n\n')
-    : '（知識庫中未找到相關資料）';
-
-  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
+    ?chunks.map(c=>`【來源：${c.source_title||'未知'}】\n${c.content}`).join('\n\n---\n\n')
+    :'（知識庫中未找到相關資料）';
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+KC.groq},
-    body:JSON.stringify({
-      model:'llama-3.3-70b-versatile',
-      max_tokens:2048,
-      temperature:0.3,
+    body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:2048,temperature:0.3,
       messages:[
-        {role:'system',content:`你是實威國際的 AI 知識庫助理。
-你只能根據提供的知識庫內容回答問題，不可以使用知識庫以外的知識。
-規則：
-1. 只能使用提供的知識庫內容回答，並標明來源
-2. 如果知識庫內容不足以回答，請直接說「知識庫中沒有找到相關資料，請聯繫客服」
-3. 絕對不可以自行補充或推測知識庫以外的資訊
-4. 使用者用中文問，就用中文回答
-5. 回答要清楚有條理，適當使用標題和條列`},
+        {role:'system',content:'你是實威國際的 AI 知識庫助理。\n你只能根據提供的知識庫內容回答問題，不可以使用知識庫以外的知識。\n規則：\n1. 只能使用提供的知識庫內容回答，並標明來源\n2. 如果知識庫內容不足以回答，請直接說「知識庫中沒有找到相關資料，請聯繫客服」\n3. 絕對不可以自行補充或推測知識庫以外的資訊\n4. 使用者用中文問，就用中文回答\n5. 回答要清楚有條理，適當使用標題和條列'},
         {role:'user',content:`知識庫內容：\n${context}\n\n使用者問題：${query}\n\n請根據以上知識庫內容回答，並標示資料來源。`}
-      ]
-    })
-  });
+      ]})});
   if(!r.ok)throw new Error('Groq API 錯誤 '+r.status);
-  const d=await r.json();
-  return d.choices[0].message.content;
+  const d=await r.json();return d.choices[0].message.content;
 }
 
-/* 主搜尋流程 */
 async function kbSearch(){
   const q=document.getElementById('kbSearchInput').value.trim();if(!q)return;
   const w=document.getElementById('kbResultWrap');
   if(!KC.jina||!KC.supaUrl||!KC.supaKey||!KC.groq){
     w.innerHTML='<div class="kb-warn-card">⚠️ 請先點 ⚙️ 填入所有 API 金鑰</div>';return;
   }
-  w.innerHTML=`<div class="kb-loading"><div class="kb-spin"></div><div><div class="kb-loading-txt">AI 正在分析語意並搜尋知識庫…</div><div class="kb-loading-sub">語意比對「${kbE(q)}」· 門檻 ${kbThreshold.toFixed(2)} · ${kbResultCount} 段落</div></div></div>`;
+  w.innerHTML=`<div class="kb-loading"><div class="kb-spin"></div><div><div class="kb-loading-txt">AI 正在語意搜尋知識庫…</div><div class="kb-loading-sub">比對「${kbE(q)}」· 門檻 ${kbThreshold.toFixed(2)} · ${kbResultCount} 段落</div></div></div>`;
   try{
-    /* 1. 取得 embedding */
     const embedding=await kbGetEmbedding(q);
-    /* 2. 搜尋向量資料庫 */
     const chunks=await kbSearchChunks(embedding);
-    /* 3. 補充文件來源資訊 */
-    const docIds=[...new Set(chunks.map(c=>c.document_id).filter(Boolean))];
-    const docMap=await kbGetDocInfo(docIds);
-    chunks.forEach(c=>{
-      const doc=docMap[c.document_id]||{};
-      c.source_title=doc.title||'未知來源';
-      c.source_type=doc.source_type||'file';
-      c.source_url=doc.source_url||'';
-    });
-    /* 4. Groq 生成回答 */
+    chunks.forEach(c=>{c.source_title=c.source_title||'未知來源';});
     const answer=await kbGenerateAnswer(q,chunks);
-
-    /* 來源整理（去重） */
-    const seen={};
-    chunks.forEach(c=>{if(c.source_title&&!seen[c.source_title])seen[c.source_title]=c;});
-    const srcChips=Object.entries(seen).map(([title,c])=>{
-      const icon=c.source_type==='website'?'🌐':'📄';
-      const label=title.length>35?title.slice(0,35)+'…':title;
-      return c.source_url
-        ?`<a href="${kbE(c.source_url)}" target="_blank" class="kb-src-chip">${icon} ${kbE(label)}</a>`
-        :`<span class="kb-src-chip">${icon} ${kbE(label)}</span>`;
-    }).join('')||`<span class="kb-src-chip" style="color:var(--t3)">AI 知識推理</span>`;
-
-    /* Markdown 簡易轉換 */
-    let html=kbE(answer)
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/^#{1,3} (.+)$/gm,'<strong style="color:var(--accent)">$1</strong>')
-      .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
-      .replace(/(<li>[\s\S]*?<\/li>\n?)+/g,m=>`<ul style="padding-left:18px;margin:8px 0">${m}</ul>`)
-      .replace(/\n\n/g,'</p><p style="margin-top:8px">')
-      .replace(/\n/g,'<br>');
-    html=`<p>${html}</p>`;
-
+    const seen={};chunks.forEach(c=>{if(!seen[c.source_title])seen[c.source_title]=c;});
+    const srcChips=Object.entries(seen).map(([t,c])=>`<span class="kb-src-chip">${c.source_type==='website'?'🌐':'📄'} ${kbE(t.length>35?t.slice(0,35)+'…':t)}</span>`).join('')
+      ||`<span class="kb-src-chip" style="color:var(--t3)">AI 知識推理</span>`;
+    let html=kbE(answer).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p style="margin-top:8px">').replace(/\n/g,'<br>');
     w.innerHTML=`<div class="kb-result-card">
       <div class="kb-result-head">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="kb-result-tag">AI 回答</span>
-          <span class="kb-result-q">搜尋：<strong>${kbE(q)}</strong></span>
-        </div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="kb-result-tag">AI 回答</span><span class="kb-result-q">搜尋：<strong>${kbE(q)}</strong></span></div>
         <button class="kb-result-close" onclick="document.getElementById('kbResultWrap').innerHTML='';document.getElementById('kbSearchInput').value=''">✕</button>
       </div>
-      <div class="kb-result-body">${html}</div>
-      <div class="kb-result-sources">
-        <span class="kb-src-lbl">來源</span>${srcChips}
-        <span style="margin-left:auto;font-size:11px;color:var(--t3)">知識庫搜尋 · ${chunks.length} 段落</span>
-      </div>
+      <div class="kb-result-body"><p>${html}</p></div>
+      <div class="kb-result-sources"><span class="kb-src-lbl">引用來源</span>${srcChips}<span style="margin-left:auto;font-size:11px;color:var(--t3)">${chunks.length} 段落</span></div>
     </div>`;
-  }catch(e){
-    w.innerHTML=`<div class="kb-err-card"><span>❌</span><div><div style="font-weight:700">搜尋失敗</div><div style="font-size:12px;margin-top:4px">${kbE(e.message)}</div></div></div>`;
-  }
-}
-
-/* 知識庫文件列表（Supabase documents table） */
-async function kbLoadDocs(){
-  const list=document.getElementById('kbDocList');
-  if(!KC.supaUrl||!KC.supaKey){list.innerHTML='<div class="kb-empty">請先在 ⚙️ 設定中填入 Supabase 資訊</div>';return;}
-  list.innerHTML='<div class="kb-loading" style="border:none;padding:12px 0"><div class="kb-spin"></div><div class="kb-loading-txt">載入文件列表…</div></div>';
-  try{
-    const r=await fetch(`${KC.supaUrl}/rest/v1/documents?select=*&order=created_at.desc`,{
-      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey}
-    });
-    if(!r.ok)throw new Error('Supabase 錯誤 '+r.status);
-    const docs=await r.json();
-
-    /* 統計 */
-    const fileCount=docs.filter(d=>d.source_type==='file').length;
-    const webCount=docs.filter(d=>d.source_type==='website').length;
-    document.getElementById('kbStatDocs').textContent=docs.length||'0';
-    document.getElementById('kbStatWords').textContent=fileCount;
-    document.getElementById('kbStatChunks').textContent=webCount;
-
-    if(!docs.length){list.innerHTML='<div class="kb-empty">📭 知識庫目前沒有文件</div>';return;}
-
-    list.innerHTML=docs.map(doc=>{
-      const icon=doc.source_type==='website'?'🌐':'📄';
-      const date=doc.created_at?new Date(doc.created_at).toLocaleDateString('zh-TW'):'—';
-      return `<div class="kb-doc-item">
-        <span class="kb-doc-icon">${icon}</span>
-        <div class="kb-doc-info">
-          <div class="kb-doc-name">${kbE(doc.title||doc.id)}</div>
-          <div class="kb-doc-meta">${doc.source_type==='website'?'網站來源':'文件'} · ${date}</div>
-        </div>
-        <button class="kb-del-btn" onclick="kbDelDoc('${doc.id}')" title="刪除">🗑</button>
-      </div>`;
-    }).join('');
-  }catch(e){
-    list.innerHTML=`<div class="kb-err-card"><span>❌</span><div><div style="font-weight:700">載入失敗</div><div style="font-size:12px;margin-top:4px">${kbE(e.message)}</div></div></div>`;
-  }
-}
-
-async function kbDelDoc(id){
-  if(!confirm('確定刪除此文件？chunks 將一併刪除。'))return;
-  try{
-    const r=await fetch(`${KC.supaUrl}/rest/v1/documents?id=eq.${id}`,{
-      method:'DELETE',
-      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey,'Prefer':'return=minimal'}
-    });
-    if(!r.ok)throw new Error('刪除失敗 '+r.status);
-    kbMsg('kbDocMsg','ok','✅ 文件已刪除');setTimeout(kbLoadDocs,600);
-  }catch(e){kbMsg('kbDocMsg','err','刪除失敗：'+e.message);}
-}
+  }catch(e){w.innerHTML=`<div class="kb-err-card"><span>❌</span><div><div style="font-weight:700">搜尋失敗</div><div style="font-size:12px;margin-top:4px">${kbE(e.message)}</div></div></div>`;}
 }
 
 async function kbLoadDocs(){
@@ -1082,39 +898,29 @@ async function kbLoadDocs(){
   list.innerHTML='<div class="kb-loading" style="border:none;padding:12px 0"><div class="kb-spin"></div><div class="kb-loading-txt">載入文件列表…</div></div>';
   try{
     const r=await fetch(`${KC.supaUrl}/rest/v1/documents?select=*&order=created_at.desc`,{
-      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey}
-    });
+      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey}});
     if(!r.ok)throw new Error('Supabase 錯誤 '+r.status);
     const docs=await r.json();
-    const fileCount=docs.filter(d=>d.source_type!=='website').length;
-    const webCount=docs.filter(d=>d.source_type==='website').length;
     document.getElementById('kbStatDocs').textContent=docs.length||'0';
-    document.getElementById('kbStatWords').textContent=fileCount;
-    document.getElementById('kbStatChunks').textContent=webCount;
+    document.getElementById('kbStatWords').textContent=docs.filter(d=>d.source_type!=='website').length;
+    document.getElementById('kbStatChunks').textContent=docs.filter(d=>d.source_type==='website').length;
     if(!docs.length){list.innerHTML='<div class="kb-empty">📭 知識庫目前沒有文件<br><span style="font-size:11px">請前往管理後台上傳文件</span></div>';return;}
-    list.innerHTML=docs.map(doc=>{
-      const icon=doc.source_type==='website'?'🌐':'📄';
-      const date=doc.created_at?new Date(doc.created_at).toLocaleDateString('zh-TW'):'—';
-      return `<div class="kb-doc-item">
-        <span class="kb-doc-icon">${icon}</span>
+    list.innerHTML=docs.map(doc=>`
+      <div class="kb-doc-item">
+        <span class="kb-doc-icon">${doc.source_type==='website'?'🌐':'📄'}</span>
         <div class="kb-doc-info">
           <div class="kb-doc-name">${kbE(doc.title||doc.id)}</div>
-          <div class="kb-doc-meta">${doc.source_type==='website'?'網站來源':'文件'} · ${date}</div>
+          <div class="kb-doc-meta">${doc.source_type==='website'?'網站來源':'文件'} · ${doc.created_at?new Date(doc.created_at).toLocaleDateString('zh-TW'):'—'}</div>
         </div>
         <button class="kb-del-btn" onclick="kbDelDoc('${doc.id}')" title="刪除">🗑</button>
-      </div>`;
-    }).join('');
-  }catch(e){
-    list.innerHTML=`<div class="kb-err-card"><span>❌</span><div><div style="font-weight:700">載入失敗</div><div style="font-size:12px;margin-top:4px">${kbE(e.message)}</div></div></div>`;
-  }
+      </div>`).join('');
+  }catch(e){list.innerHTML=`<div class="kb-err-card"><span>❌</span><div><div style="font-weight:700">載入失敗</div><div style="font-size:12px;margin-top:4px">${kbE(e.message)}</div></div></div>`;}
 }
 async function kbDelDoc(id){
   if(!confirm('確定刪除此文件？chunks 將一併刪除。'))return;
   try{
-    const r=await fetch(`${KC.supaUrl}/rest/v1/documents?id=eq.${id}`,{
-      method:'DELETE',
-      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey,'Prefer':'return=minimal'}
-    });
+    const r=await fetch(`${KC.supaUrl}/rest/v1/documents?id=eq.${id}`,{method:'DELETE',
+      headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey,'Prefer':'return=minimal'}});
     if(!r.ok)throw new Error('刪除失敗 '+r.status);
     kbMsg('kbDocMsg','ok','✅ 文件已刪除');setTimeout(kbLoadDocs,600);
   }catch(e){kbMsg('kbDocMsg','err','刪除失敗：'+e.message);}

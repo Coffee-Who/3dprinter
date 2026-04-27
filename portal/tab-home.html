@@ -839,9 +839,8 @@ async function kbGetEmbedding(text){
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+KC.jina},
     body:JSON.stringify({input:[text],model:'jina-embeddings-v2-base-zh'})});
   if(!r.ok)throw new Error('Jina API 錯誤 '+r.status);
-  const d=await r.json();const emb=d.data[0].embedding;
-  const norm=Math.sqrt(emb.reduce((s,x)=>s+x*x,0))||1;
-  return emb.map(x=>x/norm);
+  const d=await r.json();
+  return d.data[0].embedding;
 }
 async function kbSearchChunks(embedding){
   const r=await fetch(`${KC.supaUrl}/rest/v1/rpc/match_chunks`,{method:'POST',

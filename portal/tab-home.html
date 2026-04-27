@@ -873,10 +873,33 @@ async function kbSearch(){
   }
   w.innerHTML=`<div class="kb-loading"><div class="kb-spin"></div><div><div class="kb-loading-txt">AI 正在語意搜尋知識庫…</div><div class="kb-loading-sub">比對「${kbE(q)}」· 門檻 ${kbThreshold.toFixed(2)} · ${kbResultCount} 段落</div></div></div>`;
   try{
+    /* 1. 向量化 */
     const embedding=await kbGetEmbedding(q);
+    /* 2. 向量搜尋 → 回傳 {id, content, document_id, similarity} */
     const chunks=await kbSearchChunks(embedding);
-    chunks.forEach(c=>{c.source_title=c.source_title||'未知來源';});
+    /* 3. 用 document_id 查文件名稱 */
+    if(chunks.length){
+      const ids=[...new Set(chunks.map(c=>c.document_id).filter(Boolean))];
+      if(ids.length){
+        const idsParam=ids.map(id=>`"${id}"`).join(',');
+        const dr=await fetch(`${KC.supaUrl}/rest/v1/documents?id=in.(${idsParam})&select=id,title,source_type,source_url`,{
+          headers:{'apikey':KC.supaKey,'Authorization':'Bearer '+KC.supaKey}});
+        if(dr.ok){
+          const docs=await dr.json();
+          const docMap=Object.fromEntries(docs.map(d=>[d.id,d]));
+          chunks.forEach(c=>{
+            const doc=docMap[c.document_id]||{};
+            c.source_title=doc.title||'未知來源';
+            c.source_type=doc.source_type||'file';
+            c.source_url=doc.source_url||'';
+          });
+        }
+      }
+    }
+    chunks.forEach(c=>{if(!c.source_title)c.source_title='未知來源';});
+    /* 4. Groq 生成回答 */
     const answer=await kbGenerateAnswer(q,chunks);
+    /* 5. 來源整理 */
     const seen={};chunks.forEach(c=>{if(!seen[c.source_title])seen[c.source_title]=c;});
     const srcChips=Object.entries(seen).map(([t,c])=>`<span class="kb-src-chip">${c.source_type==='website'?'🌐':'📄'} ${kbE(t.length>35?t.slice(0,35)+'…':t)}</span>`).join('')
       ||`<span class="kb-src-chip" style="color:var(--t3)">AI 知識推理</span>`;

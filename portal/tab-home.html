@@ -504,10 +504,10 @@ body.lm .lcard-act-btn{background:rgba(255,255,255,.92)}
 </div>
 <div class="kb-param-item">
 <div class="kb-param-header">
-<div class="kb-param-label">🎯 相似度門檻 <span class="kb-param-val" id="kbThreshVal">0.30</span></div>
+<div class="kb-param-label">🎯 相似度門檻 <span class="kb-param-val" id="kbThreshVal">0.10</span></div>
 <div class="kb-param-tip">低於此分數的段落會被過濾掉。數字越高結果越精準但可能找不到；越低答案越多但可能不相關。<span class="kb-tip-range">建議：精準查詢用 <b>0.5+</b>，探索性問題用 <b>0.2–0.3</b></span></div>
 </div>
-<input class="kb-slider" type="range" min="0.1" max="0.9" value="0.3" step="0.05" oninput="kbUpdateThreshold(this.value)">
+<input class="kb-slider" type="range" min="0.1" max="0.9" value="0.1" step="0.05" oninput="kbUpdateThreshold(this.value)">
 <div class="kb-slider-ticks"><span>0.1</span><span>0.3</span><span>0.6</span><span>0.9</span></div>
 </div>
 </div>
@@ -786,7 +786,7 @@ function renderPortal(){
 /* ════ 知識庫 JS — Jina + Supabase + Groq ════ */
 const KLS={JINA:'sw_jina_key',SUPA_URL:'sw_supabase_url',SUPA_KEY:'sw_supabase_key',GROQ:'sw_groq_key'};
 let KC={jina:'',supaUrl:'',supaKey:'',groq:''};
-let kbResultCount=5,kbThreshold=0.3;
+let kbResultCount=5,kbThreshold=0.1;
 
 function kbLoadCfg(){
   KC.jina=localStorage.getItem(KLS.JINA)||'';

@@ -180,11 +180,19 @@ select.bs{flex:1;min-width:75px;padding:5px 7px;border-radius:5px;border:1px sol
 </div>
 
 <!-- ── Navtab ── -->
-<div id="navtab">
-  <div class="ntab" onclick="location.href='tab-home.html'">🏠 首頁</div>
-  <div class="ntab" onclick="location.href='tab-daily.html'">📰 每日焦點</div>
-  <div class="ntab on">📦 3D列印</div>
-  <div class="ntab" style="pointer-events:none;opacity:.4">📋 歷史記錄 <span class="sbg">Soon</span></div>
+<div class="nav-items">
+    <a href="tab-home.html" class="nav-item" id="nav-home">
+        <span>🏠 首頁</span>
+    </a>
+    <a href="tab-sample.html" class="nav-item" id="nav-sample">
+        <span>📦 3D列印</span>
+    </a>
+    <a href="tab-kb.html" class="nav-item" id="nav-kb">
+        <span>🧠 實威國際知識庫</span>
+    </a>
+    <a href="tab-news.html" class="nav-item" id="nav-news">
+        <span>📰 每日焦點</span>
+    </a>
 </div>
 
 <!-- ── Title (scrollable, centered) ── -->

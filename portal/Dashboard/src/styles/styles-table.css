@@ -1,0 +1,207 @@
+/* 總表 view */
+.table-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0 28px 24px;
+}
+
+.kt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kt thead {
+  background: #fafbfc;
+}
+.kt th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: #fafbfc;
+  z-index: 1;
+  user-select: none;
+}
+.kt th.sortable {
+  cursor: pointer;
+}
+.kt th.sortable:hover { color: var(--ink); }
+.kt th .sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--ink-4);
+  font-size: 9px;
+  font-feature-settings: 'tnum';
+}
+.kt th.sorted { color: var(--accent); }
+.kt th.sorted .sort-indicator { color: var(--accent); }
+
+.kt td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+.kt tbody tr:hover {
+  background: var(--bg-soft);
+}
+.kt tbody tr:last-child td { border-bottom: 0; }
+
+.kt .col-seq    { text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--ink-4); width: 56px; font-feature-settings:'tnum'; }
+.kt .col-id     { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 500; font-size: 11.5px; }
+.kt .col-eng    { white-space: nowrap; }
+.kt .col-date   { font-family: 'JetBrains Mono', monospace; font-feature-settings:'tnum'; color: var(--ink-3); font-size: 11.5px; white-space: nowrap; }
+.kt .col-prog   { width: 130px; }
+.kt .col-machine{ font-family: 'JetBrains Mono', monospace; color: var(--ink-2); font-size: 11.5px; }
+.kt .col-actions{ width: 90px; text-align: right; }
+.kt .col-customer { font-weight: 500; color: var(--ink); }
+
+/* 表內 chip / badge */
+.kt-pill {
+  display: inline-flex; align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  font-size: 10.5px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kt-pill-todo      { background: #eef0f3; color: #5a6270; }
+.kt-pill-blocked   { background: #fbf3dc; color: #8b6b13; }
+.kt-pill-progress  { background: #e6f1f6; color: #0c7a99; }
+.kt-pill-done      { background: #e6f1ea; color: #1d6f43; }
+.kt-pill-cancelled { background: #f0f1f4; color: #8a93a3; }
+
+.kt-mat-ok      { color: #1d6f43; font-weight: 500; }
+.kt-mat-need    { color: #8b6b13; font-weight: 500; }
+
+.kt-eng {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.kt-eng-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kt-prog {
+  display: flex; align-items: center; gap: 8px;
+}
+.kt-prog-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.kt-prog-fill {
+  height: 100%;
+  background: var(--accent);
+}
+.kt-prog-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-feature-settings:'tnum';
+  min-width: 32px;
+  text-align: right;
+}
+
+.kt-due {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-feature-settings:'tnum';
+  white-space: nowrap;
+}
+.kt-due-red { color: #c0392b; font-weight: 600; }
+.kt-due-amber { color: #c79b2a; font-weight: 600; }
+
+.kt-act {
+  display: inline-flex; gap: 4px;
+}
+.kt-actbtn {
+  width: 24px; height: 24px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ink-3);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+  font-size: 11px;
+}
+.kt-actbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.kt-actbtn.danger:hover { border-color: #c0392b; color: #c0392b; background: #fbe7e3; }
+
+/* 空狀態 */
+.kt-empty {
+  padding: 60px 0;
+  text-align: center;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* 分頁 */
+.kt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kt-pagination-info {
+  display: flex; align-items: center; gap: 8px;
+}
+.kt-pagination-pages {
+  display: flex; gap: 3px; align-items: center;
+}
+.kt-page {
+  min-width: 28px; height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 5px;
+  font: inherit; font-size: 11.5px;
+  cursor: pointer; color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings:'tnum';
+}
+.kt-page:hover { border-color: var(--accent); color: var(--accent); }
+.kt-page[aria-current="true"] {
+  background: var(--ink); color: #fff; border-color: var(--ink);
+}
+.kt-page:disabled { opacity: 0.4; cursor: not-allowed; }

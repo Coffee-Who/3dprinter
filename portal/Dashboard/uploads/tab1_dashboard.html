@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D列印工作進度看板 - Tab 1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Anthropic Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* 標題區 */
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* 搜尋與操作欄 */
+        .search-bar {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 0.5px solid #e0e0e0;
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #095a73;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(12, 122, 153, 0.2);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0c7a99;
+            border: 1px solid #0c7a99;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f8fb;
+        }
+
+        /* 篩選區 */
+        .filter-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        select {
+            padding: 6px 10px;
+            border: 0.5px solid #ddd;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+
+        select:hover {
+            border-color: #0c7a99;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #0c7a99;
+            box-shadow: 0 0 0 2px rgba(12, 122, 153, 0.1);
+        }
+
+        /* 表格區 */
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            border: 0.5px solid #e0e0e0;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        thead {
+            background: #f5f9fc;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a1a;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        td {
+            padding: 10px;
+            color: #555;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr:hover {
+            background: #f9fbfc;
+        }
+
+        /* 進度條 */
+        .progress-cell {
+            background: #e8f4f8;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #0c7a99;
+            text-align: center;
+        }
+
+        .progress-bar {
+            height: 3px;
+            background: #ddd;
+            border-radius: 2px;
+            margin-bottom: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #10a452;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* 狀態標籤 */
+        .badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-success {
+            background: #dff0d8;
+            color: #3c763d;
+        }
+
+        .badge-warning {
+            background: #fcf8e3;
+            color: #8a6d3b;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #e8f4f8;
+            color: #0c7a99;
+        }
+
+        /* 操作按鈕 */
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 3px 6px;
+            font-size: 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn-view {
+            background: #e8f4f8;
+            color: #0c7a99;
+        }
+
+        .action-btn-view:hover {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .action-btn-edit {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .action-btn-edit:hover {
+            background: #856404;
+            color: white;
+        }
+
+        .action-btn-delete {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn-delete:hover {
+            background: #721c24;
+            color: white;
+        }
+
+        /* 分頁區 */
+        .pagination-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .pagination-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .pagination-right {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pagination-btn {
+            padding: 6px 10px;
+            border: 0.5px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover {
+            border-color: #0c7a99;
+            color: #0c7a99;
+        }
+
+        .pagination-btn.active {
+            background: #0c7a99;
+            color: white;
+            border-color: #0c7a99;
+        }
+
+        /* 儀表板區 */
+        .dashboard {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 0.5px solid #e0e0e0;
+        }
+
+        .dashboard-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        /* 統計卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border-radius: 8px;
+            padding: 14px;
+            border: 0.5px solid;
+            text-align: center;
+        }
+
+        .stat-card-primary {
+            background: #f0f8fb;
+            border-color: #0c7a99;
+        }
+
+        .stat-card-success {
+            background: #dff0d8;
+            border-color: #3c763d;
+        }
+
+        .stat-card-warning {
+            background: #fcf8e3;
+            border-color: #8a6d3b;
+        }
+
+        .stat-card-danger {
+            background: #f8d7da;
+            border-color: #721c24;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .stat-card-primary .stat-label {
+            color: #0c7a99;
+        }
+
+        .stat-card-primary .stat-value {
+            color: #0c7a99;
+        }
+
+        .stat-card-success .stat-label {
+            color: #3c763d;
+        }
+
+        .stat-card-success .stat-value {
+            color: #10a452;
+        }
+
+        .stat-card-warning .stat-label {
+            color: #8a6d3b;
+        }
+
+        .stat-card-warning .stat-value {
+            color: #f0ad4e;
+        }
+
+        .stat-card-danger .stat-label {
+            color: #721c24;
+        }
+
+        .stat-card-danger .stat-value {
+            color: #d9534f;
+        }
+
+        /* 圖表區 */
+        .chart-info {
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .chart-info-text {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            background: #f9fbfc;
+            border-radius: 8px;
+            padding: 16px;
+            border: 0.5px solid #e0e0e0;
+        }
+
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .chart-bar {
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 8px;
+        }
+
+        .bar-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bar {
+            width: 100%;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .bar:hover {
+            filter: brightness(1.1);
+        }
+
+        .bar-label {
+            font-size: 10px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bar-value {
+            font-size: 11px;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        /* 自訂圖表區 */
+        .custom-chart {
+            background: #f9fbfc;
+            border-radius: 8px;
+            padding: 20px;
+            border: 0.5px solid #e0e0e0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-chart-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .custom-chart-placeholder {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            border: 1px dashed #ddd;
+            border-radius: 6px;
+        }
+
+        /* 底部按鈕區 */
+        .button-area {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn-chart {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-chart-primary {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .btn-chart-primary:hover {
+            background: #095a73;
+        }
+
+        .btn-chart-secondary {
+            background: white;
+            color: #0c7a99;
+            border: 1px solid #0c7a99;
+        }
+
+        .btn-chart-secondary:hover {
+            background: #f0f8fb;
+        }
+
+        /* 模態框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-close:hover {
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1a1a1a;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #0c7a99;
+            box-shadow: 0 0 0 2px rgba(12, 122, 153, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn-cancel {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .modal-btn-save {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .modal-btn-save:hover {
+            background: #095a73;
+        }
+
+        /* 響應式 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .search-controls {
+                flex-direction: column;
+            }
+
+            .search-input {
+                min-width: 100%;
+            }
+
+            .filter-section {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pagination-section {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            table {
+                font-size: 10px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 標題區 -->
+        <div class="header">
+            <h1>📊 3D列印工作進度</h1>
+            <p>即時同步跨平台資料 | Firebase + GitHub 雙備份</p>
+        </div>
+
+        <!-- 搜尋與操作欄 -->
+        <div class="search-bar">
+            <div class="search-controls">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋訂單號、客戶名稱...">
+                <button class="btn btn-primary" onclick="filterTable()">🔍 搜尋</button>
+                <button class="btn btn-secondary" onclick="openAddModal()">➕ 新增</button>
+            </div>
+
+            <!-- 篩選與排序 -->
+            <div class="filter-section">
+                <span class="filter-label">篩選/排序：</span>
+                <select id="sortField" onchange="sortTable()">
+                    <option value="id">EF單號 ↕</option>
+                    <option value="id_asc">EF單號 ↑ (遞增)</option>
+                    <option value="id_desc">EF單號 ↓ (遞減)</option>
+                </select>
+
+                <select id="dateSort" onchange="sortTable()">
+                    <option value="">📅 日期 ↕</option>
+                    <option value="date_asc">日期 ↑ (最舊)</option>
+                    <option value="date_desc">日期 ↓ (最新)</option>
+                </select>
+
+                <select id="progressSort" onchange="sortTable()">
+                    <option value="">📊 進度 ↕</option>
+                    <option value="progress_asc">進度 ↑ (由低到高)</option>
+                    <option value="progress_desc">進度 ↓ (由高到低)</option>
+                </select>
+
+                <select id="statusFilter" onchange="filterTable()">
+                    <option value="">🏷️ 完成狀態</option>
+                    <option value="yes">是</option>
+                    <option value="no">否</option>
+                </select>
+
+                <select id="engineerFilter" onchange="filterTable()">
+                    <option value="">👤 工程師篩選</option>
+                    <option value="Jimmy">廖璟程(Jimmy)</option>
+                    <option value="Jaylen">何哲綸(Jaylen)</option>
+                    <option value="Bill">陳柏元(Bill)</option>
+                    <option value="Barry">Barry</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 表格區 -->
+        <div class="table-wrapper">
+            <div class="table-container">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>序列</th>
+                            <th>EF單號</th>
+                            <th>客戶名稱</th>
+                            <th>執行工程師</th>
+                            <th>EF期望交期</th>
+                            <th>開始執行日期</th>
+                            <th>預計完成日期</th>
+                            <th>材料庫存狀況</th>
+                            <th>進度%</th>
+                            <th>機器</th>
+                            <th>完成</th>
+                            <th>備註</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 分頁區 -->
+        <div class="pagination-section">
+            <div class="pagination-left">
+                <span style="font-size: 12px; color: #666; font-weight: 600;">每頁筆數：</span>
+                <select id="pageSize" onchange="changePageSize()" style="padding: 6px 10px; border: 0.5px solid #ddd; border-radius: 6px; font-size: 12px; cursor: pointer; background: white;">
+                    <option value="10">10 筆</option>
+                    <option value="20">20 筆</option>
+                    <option value="50">50 筆</option>
+                </select>
+                <span id="pageInfo" style="font-size: 12px; color: #666;"></span>
+            </div>
+
+            <div class="pagination-right" id="paginationBtns">
+            </div>
+        </div>
+
+        <!-- 互動式儀表板 -->
+        <div class="dashboard">
+            <h3 class="dashboard-title">📈 互動式統計儀表板</h3>
+
+            <!-- 統計卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card stat-card-primary">
+                    <div class="stat-label">📊 總訂單數</div>
+                    <p class="stat-value" id="totalOrders">0</p>
+                </div>
+                <div class="stat-card stat-card-success">
+                    <div class="stat-label">✓ 已完成</div>
+                    <p class="stat-value" id="completedOrders">0</p>
+                </div>
+                <div class="stat-card stat-card-warning">
+                    <div class="stat-label">⏳ 進行中</div>
+                    <p class="stat-value" id="inProgressOrders">0</p>
+                </div>
+                <div class="stat-card stat-card-danger">
+                    <div class="stat-label">✕ 已取消</div>
+                    <p class="stat-value" id="cancelledOrders">0</p>
+                </div>
+            </div>
+
+            <!-- 圖表說明 -->
+            <div class="chart-info">
+                <p class="chart-info-text">📊 圖表選項區（按提度·工程師分布等）[長條圖 / 圓餅圖 / 時間線 - 可選擇]</p>
+            </div>
+
+            <!-- 圖表區 -->
+            <div class="charts-grid">
+                <!-- 狀態統計 -->
+                <div class="chart-container">
+                    <div class="chart-title">📊 狀態統計</div>
+                    <div class="chart-bar" id="statusChart">
+                    </div>
+                </div>
+
+                <!-- 進度統計 -->
+                <div class="chart-container">
+                    <div class="chart-title">📈 進度統計</div>
+                    <div class="chart-bar" id="progressChart">
+                    </div>
+                </div>
+
+                <!-- 執行工程師統計 -->
+                <div class="chart-container">
+                    <div class="chart-title">👤 執行工程師統計</div>
+                    <div class="chart-bar" id="engineerChart">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 自訂圖表區 -->
+            <div class="custom-chart">
+                <p class="custom-chart-title">📊 自訂圖表顯示區</p>
+                <div class="custom-chart-placeholder">[長條圖 / 圓餅圖 / 時間線 - 使用者自選]</div>
+            </div>
+
+            <!-- 底部按鈕 -->
+            <div class="button-area">
+                <button class="btn-chart btn-chart-primary" onclick="refreshCharts()">📊 按提度分布</button>
+                <button class="btn-chart btn-chart-secondary" onclick="showEngineerChart()">👤 按工程師分布</button>
+                <button class="btn-chart btn-chart-secondary" onclick="showCustomerChart()">🏢 按客戶分布</button>
+                <button class="btn-chart btn-chart-secondary" onclick="showDateTrendChart()">📅 按日期趨勢</button>
+            </div>
+
+            <!-- 匯出選項 -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                <span style="font-size: 11px; color: #666; font-weight: 600; align-self: center;">💾 匯出：</span>
+                <button class="btn btn-secondary" onclick="exportCurrentPage()" style="font-size: 12px;">📥 本頁 Excel</button>
+                <button class="btn btn-secondary" onclick="exportAllData()" style="font-size: 12px;">📥 全部 Excel</button>
+                <button class="btn btn-secondary" onclick="exportStats()" style="font-size: 12px;">📊 統計表</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯模態框 -->
+    <div id="formModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitle">新增訂單</span>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+
+            <form id="dataForm">
+                <div class="form-group">
+                    <label class="form-label">EF單號 *</label>
+                    <input type="text" id="formId" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">客戶名稱 *</label>
+                    <input type="text" id="formCustomer" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">執行工程師 *</label>
+                    <select id="formEngineer" class="form-select" required>
+                        <option value="">請選擇</option>
+                        <option value="Jimmy">廖璟程(Jimmy)</option>
+                        <option value="Jaylen">何哲綸(Jaylen)</option>
+                        <option value="Bill">陳柏元(Bill)</option>
+                        <option value="Barry">Barry</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">EF期望交期</label>
+                    <input type="date" id="formDueDate" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">開始執行日期</label>
+                    <input type="date" id="formStartDate" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">預計完成日期</label>
+                    <input type="date" id="formEndDate" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">材料庫存狀況</label>
+                    <select id="formMaterial" class="form-select">
+                        <option value="足夠">材料足夠列印</option>
+                        <option value="需調撥">需調撥材料</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">進度% *</label>
+                    <select id="formProgress" class="form-select" required>
+                        <option value="0">0%</option>
+                        <option value="25">25%</option>
+                        <option value="50">50%</option>
+                        <option value="75">75%</option>
+                        <option value="100">100%</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">機器</label>
+                    <select id="formMachine" class="form-select">
+                        <option value="">請選擇</option>
+                        <option value="Form4">Form4</option>
+                        <option value="Form4L">Form4L</option>
+                        <option value="Fuse1+">Fuse1+</option>
+                        <option value="Mark2">Mark2</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">完成</label>
+                    <select id="formComplete" class="form-select">
+                        <option value="否">否</option>
+                        <option value="是">是</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">備註</label>
+                    <textarea id="formRemark" class="form-textarea"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="closeModal()">取消</button>
+                    <button type="button" class="modal-btn modal-btn-save" onclick="saveData()">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 初始資料
+        let allData = [
+            { seq: 1, id: '202512100001', customer: '維格工業股份有限公司', engineer: 'Jimmy', dueDate: '2026-01-21', startDate: '2026-01-16', endDate: '2026-01-19', material: '足夠', progress: 100, machine: 'Form4', complete: '是', remark: '' },
+            { seq: 2, id: '202605080001', customer: '眾里科技股份有限公司', engineer: 'Bill', dueDate: '2026-05-18', startDate: '2026-05-08', endDate: '2026-05-08', material: '足夠', progress: 75, machine: 'Fuse1+', complete: '否', remark: '已調撥台北' },
+            { seq: 3, id: '202604100002', customer: '彥豪智能科技股份有限公司', engineer: 'Jimmy', dueDate: '2026-04-17', startDate: '', endDate: '', material: '需調撥', progress: 0, machine: 'Mark2', complete: '否', remark: '待客戶簽回' },
+            { seq: 4, id: '202604000000', customer: '久允工業股份有限公司', engineer: 'Jimmy', dueDate: '2026-04-30', startDate: '', endDate: '', material: '足夠', progress: 0, machine: 'Form4L', complete: '否', remark: '已取消' },
+            { seq: 5, id: '202601260002', customer: '太宇科技股份有限公司', engineer: 'Bill', dueDate: '2026-02-04', startDate: '2026-01-26', endDate: '2026-02-02', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '等待樣品調撥' },
+            { seq: 6, id: '202601220001', customer: '太宇科技股份有限公司', engineer: 'Bill', dueDate: '2026-02-04', startDate: '2026-01-26', endDate: '2026-02-02', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '' },
+            { seq: 7, id: '202601260001', customer: '太宇科技股份有限公司', engineer: 'Bill', dueDate: '2026-02-04', startDate: '2026-01-28', endDate: '2026-02-02', material: '足夠', progress: 0, machine: 'Formlabs', complete: '否', remark: '' },
+            { seq: 8, id: '202601270001', customer: '博大科技股份有限公司', engineer: 'Bill', dueDate: '2026-02-06', startDate: '2026-01-29', endDate: '2026-02-11', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '烘烤中' },
+            { seq: 9, id: '202601290002', customer: '恭勤化學工業股份有限公司', engineer: 'Jimmy', dueDate: '2026-02-04', startDate: '2026-01-30', endDate: '2026-02-02', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '' },
+            { seq: 10, id: '202602040001', customer: '國立中興大學-機械工程系', engineer: 'Jimmy', dueDate: '2026-03-12', startDate: '2026-02-12', endDate: '2026-03-13', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '' },
+            { seq: 11, id: '202602050003', customer: '鑫元鴻實業股份有限公司', engineer: 'Jimmy', dueDate: '2026-03-06', startDate: '2026-02-10', endDate: '2026-03-06', material: '足夠', progress: 100, machine: 'Formlabs', complete: '是', remark: '' },
+            { seq: 12, id: '202602050001', customer: '太宇科技股份有限公司', engineer: 'Bill', dueDate: '2026-02-13', startDate: '', endDate: '', material: '需調撥', progress: 0, machine: 'Formlabs', complete: '否', remark: '' },
+        ];
+
+        let filteredData = [...allData];
+        let currentPage = 1;
+        let pageSize = 10;
+        let currentEditIndex = -1;
+
+        // 初始化
+        function init() {
+            renderTable();
+            updateStats();
+            updateCharts();
+            renderPagination();
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredData.slice(start, end);
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            pageData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const progressColor = getProgressColor(item.progress);
+                const completeStatus = item.complete === '是' ? 'badge-success' : 'badge-warning';
+                const materialBadge = item.material === '足夠' ? 'badge-success' : 'badge-warning';
+
+                row.innerHTML = `
+                    <td style="text-align: center;">${item.seq}</td>
+                    <td style="color: #0c7a99; font-weight: 600;">${item.id}</td>
+                    <td>${item.customer}</td>
+                    <td style="text-align: center;">${item.engineer}</td>
+                    <td style="text-align: center;">${item.dueDate || '-'}</td>
+                    <td style="text-align: center;">${item.startDate || '-'}</td>
+                    <td style="text-align: center;">${item.endDate || '-'}</td>
+                    <td style="text-align: center;">
+                        <span class="badge ${materialBadge}">${item.material === '足夠' ? '足夠' : '需調撥'}</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <div class="progress-cell" style="background: ${progressColor.bg}; color: ${progressColor.color};">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${item.progress}%; background: ${progressColor.color};"></div>
+                            </div>
+                            ${item.progress}%
+                        </div>
+                    </td>
+                    <td style="text-align: center;">${item.machine || '-'}</td>
+                    <td style="text-align: center;">
+                        <span class="badge ${completeStatus}">${item.complete === '是' ? '✓ 是' : '✗ 否'}</span>
+                    </td>
+                    <td>${item.remark || '-'}</td>
+                    <td style="text-align: center;">
+                        <div class="action-buttons">
+                            <button class="action-btn action-btn-view" onclick="viewData(${start + index})">👁️</button>
+                            <button class="action-btn action-btn-edit" onclick="editData(${start + index})">✏️</button>
+                            <button class="action-btn action-btn-delete" onclick="deleteData(${start + index})">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updatePageInfo();
+        }
+
+        // 獲取進度顏色
+        function getProgressColor(progress) {
+            if (progress === 100) return { bg: '#e8f4f8', color: '#0c7a99' };
+            if (progress === 75) return { bg: '#fcf8e3', color: '#8a6d3b' };
+            if (progress === 50) return { bg: '#fcf8e3', color: '#8a6d3b' };
+            if (progress === 25) return { bg: '#fcf8e3', color: '#8a6d3b' };
+            return { bg: '#e7e7e7', color: '#555' };
+        }
+
+        // 搜尋和篩選
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const engineerFilter = document.getElementById('engineerFilter').value;
+
+            filteredData = allData.filter(item => {
+                const matchSearch = item.id.toLowerCase().includes(search) || item.customer.toLowerCase().includes(search);
+                const matchStatus = !statusFilter || item.complete === statusFilter;
+                const matchEngineer = !engineerFilter || item.engineer === engineerFilter;
+                return matchSearch && matchStatus && matchEngineer;
+            });
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 排序
+        function sortTable() {
+            const sortField = document.getElementById('sortField').value;
+            const dateSort = document.getElementById('dateSort').value;
+            const progressSort = document.getElementById('progressSort').value;
+
+            if (sortField.includes('asc')) {
+                filteredData.sort((a, b) => a.id.localeCompare(b.id));
+            } else if (sortField.includes('desc')) {
+                filteredData.sort((a, b) => b.id.localeCompare(a.id));
+            }
+
+            if (dateSort.includes('asc')) {
+                filteredData.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            } else if (dateSort.includes('desc')) {
+                filteredData.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+            }
+
+            if (progressSort.includes('asc')) {
+                filteredData.sort((a, b) => a.progress - b.progress);
+            } else if (progressSort.includes('desc')) {
+                filteredData.sort((a, b) => b.progress - a.progress);
+            }
+
+            currentPage = 1;
+            renderTable();
+        }
+
+        // 更新分頁信息
+        function updatePageInfo() {
+            const totalPages = Math.ceil(filteredData.length / pageSize);
+            document.getElementById('pageInfo').textContent = `共 ${filteredData.length} 筆資料，頁次 ${currentPage} / ${totalPages}`;
+        }
+
+        // 渲染分頁按鈕
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / pageSize);
+            const paginationBtns = document.getElementById('paginationBtns');
+            paginationBtns.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // 上一頁
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.textContent = '⬅️';
+            prevBtn.onclick = () => previousPage();
+            paginationBtns.appendChild(prevBtn);
+
+            // 頁碼
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                paginationBtns.appendChild(pageBtn);
+            }
+
+            // 下一頁
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.textContent = '➡️';
+            nextBtn.onclick = () => nextPage();
+            paginationBtns.appendChild(nextBtn);
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderTable();
+            renderPagination();
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredData.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+                renderPagination();
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+                renderPagination();
+            }
+        }
+
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+        }
+
+        // 更新統計數據
+        function updateStats() {
+            const total = allData.length;
+            const completed = allData.filter(d => d.complete === '是').length;
+            const inProgress = allData.filter(d => d.complete === '否' && d.progress > 0 && d.progress < 100).length;
+            const cancelled = allData.filter(d => d.remark.includes('取消')).length;
+
+            document.getElementById('totalOrders').textContent = total;
+            document.getElementById('completedOrders').textContent = completed;
+            document.getElementById('inProgressOrders').textContent = inProgress;
+            document.getElementById('cancelledOrders').textContent = cancelled;
+        }
+
+        // 更新圖表
+        function updateCharts() {
+            updateStatusChart();
+            updateProgressChart();
+            updateEngineerChart();
+        }
+
+        // 狀態統計圖表
+        function updateStatusChart() {
+            const completed = allData.filter(d => d.complete === '是').length;
+            const inProgress = allData.filter(d => d.complete === '否' && d.progress > 0 && d.progress < 100).length;
+            const cancelled = allData.filter(d => d.remark.includes('取消')).length;
+
+            const chartHTML = `
+                <div class="bar-item">
+                    <div class="bar" style="height: 120px; background: linear-gradient(180deg, #10a452 0%, #0d7a38 100%);"></div>
+                    <div class="bar-label">已完成</div>
+                    <div class="bar-value">${completed}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 70px; background: linear-gradient(180deg, #f0ad4e 0%, #d58512 100%);"></div>
+                    <div class="bar-label">進行中</div>
+                    <div class="bar-value">${inProgress}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 50px; background: linear-gradient(180deg, #d9534f 0%, #a02622 100%);"></div>
+                    <div class="bar-label">已取消</div>
+                    <div class="bar-value">${cancelled}</div>
+                </div>
+            `;
+            document.getElementById('statusChart').innerHTML = chartHTML;
+        }
+
+        // 進度統計圖表
+        function updateProgressChart() {
+            const p100 = allData.filter(d => d.progress === 100).length;
+            const p75 = allData.filter(d => d.progress === 75).length;
+            const p50 = allData.filter(d => d.progress === 50).length;
+            const p25 = allData.filter(d => d.progress === 25).length;
+
+            const chartHTML = `
+                <div class="bar-item">
+                    <div class="bar" style="height: 130px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">100%</div>
+                    <div class="bar-value">${p100}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 85px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">75%</div>
+                    <div class="bar-value">${p75}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 50px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">50%</div>
+                    <div class="bar-value">${p50}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 30px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">25%</div>
+                    <div class="bar-value">${p25}</div>
+                </div>
+            `;
+            document.getElementById('progressChart').innerHTML = chartHTML;
+        }
+
+        // 工程師統計圖表
+        function updateEngineerChart() {
+            const jimmy = allData.filter(d => d.engineer === 'Jimmy').length;
+            const jaylen = allData.filter(d => d.engineer === 'Jaylen').length;
+            const bill = allData.filter(d => d.engineer === 'Bill').length;
+
+            const chartHTML = `
+                <div class="bar-item">
+                    <div class="bar" style="height: 115px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">Jimmy</div>
+                    <div class="bar-value">${jimmy}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 90px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">Jaylen</div>
+                    <div class="bar-value">${jaylen}</div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar" style="height: 65px; background: linear-gradient(180deg, #0c7a99 0%, #054a60 100%);"></div>
+                    <div class="bar-label">Bill</div>
+                    <div class="bar-value">${bill}</div>
+                </div>
+            `;
+            document.getElementById('engineerChart').innerHTML = chartHTML;
+        }
+
+        // 打開新增模態框
+        function openAddModal() {
+            currentEditIndex = -1;
+            document.getElementById('modalTitle').textContent = '新增訂單';
+            document.getElementById('dataForm').reset();
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        // 查看資料
+        function viewData(index) {
+            const item = allData[index];
+            alert(`訂單詳情\n\nEF單號: ${item.id}\n客戶: ${item.customer}\n工程師: ${item.engineer}\n進度: ${item.progress}%\n完成: ${item.complete}`);
+        }
+
+        // 編輯資料
+        function editData(index) {
+            currentEditIndex = index;
+            const item = allData[index];
+            document.getElementById('modalTitle').textContent = '編輯訂單';
+            document.getElementById('formId').value = item.id;
+            document.getElementById('formCustomer').value = item.customer;
+            document.getElementById('formEngineer').value = item.engineer;
+            document.getElementById('formDueDate').value = item.dueDate;
+            document.getElementById('formStartDate').value = item.startDate;
+            document.getElementById('formEndDate').value = item.endDate;
+            document.getElementById('formMaterial').value = item.material;
+            document.getElementById('formProgress').value = item.progress;
+            document.getElementById('formMachine').value = item.machine;
+            document.getElementById('formComplete').value = item.complete;
+            document.getElementById('formRemark').value = item.remark;
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        // 刪除資料
+        function deleteData(index) {
+            if (confirm('確認要刪除此訂單嗎？')) {
+                allData.splice(index, 1);
+                filteredData = [...allData];
+                renderTable();
+                updateStats();
+                updateCharts();
+            }
+        }
+
+        // 保存資料
+        function saveData() {
+            const formData = {
+                id: document.getElementById('formId').value,
+                customer: document.getElementById('formCustomer').value,
+                engineer: document.getElementById('formEngineer').value,
+                dueDate: document.getElementById('formDueDate').value,
+                startDate: document.getElementById('formStartDate').value,
+                endDate: document.getElementById('formEndDate').value,
+                material: document.getElementById('formMaterial').value,
+                progress: parseInt(document.getElementById('formProgress').value),
+                machine: document.getElementById('formMachine').value,
+                complete: document.getElementById('formComplete').value,
+                remark: document.getElementById('formRemark').value
+            };
+
+            if (!formData.id || !formData.customer || !formData.engineer) {
+                alert('請填寫必填欄位');
+                return;
+            }
+
+            if (currentEditIndex >= 0) {
+                allData[currentEditIndex] = { ...allData[currentEditIndex], ...formData };
+            } else {
+                const newSeq = Math.max(...allData.map(d => d.seq)) + 1;
+                allData.push({ seq: newSeq, ...formData });
+            }
+
+            filteredData = [...allData];
+            renderTable();
+            updateStats();
+            updateCharts();
+            closeModal();
+        }
+
+        // 關閉模態框
+        function closeModal() {
+            document.getElementById('formModal').classList.remove('active');
+            document.getElementById('dataForm').reset();
+        }
+
+        // 刷新圖表
+        function refreshCharts() {
+            updateCharts();
+            alert('圖表已刷新');
+        }
+
+        function showEngineerChart() {
+            alert('已切換為按工程師分布');
+        }
+
+        function showCustomerChart() {
+            alert('已切換為按客戶分布');
+        }
+
+        function showDateTrendChart() {
+            alert('已切換為按日期趨勢');
+        }
+
+        // 匯出功能
+        function exportCurrentPage() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredData.slice(start, end);
+            exportToExcel(pageData, `工作進度_第${currentPage}頁`);
+        }
+
+        function exportAllData() {
+            exportToExcel(allData, '工作進度_全部資料');
+        }
+
+        function exportStats() {
+            const stats = [
+                ['統計項目', '數量'],
+                ['總訂單數', allData.length],
+                ['已完成', allData.filter(d => d.complete === '是').length],
+                ['進行中', allData.filter(d => d.complete === '否' && d.progress > 0 && d.progress < 100).length],
+                ['已取消', allData.filter(d => d.remark.includes('取消')).length]
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(stats);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '統計');
+            XLSX.writeFile(wb, '工作進度統計.xlsx');
+        }
+
+        function exportToExcel(data, filename) {
+            const headers = ['序列', 'EF單號', '客戶名稱', '執行工程師', 'EF期望交期', '開始執行日期', '預計完成日期', '材料庫存狀況', '進度%', '機器', '完成', '備註'];
+            const rows = data.map(item => [
+                item.seq,
+                item.id,
+                item.customer,
+                item.engineer,
+                item.dueDate,
+                item.startDate,
+                item.endDate,
+                item.material,
+                item.progress,
+                item.machine,
+                item.complete,
+                item.remark
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '工作進度');
+            XLSX.writeFile(wb, `${filename}.xlsx`);
+        }
+
+        // 關閉模態框點擊外部
+        window.onclick = function(event) {
+            const modal = document.getElementById('formModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        // 初始化應用
+        init();
+    </script>
+</body>
+</html>

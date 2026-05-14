@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>工作看板 — 3D 列印進度</title>
+<title>3D 列印 · 工作看板 + 異常與資源</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="src/styles/styles-table.css" />
 <link rel="stylesheet" href="src/styles/styles-gantt.css" />
 <link rel="stylesheet" href="src/styles/styles-dashboard.css" />
+<link rel="stylesheet" href="src/styles/styles-issues.css" />
 </head>
 <body>
 <template id="__bundler_thumbnail">
@@ -38,11 +39,13 @@
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
 <script src="src/data.js"></script>
+<script src="src/data-issues.js"></script>
 <script src="src/helpers.js"></script>
 <script type="text/babel" src="src/views/view-table.jsx"></script>
 <script type="text/babel" src="src/views/view-kanban.jsx"></script>
 <script type="text/babel" src="src/views/view-gantt.jsx"></script>
 <script type="text/babel" src="src/views/view-dashboard.jsx"></script>
+<script type="text/babel" src="src/views/view-issues.jsx"></script>
 <script type="text/babel" src="src/app.jsx"></script>
 </body>
 </html>

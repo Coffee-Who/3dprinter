@@ -1,15 +1,22 @@
-# 工作看板 · 3D 列印進度管理
+# 3D 列印 · 工作管理平台
 
-白底科技感的工作進度看板,4 個分頁:**總表 / 看板 / 時間軸 / Dashboard**。
+白底科技感的內部工作管理工具,左側 sidebar 切換 2 個 app:
 
-## 功能
+## 應用
 
+### 🟦 工作看板 (WORK BOARD)
+4 個分頁共用同一份訂單資料:
 - **總表** — 13 欄完整資料、可點擊欄位排序、多重篩選、搜尋、分頁、匯出 CSV
 - **看板** — KPI strip + 卡片欄,可依狀態 / 進度 / 工程師 / 機台分欄,支援拖曳換欄、卡片詳情抽屜
 - **時間軸** — 工程師泳道甘特圖,bar 內填色 = 進度 %,支援月 / 季 / 半年三段檢視
 - **Dashboard** — 5 KPI + 3 預設分析(狀態 Donut、工程師橫條、進度長條) + 3 個自由分析(維度 × 圖表類型自由組合)
 
-四個分頁共用同一份資料,改一處全處更新。
+### ⚠️ 異常與資源 (ISSUES · RESOURCES)
+4 個子分頁:
+- **客戶異常** — 含多筆後續進度,支援搜尋 / 狀態 / 工程師篩選
+- **IPA 採購** — 採購紀錄,含合計桶數顯示
+- **設備清單** — 工具與器材,含合計金額顯示
+- **分析** — 5 KPI + 6 張圖表(異常工程師/狀態分布、IPA 人員/月份趨勢、設備支出方式/金額排行)
 
 ## 技術棧
 
@@ -21,7 +28,9 @@
 
 1. 在 GitHub 建立新 repo,把整個資料夾推上去
 2. **Settings → Pages → Source** 選 `main` branch / root
-3. 等幾分鐘,網址會像 `https://<你的帳號>.github.io/<repo-name>/`(會自動讀 `index.html`)
+3. 等幾分鐘,網址會像 `https://<你的帳號>.github.io/<repo-name>/`
+
+> URL 有 hash 記憶 — `#board/kanban` 直連看板分頁、`#issues/ipa` 直連 IPA 採購頁。
 
 ## 本機預覽
 
@@ -41,27 +50,30 @@ npx serve .
 
 ```
 .
-├── index.html                ← 入口檔(GitHub Pages 自動讀取)
+├── index.html                  ← 入口檔(GitHub Pages 自動讀取)
 ├── README.md
 ├── .gitignore
 │
 ├── src/
-│   ├── app.jsx               ← 主外殼:四個分頁的容器
-│   ├── helpers.js            ← 共用工具(狀態判定、日期、篩選、tokens)
-│   ├── data.js               ← 訂單資料(mock,17 筆)
+│   ├── app.jsx                 ← 主外殼:sidebar + tabs 切換
+│   ├── helpers.js              ← 共用工具(狀態判定、日期、篩選、tokens)
+│   ├── data.js                 ← 訂單資料(17 筆)
+│   ├── data-issues.js          ← 異常 / IPA / 設備資料
 │   │
 │   ├── views/
-│   │   ├── view-table.jsx        ← 總表:13 欄 + 排序/篩選/匯出
-│   │   ├── view-kanban.jsx       ← 看板:KPI + 拖曳卡片 + 抽屜
-│   │   ├── view-gantt.jsx        ← 時間軸/甘特圖
-│   │   └── view-dashboard.jsx    ← Dashboard:KPI + 預設/自由分析
+│   │   ├── view-table.jsx        ← 總表
+│   │   ├── view-kanban.jsx       ← 看板
+│   │   ├── view-gantt.jsx        ← 時間軸
+│   │   ├── view-dashboard.jsx    ← Dashboard
+│   │   └── view-issues.jsx       ← 異常與資源(4 子分頁)
 │   │
 │   └── styles/
-│       ├── styles-shell.css      ← 外殼/分頁
+│       ├── styles-shell.css      ← 外殼 + sidebar + 通用 toolbar
 │       ├── styles-kanban.css     ← 看板 + 抽屜
-│       ├── styles-table.css      ← 總表
+│       ├── styles-table.css      ← 總表(共用 .kt-* class)
 │       ├── styles-gantt.css      ← 時間軸
-│       └── styles-dashboard.css  ← Dashboard
+│       ├── styles-dashboard.css  ← Dashboard 圖表
+│       └── styles-issues.css     ← 異常頁專用補強
 │
 └── dist/
     └── 工作看板_standalone.html  ← 單檔離線版(所有 CSS/JS 內嵌)
@@ -69,7 +81,7 @@ npx serve .
 
 ## 修改資料
 
-打開 `src/data.js`,`window.KANBAN_DATA` 是陣列,每筆物件欄位:
+**訂單資料**:`src/data.js` 內的 `window.KANBAN_DATA`,每筆物件:
 
 ```js
 {
@@ -77,8 +89,8 @@ npx serve .
   id: '202512100001',          // EF 單號
   customer: '客戶名稱',
   engineer: 'Jimmy',           // Jimmy | Jaylen | Bill | Barry
-  dueDate: '2026-01-21',       // 期望交期 (yyyy-mm-dd)
-  startDate: '2026-01-16',     // 開始日 (空字串 = 未排程)
+  dueDate: '2026-01-21',       // 期望交期
+  startDate: '2026-01-16',     // 開始日
   endDate: '2026-01-19',
   material: '足夠',            // '足夠' | '需調撥'
   progress: 100,               // 0 | 25 | 50 | 75 | 100
@@ -88,11 +100,13 @@ npx serve .
 }
 ```
 
+**異常 / IPA / 設備**:`src/data-issues.js` 內的三個 `window.ISSUES_*` 陣列。
+
 要新增工程師或機台,改 `src/helpers.js` 內的 `K.ENG_ORDER` / `K.ENG_LABEL` / `K.ENG_TONE` / `K.MACHINES`。
 
 ## 今日基準日
 
-預設 `2026-05-14`。要改成「當下系統日期」,把 `src/helpers.js` 裡的
+預設 `2026-05-14`(用於倒數天數、甘特圖今日線)。要改成「當下系統日期」,把 `src/helpers.js` 裡的
 
 ```js
 K.TODAY = new Date('2026-05-14');

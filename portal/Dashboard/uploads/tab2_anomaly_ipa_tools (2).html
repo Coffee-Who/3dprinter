@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客戶異常 / IPA採購 / 設備清單</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Anthropic Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* 標題區 */
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 15px;
+            color: #666;
+        }
+
+        /* 搜尋與篩選區 */
+        .search-bar {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 0.5px solid #e0e0e0;
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #095a73;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #0c7a99;
+            border: 1px solid #0c7a99;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f8fb;
+        }
+
+        /* 篩選區 */
+        .filter-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        select {
+            padding: 10px 12px;
+            border: 0.5px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            background: white;
+        }
+
+        /* 統計卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 0.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0c7a99;
+        }
+
+        /* 主要內容區 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+            min-height: 550px;
+        }
+
+        /* 表格容器 */
+        .table-section {
+            background: white;
+            border: 0.5px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-header {
+            background: #f5f9fc;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0;
+        }
+
+        .table-wrapper {
+            overflow: auto;
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: fixed;
+        }
+
+        thead {
+            background: #f9fbfc;
+            border-bottom: 0.5px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a1a;
+            white-space: nowrap;
+            position: relative;
+            user-select: none;
+        }
+
+        th::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: transparent;
+            cursor: col-resize;
+        }
+
+        th:hover::after {
+            background: #0c7a99;
+        }
+
+        td {
+            padding: 10px 8px;
+            color: #555;
+            border-bottom: 0.5px solid #f0f0f0;
+        }
+
+        tbody tr:hover {
+            background: #f9fbfc;
+        }
+
+        tbody tr.main-row {
+            background: #fafafa;
+        }
+
+        /* 狀態標籤 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-completed {
+            background: #dff0d8;
+            color: #3c763d;
+        }
+
+        .status-processing {
+            background: #fcf8e3;
+            color: #8a6d3b;
+        }
+
+        /* 編輯按鈕 */
+        .edit-btn {
+            padding: 4px 8px;
+            background: white;
+            color: #0c7a99;
+            border: 0.5px solid #0c7a99;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .edit-btn:hover {
+            background: #0c7a99;
+            color: white;
+        }
+
+        /* 右側區塊 */
+        .right-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 儀表板區 */
+        .dashboard {
+            background: white;
+            border: 0.5px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .dashboard h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #0c7a99;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .dashboard-card {
+            border: 0.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f9fbfc;
+        }
+
+        .dashboard-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .chart-bar {
+            margin-bottom: 12px;
+        }
+
+        .chart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .chart-item-label {
+            font-size: 13px;
+            color: #1a1a1a;
+        }
+
+        .chart-item-value {
+            font-size: 13px;
+            color: #0c7a99;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #0c7a99;
+            border-radius: 3px;
+        }
+
+        /* 模態框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1a1a1a;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #0c7a99;
+            box-shadow: 0 0 0 2px rgba(12, 122, 153, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn-cancel {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .modal-btn-save {
+            background: #0c7a99;
+            color: white;
+        }
+
+        .modal-btn-save:hover {
+            background: #095a73;
+        }
+
+        /* 分頁 */
+        .pagination {
+            background: #f9fbfc;
+            padding: 12px 16px;
+            border-top: 0.5px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pagination-btn {
+            padding: 6px 10px;
+            border: 0.5px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .pagination-btn.active {
+            background: #0c7a99;
+            color: white;
+            border-color: #0c7a99;
+        }
+
+        /* 拖曳調整寬度 */
+        th {
+            position: relative;
+            user-select: none;
+        }
+
+        th::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: transparent;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        th::after:hover {
+            background: #0c7a99;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .right-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 標題區 -->
+    <div class="header">
+        <h1>⚠️ 客戶異常 / IPA採購 / 設備清單</h1>
+        <p>即時監控客戶異常、材料採購與設備管理</p>
+    </div>
+
+    <!-- 搜尋與篩選區 -->
+    <div class="search-bar">
+        <div class="search-controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋客戶、品名...">
+            <button class="btn btn-primary" onclick="filterTable()">🔍 搜尋</button>
+        </div>
+
+        <div class="filter-section">
+            <span class="filter-label">篩選:</span>
+            <select id="statusFilter" onchange="filterTable()">
+                <option value="">全部狀態</option>
+                <option value="已完成">已完成</option>
+                <option value="處理中">處理中</option>
+                <option value="暫停">暫停</option>
+            </select>
+            <select id="engineerFilter" onchange="filterTable()">
+                <option value="">全部工程師</option>
+                <option value="Jimmy">Jimmy</option>
+                <option value="Bill">Bill</option>
+                <option value="Jaylen">Jaylen</option>
+                <option value="Barry">Barry</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 統計卡片 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">📊 總異常</div>
+            <div class="stat-value" id="totalAnomalies">10</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">✓ 已完成</div>
+            <div class="stat-value" id="completedAnomalies" style="color: #10a452;">9</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">⏳ 處理中</div>
+            <div class="stat-value" id="processingAnomalies" style="color: #f0ad4e;">1</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">⏸️ 暫停</div>
+            <div class="stat-value" id="pausedAnomalies" style="color: #d9534f;">0</div>
+        </div>
+    </div>
+
+    <!-- 主要內容 -->
+    <div class="main-content">
+        <!-- 左側：客戶異常 -->
+        <div class="table-section">
+            <div class="table-header">
+                <h2>客戶異常紀錄</h2>
+                <button class="btn btn-primary" onclick="openAnomalyModal()">➕</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="anomalyTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">項</th>
+                            <th style="width: 80px;">客戶</th>
+                            <th style="width: 60px;">日期</th>
+                            <th style="width: 70px;">品名</th>
+                            <th style="width: 55px;">工程師</th>
+                            <th style="width: 45px;">狀態</th>
+                            <th style="width: 55px;">進度日期</th>
+                            <th style="width: 70px;">進度狀況</th>
+                            <th style="width: 35px;">編</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anomalyBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <span id="pageInfo">共 10 筆</span>
+                <div class="pagination-buttons">
+                    <button class="pagination-btn" onclick="prevPage()">⬅️</button>
+                    <button class="pagination-btn active" onclick="goToPage(1)">1</button>
+                    <button class="pagination-btn" onclick="nextPage()">➡️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：IPA採購 + 設備清單 -->
+        <div class="right-section">
+            <!-- IPA採購 -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>IPA採購用量紀錄</h2>
+                    <button class="btn btn-primary" onclick="openIPAModal()">➕</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="ipaTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">項</th>
+                                <th style="width: 60px;">採購日期</th>
+                                <th style="width: 60px;">使用日期</th>
+                                <th style="width: 55px;">品名</th>
+                                <th style="width: 45px;">數量</th>
+                                <th style="width: 50px;">人員</th>
+                                <th style="width: 40px;">備註</th>
+                                <th style="width: 30px;">編</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ipaBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 設備清單 -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2>台中設備工具清單</h2>
+                    <button class="btn btn-primary" onclick="openToolsModal()">➕</button>
+                </div>
+                <div class="table-wrapper">
+                    <table id="toolsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">項</th>
+                                <th style="width: 55px;">採購日期</th>
+                                <th style="width: 60px;">品名</th>
+                                <th style="width: 35px;">數量</th>
+                                <th style="width: 45px;">申請</th>
+                                <th style="width: 40px;">單號</th>
+                                <th style="width: 50px;">備註</th>
+                                <th style="width: 60px;">金額</th>
+                                <th style="width: 30px;">編</th>
+                            </tr>
+                        </thead>
+                        <tbody id="toolsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 樞紐分析儀表板 -->
+    <div class="dashboard">
+        <h2>📊 樞紐分析儀表板</h2>
+        <div class="dashboard-grid">
+            <!-- 異常工程師分布 -->
+            <div class="dashboard-card">
+                <h3>異常工程師分布</h3>
+                <div id="engineerChart"></div>
+            </div>
+
+            <!-- 異常狀態分布 -->
+            <div class="dashboard-card">
+                <h3>異常狀態分布</h3>
+                <div id="statusChart"></div>
+            </div>
+
+            <!-- 採購統計 -->
+            <div class="dashboard-card">
+                <h3>採購統計</h3>
+                <div id="purchaseStats"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 客戶異常模態框 -->
+<div id="anomalyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="anomalyModalTitle">新增異常紀錄</span>
+            <button class="modal-close" onclick="closeAnomalyModal()">&times;</button>
+        </div>
+        <form id="anomalyForm">
+            <div class="form-group">
+                <label class="form-label">客戶名稱 *</label>
+                <input type="text" id="anomalyCustomer" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">異常日期 *</label>
+                <input type="date" id="anomalyDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">品名 *</label>
+                <input type="text" id="anomalyProduct" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">窗口工程師 *</label>
+                <select id="anomalyEngineer" class="form-select" required>
+                    <option value="">請選擇</option>
+                    <option value="Jimmy">Jimmy</option>
+                    <option value="Bill">Bill</option>
+                    <option value="Jaylen">Jaylen</option>
+                    <option value="Barry">Barry</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">處理狀況 *</label>
+                <select id="anomalyStatus" class="form-select" required>
+                    <option value="處理中">處理中</option>
+                    <option value="已完成">已完成</option>
+                    <option value="暫停">暫停</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">進度日期 *</label>
+                <input type="date" id="anomalyProgressDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">進度狀況 *</label>
+                <input type="text" id="anomalyProgressStatus" class="form-input" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeAnomalyModal()">取消</button>
+                <button type="button" class="modal-btn modal-btn-save" onclick="saveAnomaly()">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- IPA採購模態框 -->
+<div id="ipaModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="ipaModalTitle">新增IPA採購紀錄</span>
+            <button class="modal-close" onclick="closeIPAModal()">&times;</button>
+        </div>
+        <form id="ipaForm">
+            <div class="form-group">
+                <label class="form-label">採購日期 *</label>
+                <input type="date" id="ipaPurchaseDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">使用日期 *</label>
+                <input type="date" id="ipaUseDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">品名 *</label>
+                <input type="text" id="ipaProduct" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">數量(桶) *</label>
+                <select id="ipaQuantity" class="form-select" required>
+                    <option value="">請選擇</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">採購人員 *</label>
+                <select id="ipaPerson" class="form-select" required>
+                    <option value="">請選擇</option>
+                    <option value="Barry">Barry</option>
+                    <option value="Jimmy">Jimmy</option>
+                    <option value="Bill">Bill</option>
+                    <option value="Jaylen">Jaylen</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">備註</label>
+                <textarea id="ipaRemark" class="form-textarea"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeIPAModal()">取消</button>
+                <button type="button" class="modal-btn modal-btn-save" onclick="saveIPA()">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 設備清單模態框 -->
+<div id="toolsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span id="toolsModalTitle">新增設備紀錄</span>
+            <button class="modal-close" onclick="closeToolsModal()">&times;</button>
+        </div>
+        <form id="toolsForm">
+            <div class="form-group">
+                <label class="form-label">採購日期 *</label>
+                <input type="date" id="toolsPurchaseDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">品名 *</label>
+                <input type="text" id="toolsProduct" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">數量 *</label>
+                <select id="toolsQuantity" class="form-select" required>
+                    <option value="">請選擇</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">採購申請方式 *</label>
+                <select id="toolsMethod" class="form-select" required>
+                    <option value="">請選擇</option>
+                    <option value="Easy Flow">Easy Flow</option>
+                    <option value="零用金">零用金</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">單號</label>
+                <input type="text" id="toolsNumber" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">備註(簡述用途)</label>
+                <textarea id="toolsRemark" class="form-textarea"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">採購金額 *</label>
+                <input type="number" id="toolsPrice" class="form-input" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeToolsModal()">取消</button>
+                <button type="button" class="modal-btn modal-btn-save" onclick="saveTools()">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 初始資料
+    let anomalies = [
+        { seq: 1, customer: '耿舜企業', date: '2026-01-05', product: 'Form 4 Printer', engineer: 'Jimmy', status: '已完成', progresses: [{ date: '2026-01-05', status: '與客戶聯繫中' }, { date: '2026-01-07', status: '前往客戶端處理完畢' }] },
+        { seq: 2, customer: '台灣迪卡儂', date: '2026-01-13', product: 'Tough1500V2', engineer: 'Jimmy', status: '已完成', progresses: [{ date: '2026-01-13', status: '確認為產品設計瑕疵' }, { date: '2026-01-14', status: '原廠答應替換樹脂罐' }] },
+        { seq: 3, customer: '彥豪智能科技', date: '2026-04-15', product: 'Tough2000V2', engineer: 'Jimmy', status: '處理中', progresses: [{ date: '2026-04-16', status: '提供客戶樹脂罐支架' }] }
+    ];
+
+    let ipaRecords = [
+        { seq: 1, purchaseDate: '2025-02-13', useDate: '2025-02-13~2025-03-18', product: '20L-IPA異丙醇', quantity: 4, person: 'Jaylen', remark: '' },
+        { seq: 2, purchaseDate: '2025-03-18', useDate: '2025-03-18~2025-04-10', product: '20L-IPA異丙醇', quantity: 1, person: 'Jaylen', remark: '' },
+        { seq: 3, purchaseDate: '2025-04-10', useDate: '2025-04-10~2025-04-24', product: '20L-IPA異丙醇', quantity: 1, person: 'Jaylen', remark: '' }
+    ];
+
+    let toolsRecords = [
+        { seq: 1, purchaseDate: '2023-08-31', product: '電動筆型散打機', quantity: 1, method: 'Easy Flow', number: 'E001', remark: '3D列印研磨用', price: 2750 },
+        { seq: 2, purchaseDate: '2024-08-01', product: '電子游標卡尺', quantity: 1, method: 'Easy Flow', number: 'E002', remark: '3D列印量測用', price: 10920 },
+        { seq: 3, purchaseDate: '', product: '充電式起子機', quantity: 1, method: '零用金', number: 'Z001', remark: '設備產品維修用', price: 1900 }
+    ];
+
+    let currentPage = 1;
+    let pageSize = 10;
+    let currentEditIndex = -1;
+    let editingType = '';
+
+    // 初始化
+    function init() {
+        renderAnomalies();
+        renderIPATable();
+        renderToolsTable();
+        updateDashboard();
+    }
+
+    // 渲染異常表格
+    function renderAnomalies() {
+        const tbody = document.getElementById('anomalyBody');
+        tbody.innerHTML = '';
+
+        anomalies.forEach((anomaly, index) => {
+            // 第一筆進度
+            const row1 = document.createElement('tr');
+            row1.className = 'main-row';
+            row1.innerHTML = `
+                <td>${anomaly.seq}</td>
+                <td><strong style="color: #0c7a99;">${anomaly.customer}</strong></td>
+                <td>${anomaly.date}</td>
+                <td style="font-size: 12px;">${anomaly.product}</td>
+                <td>${anomaly.engineer}</td>
+                <td><span class="status-badge ${anomaly.status === '已完成' ? 'status-completed' : 'status-processing'}">${anomaly.status}</span></td>
+                <td>${anomaly.progresses[0].date}</td>
+                <td style="font-size: 12px;">${anomaly.progresses[0].status}</td>
+                <td><button class="edit-btn" onclick="editAnomaly(${index})">✏️</button></td>
+            `;
+            tbody.appendChild(row1);
+
+            // 後續進度
+            if (anomaly.progresses.length > 1) {
+                for (let i = 1; i < anomaly.progresses.length; i++) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="6"></td>
+                        <td>${anomaly.progresses[i].date}</td>
+                        <td style="font-size: 12px;">${anomaly.progresses[i].status}</td>
+                        <td></td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            }
+        });
+
+        document.getElementById('pageInfo').textContent = `共 ${anomalies.length} 筆`;
+    }
+
+    // 渲染IPA表格
+    function renderIPATable() {
+        const tbody = document.getElementById('ipaBody');
+        tbody.innerHTML = '';
+
+        ipaRecords.forEach((record, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record.seq}</td>
+                <td>${record.purchaseDate}</td>
+                <td style="font-size: 12px;">${record.useDate}</td>
+                <td style="font-size: 12px;">${record.product}</td>
+                <td style="color: #0c7a99; font-weight: 600;">${record.quantity}桶</td>
+                <td style="font-size: 12px;">${record.person}</td>
+                <td style="font-size: 12px;">${record.remark || '-'}</td>
+                <td><button class="edit-btn" onclick="editIPA(${index})">✏️</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 渲染設備表格
+    function renderToolsTable() {
+        const tbody = document.getElementById('toolsBody');
+        tbody.innerHTML = '';
+
+        toolsRecords.forEach((record, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record.seq}</td>
+                <td>${record.purchaseDate || '-'}</td>
+                <td style="font-size: 12px;">${record.product}</td>
+                <td>${record.quantity}</td>
+                <td style="font-size: 12px;">${record.method}</td>
+                <td style="font-size: 12px;">${record.number || '-'}</td>
+                <td style="font-size: 12px;">${record.remark || '-'}</td>
+                <td style="color: #0c7a99; font-weight: 600;">NT$${record.price.toLocaleString()}</td>
+                <td><button class="edit-btn" onclick="editTools(${index})">✏️</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 更新儀表板
+    function updateDashboard() {
+        // 工程師分布
+        const engineers = {};
+        anomalies.forEach(a => {
+            engineers[a.engineer] = (engineers[a.engineer] || 0) + 1;
+        });
+
+        let engineerHTML = '';
+        Object.entries(engineers).forEach(([name, count]) => {
+            const percentage = (count / anomalies.length) * 100;
+            engineerHTML += `
+                <div class="chart-item">
+                    <span class="chart-item-label">${name}</span>
+                    <span class="chart-item-value">${count}筆</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${percentage}%;"></div>
+                </div>
+            `;
+        });
+        document.getElementById('engineerChart').innerHTML = engineerHTML;
+
+        // 狀態分布
+        const statuses = { '已完成': 0, '處理中': 0, '暫停': 0 };
+        anomalies.forEach(a => {
+            if (statuses.hasOwnProperty(a.status)) {
+                statuses[a.status]++;
+            }
+        });
+
+        let statusHTML = '';
+        const statusColors = { '已完成': '#10a452', '處理中': '#f0ad4e', '暫停': '#d9534f' };
+        Object.entries(statuses).forEach(([status, count]) => {
+            const percentage = (count / anomalies.length) * 100;
+            statusHTML += `
+                <div class="chart-item">
+                    <span class="chart-item-label">${status}</span>
+                    <span class="chart-item-value" style="color: ${statusColors[status]};">${count}筆</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="background: ${statusColors[status]}; width: ${percentage}%;"></div>
+                </div>
+            `;
+        });
+        document.getElementById('statusChart').innerHTML = statusHTML;
+
+        // 採購統計
+        const purchaseHTML = `
+            <p style="font-size: 14px; margin: 10px 0;">
+                <strong>IPA採購:</strong> ${ipaRecords.length}筆
+            </p>
+            <p style="font-size: 14px; margin: 10px 0;">
+                <strong>採購量:</strong> <span style="color: #0c7a99; font-weight: 600;">${ipaRecords.reduce((sum, r) => sum + parseInt(r.quantity), 0)}桶</span>
+            </p>
+            <p style="font-size: 14px; margin: 10px 0;">
+                <strong>設備採購:</strong> ${toolsRecords.length}筆
+            </p>
+            <p style="font-size: 14px; margin: 10px 0;">
+                <strong>設備金額:</strong> <span style="color: #0c7a99; font-weight: 600;">NT$${toolsRecords.reduce((sum, r) => sum + r.price, 0).toLocaleString()}</span>
+            </p>
+        `;
+        document.getElementById('purchaseStats').innerHTML = purchaseHTML;
+
+        // 更新統計卡片
+        document.getElementById('totalAnomalies').textContent = anomalies.length;
+        document.getElementById('completedAnomalies').textContent = anomalies.filter(a => a.status === '已完成').length;
+        document.getElementById('processingAnomalies').textContent = anomalies.filter(a => a.status === '處理中').length;
+        document.getElementById('pausedAnomalies').textContent = anomalies.filter(a => a.status === '暫停').length;
+    }
+
+    // 異常相關函數
+    function openAnomalyModal() {
+        currentEditIndex = -1;
+        document.getElementById('anomalyModalTitle').textContent = '新增異常紀錄';
+        document.getElementById('anomalyForm').reset();
+        document.getElementById('anomalyModal').classList.add('active');
+    }
+
+    function closeAnomalyModal() {
+        document.getElementById('anomalyModal').classList.remove('active');
+    }
+
+    function editAnomaly(index) {
+        currentEditIndex = index;
+        const anomaly = anomalies[index];
+        document.getElementById('anomalyModalTitle').textContent = '編輯異常紀錄';
+        document.getElementById('anomalyCustomer').value = anomaly.customer;
+        document.getElementById('anomalyDate').value = anomaly.date;
+        document.getElementById('anomalyProduct').value = anomaly.product;
+        document.getElementById('anomalyEngineer').value = anomaly.engineer;
+        document.getElementById('anomalyStatus').value = anomaly.status;
+        document.getElementById('anomalyProgressDate').value = anomaly.progresses[0].date;
+        document.getElementById('anomalyProgressStatus').value = anomaly.progresses[0].status;
+        document.getElementById('anomalyModal').classList.add('active');
+    }
+
+    function saveAnomaly() {
+        const formData = {
+            customer: document.getElementById('anomalyCustomer').value,
+            date: document.getElementById('anomalyDate').value,
+            product: document.getElementById('anomalyProduct').value,
+            engineer: document.getElementById('anomalyEngineer').value,
+            status: document.getElementById('anomalyStatus').value,
+            progresses: [{
+                date: document.getElementById('anomalyProgressDate').value,
+                status: document.getElementById('anomalyProgressStatus').value
+            }]
+        };
+
+        if (currentEditIndex >= 0) {
+            anomalies[currentEditIndex] = { ...anomalies[currentEditIndex], ...formData };
+        } else {
+            anomalies.push({
+                seq: anomalies.length + 1,
+                ...formData
+            });
+        }
+
+        renderAnomalies();
+        updateDashboard();
+        closeAnomalyModal();
+    }
+
+    // IPA相關函數
+    function openIPAModal() {
+        currentEditIndex = -1;
+        document.getElementById('ipaModalTitle').textContent = '新增IPA採購紀錄';
+        document.getElementById('ipaForm').reset();
+        document.getElementById('ipaModal').classList.add('active');
+    }
+
+    function closeIPAModal() {
+        document.getElementById('ipaModal').classList.remove('active');
+    }
+
+    function editIPA(index) {
+        currentEditIndex = index;
+        const record = ipaRecords[index];
+        document.getElementById('ipaModalTitle').textContent = '編輯IPA採購紀錄';
+        document.getElementById('ipaPurchaseDate').value = record.purchaseDate;
+        document.getElementById('ipaUseDate').value = record.useDate;
+        document.getElementById('ipaProduct').value = record.product;
+        document.getElementById('ipaQuantity').value = record.quantity;
+        document.getElementById('ipaPerson').value = record.person;
+        document.getElementById('ipaRemark').value = record.remark || '';
+        document.getElementById('ipaModal').classList.add('active');
+    }
+
+    function saveIPA() {
+        const formData = {
+            purchaseDate: document.getElementById('ipaPurchaseDate').value,
+            useDate: document.getElementById('ipaUseDate').value,
+            product: document.getElementById('ipaProduct').value,
+            quantity: parseInt(document.getElementById('ipaQuantity').value),
+            person: document.getElementById('ipaPerson').value,
+            remark: document.getElementById('ipaRemark').value
+        };
+
+        if (currentEditIndex >= 0) {
+            ipaRecords[currentEditIndex] = { ...ipaRecords[currentEditIndex], ...formData };
+        } else {
+            ipaRecords.push({
+                seq: ipaRecords.length + 1,
+                ...formData
+            });
+        }
+
+        renderIPATable();
+        updateDashboard();
+        closeIPAModal();
+    }
+
+    // 設備相關函數
+    function openToolsModal() {
+        currentEditIndex = -1;
+        document.getElementById('toolsModalTitle').textContent = '新增設備紀錄';
+        document.getElementById('toolsForm').reset();
+        document.getElementById('toolsModal').classList.add('active');
+    }
+
+    function closeToolsModal() {
+        document.getElementById('toolsModal').classList.remove('active');
+    }
+
+    function editTools(index) {
+        currentEditIndex = index;
+        const record = toolsRecords[index];
+        document.getElementById('toolsModalTitle').textContent = '編輯設備紀錄';
+        document.getElementById('toolsPurchaseDate').value = record.purchaseDate || '';
+        document.getElementById('toolsProduct').value = record.product;
+        document.getElementById('toolsQuantity').value = record.quantity;
+        document.getElementById('toolsMethod').value = record.method;
+        document.getElementById('toolsNumber').value = record.number || '';
+        document.getElementById('toolsRemark').value = record.remark || '';
+        document.getElementById('toolsPrice').value = record.price;
+        document.getElementById('toolsModal').classList.add('active');
+    }
+
+    function saveTools() {
+        const formData = {
+            purchaseDate: document.getElementById('toolsPurchaseDate').value,
+            product: document.getElementById('toolsProduct').value,
+            quantity: parseInt(document.getElementById('toolsQuantity').value),
+            method: document.getElementById('toolsMethod').value,
+            number: document.getElementById('toolsNumber').value,
+            remark: document.getElementById('toolsRemark').value,
+            price: parseInt(document.getElementById('toolsPrice').value)
+        };
+
+        if (currentEditIndex >= 0) {
+            toolsRecords[currentEditIndex] = { ...toolsRecords[currentEditIndex], ...formData };
+        } else {
+            toolsRecords.push({
+                seq: toolsRecords.length + 1,
+                ...formData
+            });
+        }
+
+        renderToolsTable();
+        updateDashboard();
+        closeToolsModal();
+    }
+
+    // 搜尋和篩選
+    function filterTable() {
+        // 可在此實現搜尋和篩選邏輯
+        console.log('Filter applied');
+    }
+
+    // 分頁
+    function nextPage() {
+        currentPage++;
+    }
+
+    function prevPage() {
+        if (currentPage > 1) currentPage--;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+    }
+
+    // 關閉彈窗點擊外部
+    window.onclick = function(event) {
+        const modals = ['anomalyModal', 'ipaModal', 'toolsModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    }
+
+    // 初始化
+    init();
+
+    // 表格欄位寬度拖曳調整功能
+    let isResizing = false;
+    let currentHeader = null;
+    let startX = 0;
+    let startWidth = 0;
+
+    function initTableResizing() {
+        const tables = document.querySelectorAll('table');
+        
+        tables.forEach(table => {
+            const headers = table.querySelectorAll('th');
+            
+            headers.forEach((header) => {
+                header.addEventListener('mousedown', (e) => {
+                    startResize(e, header);
+                });
+            });
+        });
+    }
+
+    function startResize(e, header) {
+        const rect = header.getBoundingClientRect();
+        const rightEdge = rect.right;
+        const clickX = e.clientX;
+        
+        // 只有點擊在右邊 8px 內才開始拖曳
+        if (clickX < rightEdge - 8) return;
+        
+        isResizing = true;
+        currentHeader = header;
+        startX = e.clientX;
+        startWidth = header.offsetWidth;
+        
+        document.addEventListener('mousemove', doResize);
+        document.addEventListener('mouseup', stopResize);
+        
+        e.preventDefault();
+    }
+
+    function doResize(e) {
+        if (!isResizing || !currentHeader) return;
+        
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(30, startWidth + diff);
+        
+        currentHeader.style.width = newWidth + 'px';
+    }
+
+    function stopResize() {
+        isResizing = false;
+        currentHeader = null;
+        
+        document.removeEventListener('mousemove', doResize);
+        document.removeEventListener('mouseup', stopResize);
+    }
+
+    // 初始化表格拖曳功能
+    initTableResizing();
+</script>
+
+</body>
+</html>

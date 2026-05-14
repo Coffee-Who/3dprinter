@@ -467,3 +467,8 @@ function DashboardView({ data }) {
 }
 
 window.DashboardView = DashboardView;
+window.VerticalBar = VerticalBar;
+window.HorizontalBar = HorizontalBar;
+window.DonutChart = DonutChart;
+window.PieChart = PieChart;
+window.LineChart = LineChart;

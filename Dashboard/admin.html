@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理員後台 · 3D列印管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles/styles-shell.css">
+<link rel="stylesheet" href="src/styles/styles-admin.css">
+</head>
+<body>
+<div id="admin-root" style="height:100vh;display:flex;flex-direction:column;"></div>
+
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> -->
+<script src="src/firebase/firebase-config.js"></script>
+<script src="src/firebase/firebase-service.js"></script>
+<script src="src/helpers.js"></script>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+function showToast(msg, type='success') {
+  const c = document.getElementById('admin-toast');
+  if(!c) return;
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// ── 使用者表單 Modal ──
+function UserModal({ userData, onClose, onSave, isCreate }) {
+  const empty = { displayName:'', email:'', role:'operator', permissions:K.ROLE_PRESETS.operator, password:'', active:true };
+  const [form, setForm] = useState(userData ? { ...userData, password:'' } : empty);
+  const [saving, setSaving] = useState(false);
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const setPreset = (role) => {
+    set('role', role);
+    set('permissions', [...(K.ROLE_PRESETS[role]||[])]);
+  };
+
+  const togglePerm = (perm) => {
+    const perms = form.permissions || [];
+    if (perms.includes(perm)) {
+      set('permissions', perms.filter(p=>p!==perm));
+    } else {
+      set('permissions', [...perms, perm]);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!form.displayName || !form.email) { showToast('請填寫姓名與 Email','error'); return; }
+    if (isCreate && !form.password) { showToast('請設定初始密碼','error'); return; }
+    if (isCreate && form.password.length < 6) { showToast('密碼至少 6 個字元','error'); return; }
+    setSaving(true);
+    try {
+      await onSave(form);
+      onClose();
+    } catch(e) {
+      showToast(e.message || '儲存失敗', 'error');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay open" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-wide">
+        <div className="modal-header">
+          <h3>{isCreate ? '➕ 新增使用者' : '✏️ 編輯使用者'}</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div className="form-row">
+            <div className="form-field"><label>姓名 *</label><input value={form.displayName} onChange={e=>set('displayName',e.target.value)} placeholder="王小明"/></div>
+            <div className="form-field"><label>Email *</label><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="user@example.com" disabled={!isCreate}/></div>
+          </div>
+          {isCreate && (
+            <div className="form-row">
+              <div className="form-field"><label>初始密碼 *</label><input type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder="最少 6 字元"/><div className="hint">使用者首次登入後可自行修改</div></div>
+              <div className="form-field"><label>狀態</label>
+                <select value={form.active?'active':'inactive'} onChange={e=>set('active',e.target.value==='active')}>
+                  <option value="active">啟用</option>
+                  <option value="inactive">停用</option>
+                </select>
+              </div>
+            </div>
+          )}
+          {!isCreate && (
+            <div className="form-field"><label>帳號狀態</label>
+              <select value={form.active?'active':'inactive'} onChange={e=>set('active',e.target.value==='active')}>
+                <option value="active">啟用</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+          )}
+
+          <div className="form-field">
+            <label>快速套用角色預設</label>
+            <div className="preset-btns">
+              <button className="preset-btn admin-preset"    onClick={()=>setPreset('admin')}>👑 管理員</button>
+              <button className="preset-btn manager-preset"  onClick={()=>setPreset('manager')}>🔷 主管</button>
+              <button className="preset-btn operator-preset" onClick={()=>setPreset('operator')}>🔩 工程師</button>
+              <button className="preset-btn viewer-preset"   onClick={()=>setPreset('viewer')}>👁 檢視者</button>
+            </div>
+          </div>
+
+          <div className="form-field">
+            <label>個別權限設定</label>
+            <div className="perm-grid">
+              {Object.entries(K.PERMISSIONS).map(([key, label]) => {
+                const checked = (form.permissions||[]).includes(key);
+                return (
+                  <div key={key} className={`perm-item ${checked?'checked':''}`} onClick={()=>togglePerm(key)}>
+                    <input type="checkbox" checked={checked} onChange={()=>{}} id={`perm-${key}`}/>
+                    <label htmlFor={`perm-${key}`}>{label}</label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>取消</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 使用者列表 ──
+function UsersTab({ currentUser }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [isCreate, setIsCreate] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(()=>{
+    loadUsers();
+  },[]);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const data = await FB.Users.getAll();
+      setUsers(data);
+    } catch(e) {
+      showToast('載入使用者失敗','error');
+    } finally { setLoading(false); }
+  };
+
+  const handleCreate = () => { setEditUser(null); setIsCreate(true); setModal(true); };
+  const handleEdit   = (u) => { setEditUser(u); setIsCreate(false); setModal(true); };
+
+  const handleSave = async (form) => {
+    if (isCreate) {
+      // 建立 Firebase Auth 帳號 + Firestore 資料
+      // 注意：前端無法直接建立其他帳號，需要 Cloud Functions
+      // 暫時解法：建立 Firestore 資料並提示使用者用 Firebase Console 建立帳號
+      try {
+        // 嘗試建立帳號（僅在特殊情境下可行）
+        const app2 = firebase.initializeApp(window.FIREBASE_CONFIG, `create-${Date.now()}`);
+        const auth2 = app2.auth();
+        const cred  = await auth2.createUserWithEmailAndPassword(form.email, form.password);
+        const uid = cred.user.uid;
+        await auth2.signOut();
+        app2.delete();
+
+        await FB.Users.create(uid, {
+          displayName: form.displayName,
+          email: form.email,
+          role: form.role || 'operator',
+          permissions: form.permissions || [],
+          active: form.active !== false,
+        });
+        showToast(`使用者「${form.displayName}」已建立 ✓`);
+      } catch(e) {
+        if (e.code === 'auth/email-already-in-use') {
+          throw new Error('此 Email 已被使用');
+        }
+        throw e;
+      }
+    } else {
+      await FB.Users.update(editUser.id, {
+        displayName: form.displayName,
+        role: form.role || 'operator',
+        permissions: form.permissions || [],
+        active: form.active !== false,
+      });
+      showToast(`使用者「${form.displayName}」已更新 ✓`);
+    }
+    await loadUsers();
+  };
+
+  const handleToggleActive = async (u) => {
+    await FB.Users.update(u.id, { active: !u.active });
+    showToast(u.active ? `已停用「${u.displayName}」` : `已啟用「${u.displayName}」`, u.active?'info':'success');
+    loadUsers();
+  };
+
+  const handleResetPassword = async (u) => {
+    try {
+      await FB.Auth.sendPasswordReset(u.email);
+      showToast(`已發送重設密碼信至 ${u.email}`);
+    } catch(e) { showToast(e.message,'error'); }
+  };
+
+  const handleDelete = async (u) => {
+    if (u.id === currentUser.id) { showToast('不可刪除自己的帳號','error'); return; }
+    if (!confirm(`確定要刪除「${u.displayName}」的帳號？此操作無法還原。`)) return;
+    await FB.Users.delete(u.id);
+    showToast(`已刪除「${u.displayName}」`,'info');
+    loadUsers();
+  };
+
+  const filtered = users.filter(u=>{
+    if(!search) return true;
+    return JSON.stringify(u).toLowerCase().includes(search.toLowerCase());
+  });
+
+  const roleName = (u) => {
+    if((u.permissions||[]).includes('admin')) return '管理員';
+    if((u.permissions||[]).includes('edit_board')&&(u.permissions||[]).includes('edit_issues')) return '主管';
+    if((u.permissions||[]).includes('edit_board')) return '工程師';
+    return '檢視者';
+  };
+  const roleClass = (u) => {
+    if((u.permissions||[]).includes('admin')) return 'admin';
+    const n = roleName(u);
+    if(n==='主管') return 'manager';
+    if(n==='工程師') return 'operator';
+    return 'viewer';
+  };
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+
+  return (
+    <div>
+      <div className="toolbar">
+        <input className="search-input" placeholder="🔍 搜尋使用者..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        <div className="toolbar-right">
+          <button className="btn btn-primary btn-sm" onClick={handleCreate}>➕ 新增使用者</button>
+        </div>
+      </div>
+      <table className="users-table">
+        <thead><tr>
+          <th>使用者</th><th>Email</th><th>角色</th><th>權限</th><th>狀態</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          {filtered.length===0&&<tr><td colSpan={6} style={{textAlign:'center',padding:'40px',color:'var(--text-muted)'}}>無使用者資料</td></tr>}
+          {filtered.map(u=>(
+            <tr key={u.id}>
+              <td>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div className="user-avatar" style={{width:34,height:34,fontSize:'14px'}}>{(u.displayName||u.email||'?')[0].toUpperCase()}</div>
+                  <div>
+                    <div style={{fontWeight:700}}>{u.displayName}</div>
+                    <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{u.id===currentUser.id?'（你）':''}</div>
+                  </div>
+                </div>
+              </td>
+              <td style={{fontSize:'12px',color:'var(--text-muted)'}}>{u.email}</td>
+              <td><span className={`role-tag ${roleClass(u)}`}>{roleName(u)}</span></td>
+              <td>
+                <div style={{display:'flex',flexWrap:'wrap',gap:2,maxWidth:280}}>
+                  {(u.permissions||[]).slice(0,4).map(p=>(
+                    <span key={p} style={{background:'#f1f5f9',padding:'1px 7px',borderRadius:10,fontSize:'10px',color:'var(--text-muted)'}}>{K.PERMISSIONS[p]||p}</span>
+                  ))}
+                  {(u.permissions||[]).length>4&&<span style={{fontSize:'10px',color:'var(--text-muted)'}}>+{(u.permissions||[]).length-4}項</span>}
+                </div>
+              </td>
+              <td>
+                <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'3px 10px',borderRadius:12,fontSize:'11px',fontWeight:700,background:u.active?'#d1fae5':'#f1f5f9',color:u.active?'#065f46':'#64748b'}}>
+                  {u.active?'●':'○'} {u.active?'啟用':'停用'}
+                </span>
+              </td>
+              <td>
+                <div style={{display:'flex',gap:4',flexWrap:'wrap'}}>
+                  <button className="btn btn-outline btn-sm" onClick={()=>handleEdit(u)}>✏️ 編輯</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>handleToggleActive(u)}>{u.active?'🔒停用':'🔓啟用'}</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>handleResetPassword(u)} title="發送重設密碼信">🔑</button>
+                  {u.id!==currentUser.id&&<button className="btn btn-danger btn-sm" onClick={()=>handleDelete(u)}>🗑</button>}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {modal&&<UserModal userData={editUser} onClose={()=>setModal(false)} onSave={handleSave} isCreate={isCreate}/>}
+    </div>
+  );
+}
+
+// ── 總覽 Tab ──
+function OverviewTab({ currentUser }) {
+  const [stats, setStats] = useState({ users:0, orders:0, issues:0, equipment:0 });
+  useEffect(()=>{
+    Promise.all([
+      FB.Users.getAll(),
+      FB.Orders.getAll(),
+      FB.Issues.getAll(),
+      FB.Equipment.getAll()
+    ]).then(([users,orders,issues,equip])=>{
+      setStats({ users:users.length, orders:orders.length, issues:issues.length, equipment:equip.length });
+    });
+  },[]);
+
+  return (
+    <div>
+      <div className="admin-stats">
+        <div className="stat-card"><div className="stat-icon">👥</div><div className="stat-val">{stats.users}</div><div className="stat-lbl">使用者</div></div>
+        <div className="stat-card"><div className="stat-icon">📋</div><div className="stat-val">{stats.orders}</div><div className="stat-lbl">訂單</div></div>
+        <div className="stat-card"><div className="stat-icon">⚠️</div><div className="stat-val">{stats.issues}</div><div className="stat-lbl">異常紀錄</div></div>
+        <div className="stat-card"><div className="stat-icon">🔧</div><div className="stat-val">{stats.equipment}</div><div className="stat-lbl">設備品項</div></div>
+      </div>
+      <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:20}}>
+        <h4 style={{fontWeight:700,marginBottom:16}}>⚙️ Firebase 設定說明</h4>
+        <div style={{fontSize:'13px',lineHeight:1.8,color:'var(--text-muted)'}}>
+          <p style={{marginBottom:8}}>目前使用的 Firebase 專案：<strong style={{color:'var(--text)'}}>{window.FIREBASE_CONFIG?.projectId || '（未設定）'}</strong></p>
+          <p>請至 <code style={{background:'#f1f5f9',padding:'1px 6px',borderRadius:4}}>src/firebase/firebase-config.js</code> 填寫你的 Firebase 設定。</p>
+          <br/>
+          <p><strong style={{color:'var(--text)'}}>Firestore Security Rules 建議設定：</strong></p>
+          <pre style={{background:'#f8fafc',padding:12,borderRadius:6,fontSize:'12px',overflowX:'auto',marginTop:8}}>{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 使用者需登入才能讀取
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid))
+          .data.permissions.hasAny(['admin']);
+    }
+    // 訂單：有 view_board 才能讀，edit_board 才能寫
+    match /orders/{docId} {
+      allow read: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid))
+          .data.permissions.hasAny(['view_board','admin']);
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid))
+          .data.permissions.hasAny(['edit_board','admin']);
+    }
+    // 異常、IPA、設備同理
+    match /{col}/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}`}</pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 主元件 ──
+function AdminApp({ user }) {
+  const [tab, setTab] = useState('overview');
+  const tabs = [['overview','📊 總覽'],['users','👥 使用者管理']];
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        <span className="topbar-title">⚙️ 管理員後台</span>
+        <div className="topbar-tabs">
+          {tabs.map(([k,l])=><button key={k} className={`tab-btn ${tab===k?'active':''}`} onClick={()=>setTab(k)}>{l}</button>)}
+        </div>
+      </div>
+      <div className="content-area">
+        {tab==='overview' && <OverviewTab currentUser={user}/>}
+        {tab==='users'    && <UsersTab currentUser={user}/>}
+      </div>
+      <div id="admin-toast" className="toast-container"/>
+    </div>
+  );
+}
+
+window.mountAdmin = (user) => {
+  const root = ReactDOM.createRoot(document.getElementById('admin-root'));
+  root.render(<AdminApp user={user}/>);
+};
+
+if(window.self === window.top) {
+  FB.initFirebase();
+  FB.Auth.onAuthStateChanged(async (firebaseUser) => {
+    if(firebaseUser) {
+      const userData = await FB.Users.get(firebaseUser.uid);
+      if(!userData || !K.hasPermission(userData,'admin')) {
+        document.getElementById('admin-root').innerHTML = '<div class="permission-denied"><div class="icon">🔒</div><p>需要管理員權限</p></div>';
+        return;
+      }
+      window.mountAdmin({...userData, id:firebaseUser.uid});
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+}
+</script>
+</body>
+</html>

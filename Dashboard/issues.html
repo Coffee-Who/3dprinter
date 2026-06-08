@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>異常與資源 · 3D列印管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles/styles-shell.css">
+<style>
+/* ── Issues Table ── */
+.issue-table { width:100%; border-collapse:collapse; background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+.issue-table th { background:#f8fafc; padding:9px 12px; text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); }
+.issue-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+.issue-table tr:last-child td { border-bottom:none; }
+.issue-table tr:hover td { background:#f8fafc; }
+.issue-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; }
+.issue-badge.待處理 { background:#fef3c7; color:#92400e; }
+.issue-badge.處理中 { background:#dbeafe; color:#1e40af; }
+.issue-badge.已解決 { background:#d1fae5; color:#065f46; }
+.issue-badge.關閉   { background:#f1f5f9; color:#475569; }
+
+/* ── Expand Row ── */
+.expand-btn { background:none; border:1px solid var(--border); border-radius:4px; cursor:pointer; padding:2px 6px; font-size:11px; color:var(--text-muted); }
+.expand-btn:hover { background:#f1f5f9; }
+.sub-progress { background:#f8fafc; }
+.sub-progress td { padding:6px 12px 6px 40px; font-size:12px; color:var(--text-muted); border-bottom:1px solid var(--border); }
+
+/* ── IPA / Equipment ── */
+.data-table { width:100%; border-collapse:collapse; background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+.data-table th { background:#f8fafc; padding:9px 12px; text-align:left; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; border-bottom:1px solid var(--border); }
+.data-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:#f8fafc; }
+.sum-bar { background:#eff6ff; border-radius:var(--radius); padding:10px 16px; margin-bottom:12px; display:flex; gap:24px; font-size:13px; }
+.sum-bar strong { color:var(--primary); }
+
+/* ── Analysis Charts ── */
+.charts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+.chart-card h4 { font-size:13px; font-weight:700; margin-bottom:12px; }
+.bar-chart { display:flex; flex-direction:column; gap:8px; }
+.bar-row { display:flex; align-items:center; gap:8px; }
+.bar-row-label { font-size:12px; width:80px; flex-shrink:0; }
+.bar-bg { flex:1; height:20px; background:#f1f5f9; border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:6px; font-size:11px; font-weight:700; color:#fff; min-width:4px; }
+</style>
+</head>
+<body>
+<div id="issues-root" style="height:100vh;display:flex;flex-direction:column;"></div>
+
+
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> -->
+<script src="src/firebase/firebase-config.js"></script>
+<script src="src/firebase/firebase-service.js"></script>
+<script src="src/helpers.js"></script>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+function showToast(msg, type='success') {
+  const c = document.getElementById('issues-toast');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':'✕'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+// ── 客戶異常 ──
+function IssueModal({ issue, onClose, onSave }) {
+  const empty = { caseNo:'', customer:'', engineer:K.ENG_ORDER[0], issueType:'', status:'待處理', description:'', progressList:[], reportDate:'' };
+  const [form, setForm] = useState(issue||empty);
+  const [saving, setSaving] = useState(false);
+  const [newProgress, setNewProgress] = useState('');
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const addProgress = () => {
+    if(!newProgress.trim()) return;
+    const today = new Date().toISOString().split('T')[0];
+    set('progressList', [...(form.progressList||[]), { date:today, note:newProgress.trim() }]);
+    setNewProgress('');
+  };
+  const removeProgress = (i) => set('progressList', form.progressList.filter((_,idx)=>idx!==i));
+
+  const handleSave = async () => {
+    if(!form.customer||!form.issueType) { showToast('請填寫客戶名稱與異常類型','error'); return; }
+    setSaving(true);
+    try { await onSave(form); onClose(); }
+    catch(e) { showToast(e.message||'儲存失敗','error'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay open" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-wide">
+        <div className="modal-header">
+          <h3>{issue?'✏️ 編輯異常':'➕ 新增異常'}</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div className="form-row">
+            <div className="form-field"><label>案號</label><input value={form.caseNo} onChange={e=>set('caseNo',e.target.value)} placeholder="IS-2024-001"/></div>
+            <div className="form-field"><label>客戶名稱 *</label><input value={form.customer} onChange={e=>set('customer',e.target.value)}/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>工程師</label>
+              <select value={form.engineer} onChange={e=>set('engineer',e.target.value)}>
+                {K.ENG_ORDER.map(e=><option key={e}>{e}</option>)}
+              </select>
+            </div>
+            <div className="form-field"><label>狀態</label>
+              <select value={form.status} onChange={e=>set('status',e.target.value)}>
+                {K.ISSUE_STATUS.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>異常類型 *</label><input value={form.issueType} onChange={e=>set('issueType',e.target.value)} placeholder="例：列印失敗、尺寸偏差..."/></div>
+            <div className="form-field"><label>回報日期</label><input type="date" value={form.reportDate} onChange={e=>set('reportDate',e.target.value)}/></div>
+          </div>
+          <div className="form-field"><label>說明</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3}/></div>
+          <div className="form-field">
+            <label>後續進度紀錄</label>
+            <div style={{background:'#f8fafc',borderRadius:var(--radius)||8,padding:12,marginBottom:8}}>
+              {(form.progressList||[]).map((p,i)=>(
+                <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:6}}>
+                  <span style={{fontSize:'11px',color:'var(--text-muted)',whiteSpace:'nowrap',marginTop:2}}>{p.date}</span>
+                  <span style={{flex:1,fontSize:'12px'}}>{p.note}</span>
+                  <button onClick={()=>removeProgress(i)} style={{background:'none',border:'none',color:'var(--danger)',cursor:'pointer',fontSize:'14px'}}>×</button>
+                </div>
+              ))}
+              {(form.progressList||[]).length===0&&<div style={{fontSize:'12px',color:'var(--text-muted)'}}>尚無進度紀錄</div>}
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              <input style={{flex:1,padding:'6px 10px',border:'1.5px solid var(--border)',borderRadius:6,fontSize:'12px'}} placeholder="新增進度記錄..." value={newProgress} onChange={e=>setNewProgress(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addProgress()}/>
+              <button className="btn btn-outline btn-sm" onClick={addProgress}>+ 新增</button>
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>取消</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IssuesTab({ user }) {
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [expanded, setExpanded] = useState({});
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterEng, setFilterEng] = useState('');
+  const unsubRef = useRef(null);
+
+  const canEdit   = K.hasPermission(user,'edit_issues');
+  const canDelete = K.hasPermission(user,'delete_issues');
+
+  useEffect(()=>{
+    unsubRef.current = FB.Issues.onSnapshot(data=>{ setIssues(data); setLoading(false); });
+    return ()=>{ if(unsubRef.current) unsubRef.current(); };
+  },[]);
+
+  const filtered = issues.filter(i=>{
+    if(search && !JSON.stringify(i).toLowerCase().includes(search.toLowerCase())) return false;
+    if(filterStatus && i.status!==filterStatus) return false;
+    if(filterEng && i.engineer!==filterEng) return false;
+    return true;
+  });
+
+  const handleSave = async (form) => {
+    if(editItem) { await FB.Issues.update(editItem.id, form); showToast('異常已更新 ✓'); }
+    else { await FB.Issues.create(form); showToast('異常已新增 ✓'); }
+  };
+  const handleDelete = async (item) => {
+    if(!confirm(`確定刪除「${item.customer}」的異常？`)) return;
+    await FB.Issues.delete(item.id);
+    showToast('已刪除','info');
+  };
+
+  const toggleExpand = (id) => setExpanded(e=>({...e,[id]:!e[id]}));
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+  return (
+    <div>
+      <div className="toolbar">
+        <input className="search-input" placeholder="🔍 搜尋..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        <select className="filter-select" value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+          <option value="">所有狀態</option>
+          {K.ISSUE_STATUS.map(s=><option key={s}>{s}</option>)}
+        </select>
+        <select className="filter-select" value={filterEng} onChange={e=>setFilterEng(e.target.value)}>
+          <option value="">所有工程師</option>
+          {K.ENG_ORDER.map(e=><option key={e}>{e}</option>)}
+        </select>
+        <div className="toolbar-right">
+          <button className="btn btn-ghost btn-sm" onClick={()=>K.exportCSV(filtered,'客戶異常.csv')}>📥 匯出</button>
+          {canEdit&&<button className="btn btn-primary btn-sm" onClick={()=>{setEditItem(null);setModal(true);}}>➕ 新增異常</button>}
+        </div>
+      </div>
+      <table className="issue-table">
+        <thead><tr>
+          <th>案號</th><th>客戶</th><th>工程師</th><th>類型</th><th>回報日</th><th>狀態</th><th>進度</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',padding:'40px',color:'var(--text-muted)'}}>無資料</td></tr>}
+          {filtered.map(item=>(
+            <React.Fragment key={item.id}>
+              <tr>
+                <td style={{fontFamily:'monospace',fontSize:'11px'}}>{item.caseNo||'-'}</td>
+                <td style={{fontWeight:600}}>{item.customer}</td>
+                <td><span style={{color:K.ENG_TONE[item.engineer]||'#64748b',fontWeight:700}}>{item.engineer}</span></td>
+                <td>{item.issueType}</td>
+                <td style={{fontSize:'12px'}}>{item.reportDate||'-'}</td>
+                <td><span className={`issue-badge ${item.status}`}>{item.status}</span></td>
+                <td>
+                  {(item.progressList||[]).length>0&&(
+                    <button className="expand-btn" onClick={()=>toggleExpand(item.id)}>
+                      {expanded[item.id]?'▲':'▼'} {(item.progressList||[]).length} 筆
+                    </button>
+                  )}
+                </td>
+                <td>
+                  <div style={{display:'flex',gap:4}}>
+                    {canEdit&&<button className="btn btn-outline btn-sm" onClick={()=>{setEditItem(item);setModal(true);}}>✏️</button>}
+                    {canDelete&&<button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item)}>🗑</button>}
+                  </div>
+                </td>
+              </tr>
+              {expanded[item.id]&&(item.progressList||[]).map((p,i)=>(
+                <tr key={i} className="sub-progress">
+                  <td colSpan={8}>
+                    <span style={{marginRight:12,fontSize:'11px',color:'var(--text-muted)'}}>{p.date}</span>
+                    {p.note}
+                  </td>
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+      {modal&&<IssueModal issue={editItem} onClose={()=>setModal(false)} onSave={handleSave}/>}
+    </div>
+  );
+}
+
+// ── IPA 採購 ──
+function IPAModal({ item, onClose, onSave }) {
+  const empty = { date:'', purchaser:'', liters:0, price:0, supplier:'', payMethod:'轉帳', remark:'' };
+  const [form, setForm] = useState(item||empty);
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const handleSave = async () => {
+    if(!form.date||!form.purchaser) { showToast('請填必填欄位','error'); return; }
+    setSaving(true);
+    try { await onSave(form); onClose(); }
+    catch(e) { showToast(e.message||'儲存失敗','error'); }
+    finally { setSaving(false); }
+  };
+  return (
+    <div className="modal-overlay open" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><h3>{item?'✏️ 編輯採購':'➕ 新增採購'}</h3><button className="modal-close" onClick={onClose}>×</button></div>
+        <div className="modal-body">
+          <div className="form-row">
+            <div className="form-field"><label>採購日期 *</label><input type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+            <div className="form-field"><label>採購人 *</label>
+              <select value={form.purchaser} onChange={e=>set('purchaser',e.target.value)}>
+                {K.ENG_ORDER.map(e=><option key={e}>{e}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>桶數 (桶)</label><input type="number" min={0} step={0.5} value={form.liters} onChange={e=>set('liters',Number(e.target.value))}/></div>
+            <div className="form-field"><label>金額 (元)</label><input type="number" min={0} value={form.price} onChange={e=>set('price',Number(e.target.value))}/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>供應商</label><input value={form.supplier} onChange={e=>set('supplier',e.target.value)}/></div>
+            <div className="form-field"><label>付款方式</label>
+              <select value={form.payMethod} onChange={e=>set('payMethod',e.target.value)}>
+                {K.PAYMENT_METHODS.map(m=><option key={m}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-field"><label>備註</label><textarea value={form.remark} onChange={e=>set('remark',e.target.value)} rows={2}/></div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>取消</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IPATab({ user }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const unsubRef = useRef(null);
+  const canEdit = K.hasPermission(user,'edit_issues');
+  const canDelete = K.hasPermission(user,'delete_issues');
+
+  useEffect(()=>{
+    unsubRef.current = FB.IPA.onSnapshot(data=>{ setItems(data); setLoading(false); });
+    return ()=>{ if(unsubRef.current) unsubRef.current(); };
+  },[]);
+
+  const handleSave = async (form) => {
+    if(editItem) { await FB.IPA.update(editItem.id,form); showToast('採購紀錄已更新 ✓'); }
+    else { await FB.IPA.create(form); showToast('採購紀錄已新增 ✓'); }
+  };
+  const handleDelete = async (item) => {
+    if(!confirm('確定刪除此筆採購？')) return;
+    await FB.IPA.delete(item.id); showToast('已刪除','info');
+  };
+
+  const totalLiters = items.reduce((s,i)=>s+(Number(i.liters)||0),0);
+  const totalPrice  = items.reduce((s,i)=>s+(Number(i.price)||0),0);
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+  return (
+    <div>
+      <div className="sum-bar">
+        <span>合計桶數：<strong>{totalLiters} 桶</strong></span>
+        <span>合計金額：<strong>NT$ {totalPrice.toLocaleString()}</strong></span>
+        <span>採購次數：<strong>{items.length} 次</strong></span>
+      </div>
+      <div className="toolbar">
+        <div className="toolbar-right">
+          <button className="btn btn-ghost btn-sm" onClick={()=>K.exportCSV(items,'IPA採購.csv')}>📥 匯出</button>
+          {canEdit&&<button className="btn btn-primary btn-sm" onClick={()=>{setEditItem(null);setModal(true);}}>➕ 新增採購</button>}
+        </div>
+      </div>
+      <table className="data-table">
+        <thead><tr><th>日期</th><th>採購人</th><th>桶數</th><th>金額</th><th>供應商</th><th>付款</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody>
+          {items.length===0&&<tr><td colSpan={8} style={{textAlign:'center',padding:'40px',color:'var(--text-muted)'}}>無資料</td></tr>}
+          {items.map(item=>(
+            <tr key={item.id}>
+              <td style={{fontSize:'12px'}}>{item.date}</td>
+              <td><span style={{color:K.ENG_TONE[item.purchaser]||'#64748b',fontWeight:700}}>{item.purchaser}</span></td>
+              <td style={{fontWeight:600}}>{item.liters} 桶</td>
+              <td>NT$ {Number(item.price).toLocaleString()}</td>
+              <td>{item.supplier||'-'}</td>
+              <td><span style={{background:'#f1f5f9',padding:'2px 8px',borderRadius:12,fontSize:'11px'}}>{item.payMethod}</span></td>
+              <td style={{color:'var(--text-muted)',fontSize:'12px'}}>{item.remark||'-'}</td>
+              <td><div style={{display:'flex',gap:4}}>
+                {canEdit&&<button className="btn btn-outline btn-sm" onClick={()=>{setEditItem(item);setModal(true);}}>✏️</button>}
+                {canDelete&&<button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item)}>🗑</button>}
+              </div></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {modal&&<IPAModal item={editItem} onClose={()=>setModal(false)} onSave={handleSave}/>}
+    </div>
+  );
+}
+
+// ── 設備清單 ──
+function EquipModal({ item, onClose, onSave }) {
+  const empty = { name:'', type:'工具', quantity:1, unit:'個', price:0, purchaseDate:'', condition:'良好', location:'', remark:'' };
+  const [form, setForm] = useState(item||empty);
+  const [saving, setSaving] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const handleSave = async () => {
+    if(!form.name) { showToast('請填寫名稱','error'); return; }
+    setSaving(true);
+    try { await onSave(form); onClose(); }
+    catch(e) { showToast(e.message||'儲存失敗','error'); }
+    finally { setSaving(false); }
+  };
+  return (
+    <div className="modal-overlay open" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><h3>{item?'✏️ 編輯設備':'➕ 新增設備'}</h3><button className="modal-close" onClick={onClose}>×</button></div>
+        <div className="modal-body">
+          <div className="form-row">
+            <div className="form-field"><label>名稱 *</label><input value={form.name} onChange={e=>set('name',e.target.value)}/></div>
+            <div className="form-field"><label>類型</label>
+              <select value={form.type} onChange={e=>set('type',e.target.value)}>
+                {K.EQUIPMENT_TYPES.map(t=><option key={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>數量</label><input type="number" min={0} value={form.quantity} onChange={e=>set('quantity',Number(e.target.value))}/></div>
+            <div className="form-field"><label>單位</label><input value={form.unit} onChange={e=>set('unit',e.target.value)} placeholder="個/組/套"/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>金額</label><input type="number" min={0} value={form.price} onChange={e=>set('price',Number(e.target.value))}/></div>
+            <div className="form-field"><label>採購日期</label><input type="date" value={form.purchaseDate} onChange={e=>set('purchaseDate',e.target.value)}/></div>
+          </div>
+          <div className="form-row">
+            <div className="form-field"><label>狀況</label>
+              <select value={form.condition} onChange={e=>set('condition',e.target.value)}>
+                {['良好','一般','需維修','報廢'].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-field"><label>存放位置</label><input value={form.location} onChange={e=>set('location',e.target.value)}/></div>
+          </div>
+          <div className="form-field"><label>備註</label><textarea value={form.remark} onChange={e=>set('remark',e.target.value)} rows={2}/></div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>取消</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EquipmentTab({ user }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [filterType, setFilterType] = useState('');
+  const unsubRef = useRef(null);
+  const canEdit = K.hasPermission(user,'edit_issues');
+  const canDelete = K.hasPermission(user,'delete_issues');
+
+  useEffect(()=>{
+    unsubRef.current = FB.Equipment.onSnapshot(data=>{ setItems(data); setLoading(false); });
+    return ()=>{ if(unsubRef.current) unsubRef.current(); };
+  },[]);
+
+  const filtered = filterType ? items.filter(i=>i.type===filterType) : items;
+  const totalPrice = filtered.reduce((s,i)=>s+(Number(i.price)||0)*((Number(i.quantity)||1)),0);
+
+  const handleSave = async (form) => {
+    if(editItem) { await FB.Equipment.update(editItem.id,form); showToast('設備已更新 ✓'); }
+    else { await FB.Equipment.create(form); showToast('設備已新增 ✓'); }
+  };
+  const handleDelete = async (item) => {
+    if(!confirm(`確定刪除「${item.name}」？`)) return;
+    await FB.Equipment.delete(item.id); showToast('已刪除','info');
+  };
+
+  const condColor = {'良好':'var(--success)','一般':'var(--accent)','需維修':'var(--warn)','報廢':'var(--danger)'};
+
+  if(loading) return <div className="loading"><div className="spinner"/></div>;
+  return (
+    <div>
+      <div className="sum-bar">
+        <span>合計金額：<strong>NT$ {totalPrice.toLocaleString()}</strong></span>
+        <span>品項數：<strong>{filtered.length} 項</strong></span>
+      </div>
+      <div className="toolbar">
+        <select className="filter-select" value={filterType} onChange={e=>setFilterType(e.target.value)}>
+          <option value="">所有類型</option>
+          {K.EQUIPMENT_TYPES.map(t=><option key={t}>{t}</option>)}
+        </select>
+        <div className="toolbar-right">
+          <button className="btn btn-ghost btn-sm" onClick={()=>K.exportCSV(filtered,'設備清單.csv')}>📥 匯出</button>
+          {canEdit&&<button className="btn btn-primary btn-sm" onClick={()=>{setEditItem(null);setModal(true);}}>➕ 新增設備</button>}
+        </div>
+      </div>
+      <table className="data-table">
+        <thead><tr><th>名稱</th><th>類型</th><th>數量</th><th>金額</th><th>採購日</th><th>狀況</th><th>存放位置</th><th>操作</th></tr></thead>
+        <tbody>
+          {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',padding:'40px',color:'var(--text-muted)'}}>無資料</td></tr>}
+          {filtered.map(item=>(
+            <tr key={item.id}>
+              <td style={{fontWeight:600}}>{item.name}</td>
+              <td><span style={{background:'#f1f5f9',padding:'2px 8px',borderRadius:12,fontSize:'11px'}}>{item.type}</span></td>
+              <td>{item.quantity} {item.unit}</td>
+              <td>NT$ {(Number(item.price)||0).toLocaleString()}</td>
+              <td style={{fontSize:'12px'}}>{item.purchaseDate||'-'}</td>
+              <td><span style={{color:condColor[item.condition]||'var(--text)',fontWeight:700,fontSize:'12px'}}>{item.condition}</span></td>
+              <td style={{fontSize:'12px',color:'var(--text-muted)'}}>{item.location||'-'}</td>
+              <td><div style={{display:'flex',gap:4}}>
+                {canEdit&&<button className="btn btn-outline btn-sm" onClick={()=>{setEditItem(item);setModal(true);}}>✏️</button>}
+                {canDelete&&<button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item)}>🗑</button>}
+              </div></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {modal&&<EquipModal item={editItem} onClose={()=>setModal(false)} onSave={handleSave}/>}
+    </div>
+  );
+}
+
+// ── 分析 Tab ──
+function AnalysisTab() {
+  const [issues, setIssues] = useState([]);
+  const [ipa, setIpa] = useState([]);
+  const [equip, setEquip] = useState([]);
+
+  useEffect(()=>{
+    FB.Issues.onSnapshot(setIssues);
+    FB.IPA.onSnapshot(setIpa);
+    FB.Equipment.onSnapshot(setEquip);
+  },[]);
+
+  const issueByEng = {};
+  K.ENG_ORDER.forEach(e=>issueByEng[e]=0);
+  issues.forEach(i=>{ if(issueByEng[i.engineer]!==undefined) issueByEng[i.engineer]++; });
+
+  const issueByStatus = {};
+  issues.forEach(i=>{ issueByStatus[i.status]=(issueByStatus[i.status]||0)+1; });
+
+  const ipaByPurchaser = {};
+  ipa.forEach(i=>{ ipaByPurchaser[i.purchaser]=(ipaByPurchaser[i.purchaser]||0)+(Number(i.liters)||0); });
+
+  const equipByType = {};
+  equip.forEach(i=>{ const cost=(Number(i.price)||0)*(Number(i.quantity)||1); equipByType[i.type]=(equipByType[i.type]||0)+cost; });
+
+  const maxEng   = Math.max(...Object.values(issueByEng),1);
+  const maxIpa   = Math.max(...Object.values(ipaByPurchaser),1);
+  const maxEquip = Math.max(...Object.values(equipByType),1);
+
+  const statusColors = {'待處理':'#f59e0b','處理中':'#3b82f6','已解決':'#10b981','關閉':'#94a3b8'};
+  const typeColors   = {'工具':'#3b82f6','器材':'#10b981','耗材':'#f59e0b','其他':'#94a3b8'};
+
+  const kpis = [
+    { label:'異常總數', value:issues.length, color:'var(--danger)' },
+    { label:'待處理', value:issues.filter(i=>i.status==='待處理').length, color:'var(--warn)' },
+    { label:'已解決', value:issues.filter(i=>i.status==='已解決').length, color:'var(--success)' },
+    { label:'IPA總桶數', value:`${ipa.reduce((s,i)=>s+(Number(i.liters)||0),0)}桶`, color:'var(--accent)' },
+    { label:'設備總支出', value:`NT$${equip.reduce((s,i)=>s+(Number(i.price)||0)*(Number(i.quantity)||1),0).toLocaleString()}`, color:'var(--primary)' },
+  ];
+
+  return (
+    <div>
+      <div className="kpi-strip">
+        {kpis.map(k=>(
+          <div key={k.label} className="kpi-card">
+            <div className="kpi-label">{k.label}</div>
+            <div className="kpi-value" style={{color:k.color}}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+      <div className="charts-grid">
+        <div className="chart-card">
+          <h4>⚠️ 異常工程師分布</h4>
+          <div className="bar-chart">
+            {K.ENG_ORDER.map(e=>(
+              <div key={e} className="bar-row">
+                <span className="bar-row-label" style={{color:K.ENG_TONE[e],fontWeight:700}}>{e}</span>
+                <div className="bar-bg"><div className="bar-fill" style={{width:`${issueByEng[e]/maxEng*100}%`,background:K.ENG_TONE[e]}}>{issueByEng[e]>0&&issueByEng[e]}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chart-card">
+          <h4>⚠️ 異常狀態分布</h4>
+          <div className="bar-chart">
+            {Object.entries(issueByStatus).map(([s,v])=>(
+              <div key={s} className="bar-row">
+                <span className="bar-row-label">{s}</span>
+                <div className="bar-bg"><div className="bar-fill" style={{width:`${v/issues.length*100||0}%`,background:statusColors[s]||'#94a3b8'}}>{v}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chart-card">
+          <h4>🧪 IPA 採購人員</h4>
+          <div className="bar-chart">
+            {Object.entries(ipaByPurchaser).map(([p,v])=>(
+              <div key={p} className="bar-row">
+                <span className="bar-row-label" style={{color:K.ENG_TONE[p],fontWeight:700}}>{p}</span>
+                <div className="bar-bg"><div className="bar-fill" style={{width:`${v/maxIpa*100}%`,background:K.ENG_TONE[p]||'var(--accent)'}}>{v}桶</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chart-card">
+          <h4>🔧 設備支出類型</h4>
+          <div className="bar-chart">
+            {Object.entries(equipByType).map(([t,v])=>(
+              <div key={t} className="bar-row">
+                <span className="bar-row-label">{t}</span>
+                <div className="bar-bg"><div className="bar-fill" style={{width:`${v/maxEquip*100}%`,background:typeColors[t]||'var(--accent)'}}>NT${v.toLocaleString()}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 主元件 ──
+function IssuesApp({ user }) {
+  const [tab, setTab] = useState('issues');
+  const tabs = [['issues','⚠️ 客戶異常'],['ipa','🧪 IPA採購'],['equipment','🔧 設備清單'],['analysis','📊 分析']];
+
+  const canView = K.hasPermission(user,'view_issues');
+  if(!canView) return <div className="permission-denied"><div className="icon">🔒</div><p>您沒有查看異常資源的權限</p></div>;
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="topbar">
+        <span className="topbar-title">⚠️ 異常與資源</span>
+        <div className="topbar-tabs">
+          {tabs.map(([k,l])=><button key={k} className={`tab-btn ${tab===k?'active':''}`} onClick={()=>setTab(k)}>{l}</button>)}
+        </div>
+      </div>
+      <div className="content-area">
+        {tab==='issues'   && <IssuesTab user={user}/>}
+        {tab==='ipa'      && <IPATab user={user}/>}
+        {tab==='equipment'&& <EquipmentTab user={user}/>}
+        {tab==='analysis' && <AnalysisTab/>}
+      </div>
+      <div id="issues-toast" className="toast-container"/>
+    </div>
+  );
+}
+
+// 嵌入/獨立模式
+window.mountIssues = (user) => {
+  const root = ReactDOM.createRoot(document.getElementById('issues-root'));
+  root.render(<IssuesApp user={user}/>);
+};
+
+if(window.self === window.top && !window.ISSUES_USER) {
+  FB.initFirebase();
+  FB.Auth.onAuthStateChanged(async (firebaseUser) => {
+    if(firebaseUser) {
+      const userData = await FB.Users.get(firebaseUser.uid);
+      const user = userData || { permissions:['view_issues'], displayName:firebaseUser.email };
+      window.mountIssues(user);
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+}
+</script>
+</body>
+</html>

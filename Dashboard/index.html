@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D 列印 · 工作管理平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles/styles-shell.css">
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN PAGE
+     ============================================================ -->
+<div id="login-page" class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon-wrap">🖨️</div>
+      <h1>3D 列印管理平台</h1>
+      <p>工作看板 · 異常追蹤 · 資源管理</p>
+    </div>
+    <!-- Demo 帳號提示 -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;">
+      <div style="font-weight:700;color:#1e40af;margin-bottom:6px;">🎮 Demo 測試帳號</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;color:#1e40af;">
+        <div>👑 <b>管理員</b></div><div style="font-family:monospace">admin@demo.com / admin123</div>
+        <div>🔩 <b>工程師</b></div><div style="font-family:monospace">jimmy@demo.com / jimmy123</div>
+        <div>👁 <b>檢視者</b></div><div style="font-family:monospace">viewer@demo.com / view123</div>
+      </div>
+    </div>
+
+    <div id="login-error" class="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@demo.com" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>密碼</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button id="login-btn" class="btn btn-primary btn-block" style="margin-top:8px;">
+      🔐 登入
+    </button>
+    <div id="login-loading" style="text-align:center;margin-top:12px;display:none;color:var(--text-muted);font-size:13px;">登入中...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="app" class="app" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">🖨️</div>
+      <div>
+        <h2>3D 列印管理</h2>
+        <p>工作管理平台</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">主要功能</div>
+      <button class="sidebar-item active" data-page="workboard">
+        <span class="icon">🗂</span>
+        工作看板
+      </button>
+      <button class="sidebar-item" data-page="issues">
+        <span class="icon">⚠️</span>
+        異常與資源
+      </button>
+    </div>
+
+    <div class="sidebar-section" id="admin-section" style="display:none;">
+      <div class="sidebar-section-label">系統管理</div>
+      <button class="sidebar-item" data-page="admin">
+        <span class="icon">⚙️</span>
+        管理員後台
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div>
+          <div class="user-name" id="user-name">載入中...</div>
+          <div class="user-role" id="user-role">-</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm logout-btn" id="logout-btn">🚪 登出</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div id="perm-denied" class="permission-denied" style="display:none;">
+      <div class="icon">🔒</div>
+      <p>您沒有查看此頁面的權限</p>
+    </div>
+    <iframe id="app-frame" src="" frameborder="0" style="width:100%;height:100%;border:none;display:none;"></iframe>
+  </main>
+
+</div>
+
+<!-- Demo 模式：不需要 Firebase SDK -->
+<!-- 正式使用時取消下方三行 Firebase SDK 的註解 -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> -->
+<script src="src/firebase/firebase-config.js"></script>
+<script src="src/firebase/firebase-service.js"></script>
+<script src="src/helpers.js"></script>
+
+<div id="toast-root" class="toast-container"></div>
+
+<script>
+// ── Toast ──
+function toast(msg, type='success') {
+  const c = document.getElementById('toast-root');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+// ── Page Map ──
+const PAGES = {
+  workboard: { src:'workboard.html', perm:'view_board',  label:'工作看板' },
+  issues:    { src:'issues.html',    perm:'view_issues', label:'異常與資源' },
+  admin:     { src:'admin.html',     perm:'admin',       label:'管理員後台' },
+};
+
+let currentUser = null;
+let currentPage = null;
+
+// ── Navigate ──
+function navigate(page) {
+  const cfg = PAGES[page];
+  if (!cfg) return;
+
+  // 更新 sidebar active
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+
+  const frame = document.getElementById('app-frame');
+  const denied = document.getElementById('perm-denied');
+
+  // 檢查權限
+  if (!K.hasPermission(currentUser, cfg.perm)) {
+    frame.style.display = 'none';
+    denied.style.display = 'flex';
+    return;
+  }
+
+  denied.style.display = 'none';
+  frame.style.display = 'block';
+
+  if (currentPage !== page) {
+    currentPage = page;
+    frame.src = cfg.src;
+  }
+
+  // Hash 記憶
+  location.hash = page;
+}
+
+// ── Login ──
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-password').focus(); });
+document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+
+function showLoginError(msg, isInfo=false) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.add('show');
+  el.style.background = isInfo ? '#eff6ff' : '#fef2f2';
+  el.style.borderColor = isInfo ? '#bfdbfe' : '#fecaca';
+  el.style.color       = isInfo ? '#1e40af' : '#dc2626';
+}
+
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  const loading = document.getElementById('login-loading');
+
+  err.classList.remove('show');
+  if (!email || !password) { showLoginError('請填寫 Email 與密碼'); return; }
+
+  btn.disabled = true;
+  loading.style.display = 'block';
+
+  try {
+    const fbUser = await FB.Auth.login(email, password);
+    const userData = await FB.Users.get(fbUser.uid);
+    if (!userData) {
+      // 第一次登入可能還沒建資料
+      currentUser = { id: fbUser.uid, displayName: fbUser.email, email: fbUser.email, permissions: ['view_board','view_issues'], active: true };
+      await FB.Users.create(fbUser.uid, currentUser);
+    } else {
+      currentUser = { ...userData, id: fbUser.uid };
+    }
+    if (currentUser.active === false) {
+      await FB.Auth.logout();
+      showLoginError('此帳號已被停用，請聯絡管理員');
+      return;
+    }
+    enterApp();
+  } catch(e) {
+    const msg = e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential'
+      ? 'Email 或密碼錯誤' : e.message;
+    showLoginError(msg);
+  } finally {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+// ── Enter App ──
+function enterApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  // 使用者資訊
+  const initials = (currentUser.displayName||currentUser.email||'?')[0].toUpperCase();
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-name').textContent = currentUser.displayName || currentUser.email;
+
+  // 角色標籤
+  let roleLabel = '一般使用者';
+  if (K.hasPermission(currentUser,'admin'))        roleLabel = '👑 管理員';
+  else if (K.hasPermission(currentUser,'edit_board') && K.hasPermission(currentUser,'edit_issues')) roleLabel = '🔷 主管';
+  else if (K.hasPermission(currentUser,'edit_board')) roleLabel = '🔩 工程師';
+  else if (K.hasPermission(currentUser,'view_board')) roleLabel = '👁 檢視者';
+  document.getElementById('user-role').textContent = roleLabel;
+
+  // 管理員入口
+  if (K.hasPermission(currentUser,'admin')) {
+    document.getElementById('admin-section').style.display = '';
+  }
+
+  // 預設頁面
+  const hash = location.hash.replace('#','');
+  navigate(PAGES[hash] ? hash : 'workboard');
+}
+
+// ── Sidebar Clicks ──
+document.querySelectorAll('.sidebar-item[data-page]').forEach(btn => {
+  btn.addEventListener('click', () => navigate(btn.dataset.page));
+});
+
+// ── Logout ──
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await FB.Auth.logout();
+  currentUser = null;
+  currentPage = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('app-frame').src = '';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  location.hash = '';
+});
+
+// ── Auto Login Check ──
+FB.initFirebase();
+FB.Auth.onAuthStateChanged(async (fbUser) => {
+  if (fbUser) {
+    const userData = await FB.Users.get(fbUser.uid);
+    if (!userData) {
+      currentUser = { id: fbUser.uid, displayName: fbUser.email, email: fbUser.email, permissions: ['view_board','view_issues'], active: true };
+    } else {
+      currentUser = { ...userData, id: fbUser.uid };
+    }
+    if (currentUser.active === false) {
+      await FB.Auth.logout();
+      return;
+    }
+    enterApp();
+  }
+  // else: 顯示登入頁（預設已顯示）
+});
+</script>
+</body>
+</html>

@@ -3351,7 +3351,7 @@ window.LineChart = LineChart;
 
 <!-- WorkBoard 主元件 -->
 <script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef } = React;
+const { useState: useStateWB, useEffect: useEffectWB, useRef: useRefWB } = React;
 
 const TABS = [
   { key:'table',     label:'總表' },
@@ -3371,8 +3371,8 @@ const TAB_ICONS = {
 function OrderModal({ order, onClose, onSave, canDelete }) {
   const K = window.K;
   const empty = { seq:'', id:'', customer:'', engineer:K.ENG_ORDER[0], dueDate:'', startDate:'', endDate:'', material:'足夠', progress:0, machine:K.MACHINES[0], complete:'否', remark:'' };
-  const [form, setForm] = useState(order ? {...order} : empty);
-  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useStateWB(order ? {...order} : empty);
+  const [busy, setBusy] = useStateWB(false);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const save = async () => {
@@ -3442,19 +3442,19 @@ const BTNP = {height:34,padding:'0 16px',border:'none',background:'#0a0e14',colo
 
 /* ── WorkBoard 主元件 ── */
 function WorkBoard({ currentUser, standalone }) {
-  const [tab, setTab] = useState('table');
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [modal, setModal] = useState(false);
-  const [editOrder, setEditOrder] = useState(null);
-  const unsubRef = useRef(null);
+  const [tab, setTab] = useStateWB('table');
+  const [data, setData] = useStateWB([]);
+  const [loading, setLoading] = useStateWB(true);
+  const [error, setError] = useStateWB('');
+  const [modal, setModal] = useStateWB(false);
+  const [editOrder, setEditOrder] = useStateWB(null);
+  const unsubRef = useRefWB(null);
   const K = window.K;
 
   const canEdit   = currentUser && (currentUser.permissions||[]).some(p=>['admin','edit_board'].includes(p));
   const canDelete = currentUser && (currentUser.permissions||[]).some(p=>['admin','delete_board'].includes(p));
 
-  useEffect(() => {
+  useEffectWB(() => {
     if (!window._db) { setError('Firebase 尚未初始化，請確認 firebase-config.js'); setLoading(false); return; }
     unsubRef.current = window.FBOrders.onSnapshot(rows => {
       setData(rows);
@@ -3464,7 +3464,7 @@ function WorkBoard({ currentUser, standalone }) {
   }, []);
 
   // 同步 parent frame tab bar
-  useEffect(() => {
+  useEffectWB(() => {
     if (!standalone) return;
     const topbar = document.getElementById('wb-topbar');
     const tabsEl = document.getElementById('wb-tabs');

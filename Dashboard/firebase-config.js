@@ -4,12 +4,12 @@
 //  取得方式：Firebase Console → 專案設定 → 你的應用程式 → firebaseConfig
 // ============================================================
 const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey:            "AIzaSyBhgfPGUgGsWr4VmOUeaEe_cC0RNSx8I7U",
+  authDomain:        "swtc-portal-6930c.firebaseapp.com",
+  projectId:         "swtc-portal-6930c",
+  storageBucket:     "swtc-portal-6930c.firebasestorage.app",
+  messagingSenderId: "447508396321",
+  appId:             "1:447508396321:web:ee8d1faaa0331590e5e660"
 };
 
 // ============================================================

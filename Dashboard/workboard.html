@@ -1,0 +1,3609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作看板 · 3D Print</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:#fff}
+/* 主外殼 — 左側 sidebar + 上方 tabs */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #fafbfc;
+  --line: #e6e8ec;
+  --line-soft: #eef0f3;
+  --ink: #0a0e14;
+  --ink-2: #3b4250;
+  --ink-3: #5a6270;
+  --ink-4: #8a93a3;
+  --accent: #0c7a99;
+  --accent-soft: #e6f1f6;
+
+  --sidebar-w: 224px;
+}
+
+.shell {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+}
+
+/* ── Sidebar ───────────────────────── */
+.shell-sidebar {
+  width: var(--sidebar-w);
+  flex: 0 0 var(--sidebar-w);
+  background: var(--bg-soft);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 16px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.shell-brand-mark {
+  width: 28px; height: 28px;
+  background: #0a0e14;
+  border-radius: 7px;
+  position: relative;
+  flex-shrink: 0;
+}
+.shell-brand-mark::before, .shell-brand-mark::after {
+  content: ''; position: absolute; background: var(--accent);
+}
+.shell-brand-mark::before {
+  top: 6px; left: 6px; width: 6px; height: 6px; border-radius: 1px;
+}
+.shell-brand-mark::after {
+  bottom: 6px; right: 6px; width: 10px; height: 2px; border-radius: 1px;
+}
+.shell-brand-title {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.shell-brand-sub {
+  font-size: 9.5px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  overflow-y: auto;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--ink-3);
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+}
+.sidebar-item:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+.sidebar-item[aria-selected="true"] {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.sidebar-item[aria-selected="true"] .sidebar-item-icon {
+  color: var(--accent);
+}
+.sidebar-item-icon {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-4);
+  flex-shrink: 0;
+}
+.sidebar-item-text {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sidebar-item-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
+}
+.sidebar-item-sub {
+  font-size: 9.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-4);
+  letter-spacing: 0.08em;
+}
+
+.sidebar-foot {
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ink-4);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sidebar-foot-date {
+  color: var(--ink-2);
+  font-feature-settings: 'tnum';
+}
+
+/* ── Main area ─────────────────────── */
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 20;
+  min-height: 48px;
+}
+
+.shell-tabs {
+  display: flex;
+  gap: 2px;
+}
+.shell-tab {
+  position: relative;
+  border: 0; background: transparent;
+  font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ink-3);
+  padding: 14px 16px 14px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: color 0.15s;
+}
+.shell-tab:hover { color: var(--ink); }
+.shell-tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.shell-tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.shell-tab-icon {
+  width: 14px; height: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.shell-spacer { flex: 1; }
+
+.shell-aux {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+}
+
+.shell-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* ── 通用 toolbar(view 內共用) ─── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+.toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-right: 8px;
+}
+.toolbar-sub {
+  font-size: 11.5px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  margin-right: auto;
+}
+
+.t-search {
+  display: flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink-4);
+  min-width: 220px;
+}
+.t-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  color: var(--ink-2);
+}
+.t-search input {
+  border: 0; outline: 0; background: transparent;
+  font: inherit; width: 100%; color: var(--ink);
+}
+.t-search input::placeholder { color: var(--ink-4); }
+
+.t-sel {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.t-sel:hover { border-color: #cdd1d8; }
+.t-sel:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.t-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.t-btn:hover { border-color: #cdd1d8; color: var(--ink); }
+.t-btn-primary {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.t-btn-primary:hover { background: #25303f; color: #fff; }
+
+/* responsive — sidebar 縮成 icon-only */
+@media (max-width: 960px) {
+  :root { --sidebar-w: 60px; }
+  .sidebar-brand > div:not(.shell-brand-mark) { display: none; }
+  .sidebar-item-text { display: none; }
+  .sidebar-item { justify-content: center; padding: 10px 8px; }
+  .sidebar-foot { display: none; }
+}
+@media (max-width: 600px) {
+  .shell-top { padding: 0 14px; gap: 6px; flex-wrap: wrap; }
+  .shell-tab { padding: 11px 10px; font-size: 12px; }
+  .shell-aux { display: none; }
+}
+
+/* 總表 view */
+.table-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0 28px 24px;
+}
+
+.kt {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12.5px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kt thead {
+  background: #fafbfc;
+}
+.kt th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: #fafbfc;
+  z-index: 1;
+  user-select: none;
+}
+.kt th.sortable {
+  cursor: pointer;
+}
+.kt th.sortable:hover { color: var(--ink); }
+.kt th .sort-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--ink-4);
+  font-size: 9px;
+  font-feature-settings: 'tnum';
+}
+.kt th.sorted { color: var(--accent); }
+.kt th.sorted .sort-indicator { color: var(--accent); }
+
+.kt td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+.kt tbody tr:hover {
+  background: var(--bg-soft);
+}
+.kt tbody tr:last-child td { border-bottom: 0; }
+
+.kt .col-seq    { text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--ink-4); width: 56px; font-feature-settings:'tnum'; }
+.kt .col-id     { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 500; font-size: 11.5px; }
+.kt .col-eng    { white-space: nowrap; }
+.kt .col-date   { font-family: 'JetBrains Mono', monospace; font-feature-settings:'tnum'; color: var(--ink-3); font-size: 11.5px; white-space: nowrap; }
+.kt .col-prog   { width: 130px; }
+.kt .col-machine{ font-family: 'JetBrains Mono', monospace; color: var(--ink-2); font-size: 11.5px; }
+.kt .col-actions{ width: 90px; text-align: right; }
+.kt .col-customer { font-weight: 500; color: var(--ink); }
+
+/* 表內 chip / badge */
+.kt-pill {
+  display: inline-flex; align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  font-size: 10.5px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kt-pill-todo      { background: #eef0f3; color: #5a6270; }
+.kt-pill-blocked   { background: #fbf3dc; color: #8b6b13; }
+.kt-pill-progress  { background: #e6f1f6; color: #0c7a99; }
+.kt-pill-done      { background: #e6f1ea; color: #1d6f43; }
+.kt-pill-cancelled { background: #f0f1f4; color: #8a93a3; }
+
+.kt-mat-ok      { color: #1d6f43; font-weight: 500; }
+.kt-mat-need    { color: #8b6b13; font-weight: 500; }
+
+.kt-eng {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.kt-eng-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.kt-prog {
+  display: flex; align-items: center; gap: 8px;
+}
+.kt-prog-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.kt-prog-fill {
+  height: 100%;
+  background: var(--accent);
+}
+.kt-prog-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-feature-settings:'tnum';
+  min-width: 32px;
+  text-align: right;
+}
+
+.kt-due {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-feature-settings:'tnum';
+  white-space: nowrap;
+}
+.kt-due-red { color: #c0392b; font-weight: 600; }
+.kt-due-amber { color: #c79b2a; font-weight: 600; }
+
+.kt-act {
+  display: inline-flex; gap: 4px;
+}
+.kt-actbtn {
+  width: 24px; height: 24px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ink-3);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+  font-size: 11px;
+}
+.kt-actbtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.kt-actbtn.danger:hover { border-color: #c0392b; color: #c0392b; background: #fbe7e3; }
+
+/* 空狀態 */
+.kt-empty {
+  padding: 60px 0;
+  text-align: center;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* 分頁 */
+.kt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kt-pagination-info {
+  display: flex; align-items: center; gap: 8px;
+}
+.kt-pagination-pages {
+  display: flex; gap: 3px; align-items: center;
+}
+.kt-page {
+  min-width: 28px; height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 5px;
+  font: inherit; font-size: 11.5px;
+  cursor: pointer; color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings:'tnum';
+}
+.kt-page:hover { border-color: var(--accent); color: var(--accent); }
+.kt-page[aria-current="true"] {
+  background: var(--ink); color: #fff; border-color: var(--ink);
+}
+.kt-page:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 工作看板 — 白底科技感 tokens */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #fafbfc;
+  --bg-panel: #f5f7f9;
+  --line: #e6e8ec;
+  --line-soft: #eef0f3;
+  --ink: #0a0e14;
+  --ink-2: #3b4250;
+  --ink-3: #5a6270;
+  --ink-4: #8a93a3;
+  --accent: #0c7a99;
+  --accent-soft: #e6f1f6;
+  --ok: #1d6f43;
+  --ok-soft: #e6f1ea;
+  --warn: #c79b2a;
+  --warn-soft: #fbf3dc;
+  --danger: #c0392b;
+  --danger-soft: #fbe7e3;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow-card: 0 1px 0 rgba(10,14,20,0.04), 0 1px 2px rgba(10,14,20,0.04);
+  --shadow-card-hover: 0 2px 0 rgba(10,14,20,0.04), 0 4px 12px rgba(10,14,20,0.06);
+
+  --font-ui: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 微妙網點背景 — 科技感 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(10,14,20,0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.15));
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.15));
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- 頂列 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--ink);
+  position: relative;
+  flex-shrink: 0;
+}
+.brand-mark::before, .brand-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--accent);
+}
+.brand-mark::before {
+  top: 6px; left: 6px;
+  width: 6px; height: 6px;
+  border-radius: 1px;
+}
+.brand-mark::after {
+  bottom: 6px; right: 6px;
+  width: 10px; height: 2px;
+  border-radius: 1px;
+}
+.brand-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.brand-sub {
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+.topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink-4);
+  min-width: 260px;
+}
+.search-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  color: var(--ink-2);
+}
+.search-input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  width: 100%;
+  color: var(--ink);
+}
+.search-input::placeholder { color: var(--ink-4); }
+
+.sel {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.sel:hover { border-color: #cdd1d8; }
+.sel:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 2px;
+  gap: 2px;
+}
+.seg-btn {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 10px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.seg-btn:hover { color: var(--ink); }
+.seg-btn-active {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+/* ---------- KPI ---------- */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.kpi-cell {
+  padding: 16px 24px 18px;
+  border-right: 1px solid var(--line-soft);
+  position: relative;
+}
+.kpi-cell:last-child { border-right: 0; }
+.kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.kpi-value {
+  font-size: 30px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-top: 4px;
+  line-height: 1.1;
+  font-feature-settings: 'tnum';
+}
+.kpi-sub {
+  font-size: 11px;
+  color: var(--ink-4);
+  margin-top: 4px;
+}
+
+/* ---------- 看板 ---------- */
+.board {
+  flex: 1;
+  display: flex;
+  gap: 14px;
+  padding: 20px 28px 24px;
+  overflow-x: auto;
+  align-items: flex-start;
+  background:
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 80px);
+  min-height: 0;
+}
+.col {
+  flex: 0 0 296px;
+  width: 296px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 220px);
+  transition: border-color 0.15s, background 0.15s;
+}
+.col-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.col-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.col-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.col-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.col-count {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  color: var(--ink-3);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 7px;
+  min-width: 22px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-hint {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.col-body {
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 80px;
+}
+.col-empty {
+  text-align: center;
+  color: var(--ink-4);
+  font-size: 12px;
+  padding: 24px 0;
+  font-family: var(--font-mono);
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px 10px;
+  cursor: grab;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card:hover {
+  border-color: #d2d6dd;
+  box-shadow: var(--shadow-card-hover);
+}
+.card:active { cursor: grabbing; }
+.card-dragging { opacity: 0.4; }
+.card-cancelled { opacity: 0.62; }
+.card-cancelled .card-title { text-decoration: line-through; text-decoration-color: var(--ink-4); }
+
+.card-compact { padding: 9px 11px 9px; gap: 6px; }
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-top-right {
+  display: flex; align-items: center; gap: 6px;
+}
+.card-id {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-4);
+  letter-spacing: 0.02em;
+}
+.card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-compact .card-title { font-size: 12.5px; -webkit-line-clamp: 1; }
+
+.card-meta {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.meta-machine {
+  font-family: var(--font-mono);
+  color: var(--ink-2);
+}
+.meta-remark {
+  color: var(--ink-4);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.card-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.progress-track {
+  flex: 1;
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s;
+}
+.progress-num {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  min-width: 30px;
+  text-align: right;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.seq-num {
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--ink-4);
+  font-feature-settings: 'tnum';
+}
+
+/* avatar */
+.avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+}
+
+/* chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  border-radius: 4px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.chip-muted { color: var(--ink-3); background: var(--bg-panel); border: 1px solid var(--line); }
+.chip-amber { color: #8b6b13; background: var(--warn-soft); border: 1px solid #f0e4b8; }
+.chip-red   { color: #8a1d12; background: var(--danger-soft); border: 1px solid #f3c8c0; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.dot-amber { background: var(--warn); }
+
+/* ---------- 抽屜 ---------- */
+.drawer-wrap {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,14,20,0.18);
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  animation: fade 0.12s ease;
+}
+.drawer {
+  width: min(440px, 92vw);
+  height: 100%;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  box-shadow: -16px 0 30px rgba(10,14,20,0.08);
+  padding: 22px 24px 24px;
+  overflow-y: auto;
+  animation: slidein 0.18s ease;
+}
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slidein { from { transform: translateX(20px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.drawer-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.drawer-id {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.icon-btn {
+  width: 28px; height: 28px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink-3);
+}
+.icon-btn:hover { background: var(--bg-panel); color: var(--ink); }
+
+.drawer-customer {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 14px 0 18px;
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 18px;
+}
+
+.drawer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.drawer-field {}
+.field-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+.field-value {
+  font-size: 13.5px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+}
+.field-value.mono { font-family: var(--font-mono); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.pill-ok { background: var(--ok-soft); color: var(--ok); }
+.pill-amber { background: var(--warn-soft); color: #8b6b13; }
+
+.progress-controls {
+  display: flex;
+  gap: 6px;
+}
+.prog-btn {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  color: var(--ink-3);
+}
+.prog-btn:hover { border-color: var(--accent); color: var(--accent); }
+.prog-btn-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.remark-box {
+  display: block;
+  padding: 10px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+  min-height: 44px;
+}
+
+.drawer-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+}
+
+/* ---------- footnote ---------- */
+.footnote {
+  padding: 10px 28px 18px;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dot-sep {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+/* scrollbar */
+.col-body::-webkit-scrollbar,
+.board::-webkit-scrollbar { height: 10px; width: 10px; }
+.col-body::-webkit-scrollbar-thumb,
+.board::-webkit-scrollbar-thumb { background: #d6dae1; border-radius: 999px; border: 2px solid var(--bg-panel); }
+.board::-webkit-scrollbar-thumb { border-color: var(--bg); }
+.col-body::-webkit-scrollbar-thumb:hover,
+.board::-webkit-scrollbar-thumb:hover { background: #b8bec8; }
+
+/* responsive */
+@media (max-width: 1100px) {
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .kpi-cell:nth-child(4), .kpi-cell:nth-child(5) { border-top: 1px solid var(--line-soft); }
+}
+@media (max-width: 720px) {
+  .topbar { flex-direction: column; align-items: stretch; }
+  .topbar-tools { justify-content: flex-start; }
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .board { padding: 16px; }
+}
+
+/* V3 · 時間軸/甘特版 — 白底科技感 */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #fafbfc;
+  --bg-grid: #f5f7f9;
+  --line: #e6e8ec;
+  --line-soft: #eef0f3;
+  --line-week: #dde0e6;
+  --ink: #0a0e14;
+  --ink-2: #3b4250;
+  --ink-3: #5a6270;
+  --ink-4: #8a93a3;
+  --accent: #0c7a99;
+  --accent-soft: #e6f1f6;
+  --ok: #1d6f43;
+  --warn: #c79b2a;
+  --danger: #c0392b;
+
+  --row-h: 56px;
+  --lane-w: 200px;
+  --day-w: 22px;
+
+  --font-ui: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── 頂列 ─────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.mark {
+  width: 24px; height: 24px;
+  background: var(--ink);
+  border-radius: 6px;
+  position: relative;
+}
+.mark::before {
+  content: ''; position: absolute;
+  top: 5px; left: 5px;
+  width: 5px; height: 5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.mark::after {
+  content: ''; position: absolute;
+  bottom: 5px; right: 5px;
+  width: 8px; height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.brand-info { line-height: 1.1; }
+.brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.brand-sub { font-size: 11px; color: var(--ink-4); font-family: var(--font-mono); margin-top: 2px; }
+
+.spacer { flex: 1; }
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.seg-btn {
+  border: 0; background: transparent;
+  font: inherit; font-size: 12px;
+  padding: 0 12px; height: 24px;
+  border-radius: 4px;
+  cursor: pointer; color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.seg-btn:hover { color: var(--ink); }
+.seg-btn-active { background: var(--ink); color: #fff; }
+
+.today-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-soft);
+}
+.today-pill .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--danger);
+}
+.today-pill b { color: var(--ink); font-weight: 600; font-feature-settings:'tnum'; }
+
+.sel {
+  height: 28px; padding: 0 24px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  font: inherit; font-size: 12px;
+  color: var(--ink-2);
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
+
+/* ── 圖例 ─────────────────────────────── */
+.legend {
+  display: flex; gap: 14px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  align-items: center;
+}
+.lg { display: flex; align-items: center; gap: 6px; }
+.lg-chip {
+  width: 22px; height: 8px;
+  border-radius: 3px;
+}
+.lg-chip.todo { background: linear-gradient(90deg, #cbd0d8 0%, #cbd0d8 60%, transparent 60%); border: 1px solid #cbd0d8; }
+.lg-chip.blocked { background: var(--warn); }
+.lg-chip.progress { background: var(--accent); }
+.lg-chip.done { background: var(--ok); }
+.lg-chip.cancelled { background: #cbd0d8; opacity: 0.5; }
+.lg-spacer { flex: 1; }
+.lg-hint { color: var(--ink-4); }
+
+/* ── Gantt 主體 ───────────────────────── */
+.gantt {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  background: var(--bg);
+}
+.gantt-left {
+  flex: 0 0 var(--lane-w);
+  width: var(--lane-w);
+  position: sticky; left: 0;
+  background: var(--bg);
+  z-index: 5;
+  border-right: 1px solid var(--line);
+}
+.gantt-right {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* 時間刻度 */
+.scale {
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 4;
+  border-bottom: 1px solid var(--line);
+  height: 48px;
+  display: flex;
+}
+.scale-months {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 22px;
+  display: flex;
+  border-bottom: 1px solid var(--line-soft);
+}
+.scale-month {
+  border-right: 1px solid var(--line-soft);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-2);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.scale-days {
+  position: absolute; top: 22px; left: 0; right: 0;
+  height: 26px;
+  display: flex;
+}
+.scale-day {
+  width: var(--day-w);
+  border-right: 1px solid var(--line-soft);
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: var(--ink-4);
+  display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-feature-settings:'tnum';
+}
+.scale-day.weekend { background: var(--bg-soft); color: var(--ink-4); }
+.scale-day.is-today { background: #fff3ec; color: var(--danger); font-weight: 700; }
+.scale-day.is-monday { border-right-color: var(--line-week); }
+
+/* 左側泳道頭 */
+.lane-head-sticky {
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 6;
+  height: 48px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center;
+  padding: 0 14px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.lane {
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line-soft);
+  display: flex; align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+}
+.lane:last-child { border-bottom: 0; }
+.lane-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.lane-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.lane-name {
+  font-size: 13px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.lane-sub {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  font-feature-settings:'tnum';
+}
+
+/* 右側 row */
+.row {
+  height: var(--row-h);
+  border-bottom: 1px solid var(--line-soft);
+  position: relative;
+}
+.row:last-child { border-bottom: 0; }
+.row.alt { background: var(--bg-soft); }
+
+/* 直向格線 */
+.grid-lines {
+  position: absolute; inset: 0;
+  display: flex;
+  pointer-events: none;
+}
+.grid-cell {
+  width: var(--day-w);
+  border-right: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+.grid-cell.weekend { background: rgba(10,14,20,0.018); }
+.grid-cell.is-monday { border-right-color: var(--line-week); }
+
+.today-line {
+  position: absolute; top: 0; bottom: 0;
+  width: 1.5px;
+  background: var(--danger);
+  opacity: 0.7;
+  z-index: 3;
+  pointer-events: none;
+}
+.today-line::before {
+  content: '';
+  position: absolute; top: -3px; left: -3px;
+  width: 7.5px; height: 7px;
+  background: var(--danger);
+  border-radius: 50%;
+}
+
+/* 任務 bar */
+.bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 26px;
+  border-radius: 4px;
+  display: flex; align-items: center;
+  padding: 0 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--ink);
+  z-index: 2;
+}
+.bar:hover {
+  box-shadow: 0 2px 8px rgba(10,14,20,0.12);
+  z-index: 4;
+}
+
+/* 不同狀態的 bar 背景 */
+.bar.progress { background: var(--accent-soft); border: 1px solid #b8d3df; color: #054a60; }
+.bar.done { background: var(--ok); border: 1px solid var(--ok); color: #fff; }
+.bar.blocked { background: var(--warn-soft, #fbf3dc); border: 1px solid #f0e4b8; color: #6b4f0e; }
+.bar.todo { background: var(--bg); border: 1px dashed #cbd0d8; color: var(--ink-3); }
+.bar.cancelled {
+  background: repeating-linear-gradient(45deg, var(--bg-soft) 0 4px, #f0f1f4 4px 8px);
+  border: 1px solid var(--line);
+  color: var(--ink-4);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-4);
+}
+
+.bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--accent);
+  opacity: 0.85;
+  z-index: 0;
+}
+.bar.done .bar-fill { background: rgba(255,255,255,0.18); }
+.bar.progress .bar-fill { background: var(--accent); opacity: 0.78; }
+.bar-text {
+  position: relative; z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar.progress .bar-text { color: #fff; mix-blend-mode: normal; }
+.bar.progress .bar-text-fill { color: #fff; }
+.bar-due-marker {
+  position: absolute; top: -2px; right: -2px;
+  width: 4px; height: calc(100% + 4px);
+  background: var(--warn);
+  border-radius: 0 4px 4px 0;
+}
+.bar.overdue .bar-due-marker { background: var(--danger); }
+
+/* 未排程任務(只有 dueDate 沒 startDate) */
+.bar.todo-pending {
+  width: 24px !important;
+  background: var(--bg);
+  border: 1px dashed var(--ink-4);
+  color: var(--ink-4);
+}
+
+/* tooltip / 詳情卡 */
+.tooltip {
+  position: absolute;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 8px 10px;
+  border-radius: 6px;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(10,14,20,0.2);
+  max-width: 240px;
+  line-height: 1.5;
+}
+.tooltip-title { font-weight: 600; font-size: 12px; margin-bottom: 4px; font-family: var(--font-ui); }
+.tooltip-row { color: rgba(255,255,255,0.7); }
+.tooltip-row b { color: #fff; font-weight: 500; }
+
+/* footer */
+.foot {
+  padding: 8px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: var(--font-mono);
+  display: flex; gap: 10px;
+}
+
+/* scrollbar */
+.gantt::-webkit-scrollbar { height: 10px; width: 10px; }
+.gantt::-webkit-scrollbar-thumb { background: #d6dae1; border-radius: 999px; }
+
+/* Dashboard view */
+.dash {
+  flex: 1;
+  overflow: auto;
+  padding: 0 28px 32px;
+  background: var(--bg);
+}
+
+/* KPI 列 */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  padding: 18px 0;
+}
+.dash-kpi {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--bg);
+  position: relative;
+}
+.dash-kpi-label {
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-4);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dash-kpi-value {
+  font-size: 30px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-top: 4px;
+  line-height: 1.1;
+  font-feature-settings: 'tnum';
+}
+.dash-kpi-sub {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 段落標題 */
+.dash-section {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 0 12px;
+}
+.dash-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.dash-section-sub {
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 圖表卡片 */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.chart-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+.chart-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.chart-card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.chart-card-meta {
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.chart-card.custom .chart-card-head {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chart-card.custom .chart-card-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.chart-card.custom .chart-card-title::before {
+  content: '⊕';
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.chart-mini-sel {
+  height: 26px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  flex: 1;
+}
+.chart-mini-sel:hover { border-color: #cdd1d8; }
+.chart-mini-sel:focus { outline: 0; border-color: var(--accent); }
+
+.chart-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  position: relative;
+}
+
+/* SVG charts */
+.svg-chart {
+  display: block;
+  width: 100%;
+  height: 200px;
+  overflow: visible;
+}
+.svg-chart text {
+  font-family: 'JetBrains Mono', 'Inter', monospace;
+  fill: var(--ink-3);
+}
+
+/* Vertical bar */
+.vbar-bar {
+  cursor: default;
+  transition: opacity 0.15s;
+}
+.vbar-bar:hover { opacity: 0.85; }
+.vbar-track {
+  fill: var(--bg-soft);
+}
+.vbar-grid {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+}
+
+/* Horizontal bar */
+.hbar-row + .hbar-row { margin-top: 8px; }
+.hbar-list {
+  display: flex; flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 0;
+}
+.hbar-row {
+  display: grid;
+  grid-template-columns: 96px 1fr 36px;
+  gap: 10px;
+  align-items: center;
+}
+.hbar-label {
+  font-size: 11px;
+  color: var(--ink-2);
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hbar-track {
+  position: relative;
+  height: 14px;
+  background: var(--bg-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.hbar-num {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink-2);
+  text-align: right;
+  font-feature-settings: 'tnum';
+}
+
+/* Donut center label */
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.donut-center-value {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-feature-settings: 'tnum';
+}
+.donut-center-label {
+  font-size: 10px;
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Chart legend */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.chart-legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+}
+
+/* Line chart */
+.line-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.line-grid {
+  stroke: var(--line-soft);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.line-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.line-area {
+  fill: var(--accent);
+  opacity: 0.08;
+}
+.line-dot {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+/* Empty state */
+.chart-empty {
+  color: var(--ink-4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* responsive */
+@media (max-width: 1100px) {
+  .dash-kpis { grid-template-columns: repeat(3, 1fr); }
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .dash-kpis { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 頂部 tabs bar (workboard 獨立頁用) ── */
+.wb-topbar{
+  display:flex;align-items:center;gap:2px;
+  padding:0 28px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:20;min-height:48px;
+}
+.wb-body{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+
+/* ── Loading / Error ── */
+.fb-loading{display:flex;align-items:center;justify-content:center;height:200px;font-size:14px;color:var(--ink-4)}
+.fb-err{display:flex;align-items:center;justify-content:center;height:200px;font-size:14px;color:#c0392b}
+</style>
+</head>
+<body>
+
+<!-- 頂部 tab bar (當獨立頁面開啟時顯示) -->
+<div class="wb-topbar" id="wb-topbar" style="display:none">
+  <nav class="shell-tabs" id="wb-tabs" role="tablist"></nav>
+  <div class="shell-spacer"></div>
+  <div class="shell-aux">WORK BOARD</div>
+</div>
+
+<div id="wb-root" class="wb-body"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- React -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- helpers (K 常數) -->
+<script>
+/* 共用常數 / 工具 — 所有 view 都靠 window.K 取用 */
+(function () {
+  const K = {};
+
+  K.TODAY = new Date('2026-05-14');
+  K.DAY = 86400000;
+
+  K.ENG_ORDER = ['Jimmy', 'Jaylen', 'Bill', 'Barry'];
+  K.ENG_LABEL = {
+    Jimmy:  '廖璟程',
+    Jaylen: '何哲綸',
+    Bill:   '陳柏元',
+    Barry:  'Barry',
+  };
+  K.ENG_FULLLABEL = {
+    Jimmy:  '廖璟程 (Jimmy)',
+    Jaylen: '何哲綸 (Jaylen)',
+    Bill:   '陳柏元 (Bill)',
+    Barry:  'Barry',
+  };
+  K.ENG_INIT = { Jimmy: 'JC', Jaylen: 'JL', Bill: 'BL', Barry: 'BR' };
+  K.ENG_TONE = {
+    Jimmy:  { fg: '#0c7a99', bg: '#e6f1f6' },
+    Jaylen: { fg: '#6b3fa0', bg: '#efe9f7' },
+    Bill:   { fg: '#1d6f43', bg: '#e6f1ea' },
+    Barry:  { fg: '#a05a00', bg: '#f7eed8' },
+  };
+
+  K.MACHINES = ['Form4', 'Form4L', 'Fuse1+', 'Mark2'];
+  K.MATERIALS = ['足夠', '需調撥'];
+  K.PROGRESS_VALUES = [0, 25, 50, 75, 100];
+
+  K.STATUS_TONE = {
+    todo:      { fg: '#5a6270', bg: '#eef0f3', label: '待開始' },
+    blocked:   { fg: '#8b6b13', bg: '#fbf3dc', label: '等待材料' },
+    progress:  { fg: '#0c7a99', bg: '#e6f1f6', label: '進行中' },
+    done:      { fg: '#1d6f43', bg: '#e6f1ea', label: '已完成' },
+    cancelled: { fg: '#8a93a3', bg: '#f0f1f4', label: '已取消' },
+  };
+
+  K.daysUntil = function (dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+    return Math.round((d - K.TODAY) / K.DAY);
+  };
+
+  K.statusOf = function (item) {
+    if (/取消/.test(item.remark)) return 'cancelled';
+    if (item.complete === '是' || item.progress === 100) return 'done';
+    if (item.material === '需調撥') return 'blocked';
+    if (item.progress > 0) return 'progress';
+    return 'todo';
+  };
+
+  K.fmtYmd = function (d) {
+    if (!d) return '—';
+    const x = (d instanceof Date) ? d : new Date(d);
+    if (Number.isNaN(x.getTime())) return '—';
+    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+  };
+
+  // 預設過濾器套用到所有 view 的入口
+  K.applyFilters = function (data, { search = '', engineer = '', machine = '', status = '' } = {}) {
+    const s = (search || '').trim().toLowerCase();
+    return data.filter((d) => {
+      if (s && !d.id.toLowerCase().includes(s) && !d.customer.toLowerCase().includes(s)) return false;
+      if (engineer && d.engineer !== engineer) return false;
+      if (machine && d.machine !== machine) return false;
+      if (status && K.statusOf(d) !== status) return false;
+      return true;
+    });
+  };
+
+  window.K = K;
+})();
+
+</script>
+
+<!-- Firebase 初始化 + DB service -->
+<script>
+// 由 index.html iframe 傳入 config，或獨立開啟時讀 firebase-config.js
+(function(){
+  function init(cfg){
+    if(window._fbReady) return;
+    firebase.initializeApp(cfg);
+    window._fbReady = true;
+    window._auth = firebase.auth();
+    window._db   = firebase.firestore();
+  }
+
+  // 若由 parent frame 注入
+  window.addEventListener('message', function(e){
+    if(e.data && e.data.type === 'FB_CONFIG') init(e.data.config);
+  });
+
+  // 嘗試讀取同目錄 firebase-config.js（獨立開啟時）
+  if(typeof FIREBASE_CONFIG !== 'undefined') init(FIREBASE_CONFIG);
+
+  // ── Firestore CRUD ──
+  window.FBOrders = {
+    col: function(){ return window._db.collection('orders'); },
+    getAll: async function(){
+      var snap = await this.col().orderBy('seq').get();
+      return snap.docs.map(function(d){ return Object.assign({_id:d.id}, d.data()); });
+    },
+    add: async function(data){
+      var ref = await this.col().add(Object.assign({}, data, {
+        _ts: firebase.firestore.FieldValue.serverTimestamp()
+      }));
+      return ref.id;
+    },
+    update: async function(docId, data){
+      await this.col().doc(docId).update(Object.assign({}, data, {
+        _ts: firebase.firestore.FieldValue.serverTimestamp()
+      }));
+    },
+    del: async function(docId){
+      await this.col().doc(docId).delete();
+    },
+    onSnapshot: function(cb){
+      return this.col().orderBy('seq').onSnapshot(function(snap){
+        cb(snap.docs.map(function(d){ return Object.assign({_id:d.id}, d.data()); }));
+      });
+    }
+  };
+})();
+</script>
+
+<!-- Views -->
+<script type="text/babel" data-presets="react">
+/* 總表 view —— 沿用原始 12 欄位 + 排序篩選 */
+const { useState, useMemo } = React;
+
+function TableView({ data, setData }) {
+  const K = window.K;
+  const [search, setSearch] = useState('');
+  const [engF, setEngF] = useState('');
+  const [machF, setMachF] = useState('');
+  const [statusF, setStatusF] = useState('');
+  const [matF, setMatF] = useState('');
+  const [sortKey, setSortKey] = useState('seq');
+  const [sortDir, setSortDir] = useState('asc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  const filtered = useMemo(() => {
+    let arr = K.applyFilters(data, { search, engineer: engF, machine: machF, status: statusF });
+    if (matF) arr = arr.filter(d => d.material === matF);
+    arr = [...arr].sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      const va = a[sortKey], vb = b[sortKey];
+      if (typeof va === 'number') return (va - vb) * dir;
+      return String(va || '').localeCompare(String(vb || '')) * dir;
+    });
+    return arr;
+  }, [data, search, engF, machF, statusF, matF, sortKey, sortDir]);
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  function toggleSort(key) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
+
+  function clearFilters() {
+    setSearch(''); setEngF(''); setMachF(''); setStatusF(''); setMatF('');
+    setSortKey('seq'); setSortDir('asc');
+  }
+
+  function exportCSV() {
+    const headers = ['序列','EF單號','客戶名稱','執行工程師','EF期望交期','開始執行日期','預計完成日期','材料庫存','進度%','機器','完成','備註'];
+    const lines = [headers.join(',')];
+    filtered.forEach(it => {
+      lines.push([
+        it.seq, it.id, `"${it.customer}"`, K.ENG_LABEL[it.engineer]||it.engineer,
+        it.dueDate, it.startDate, it.endDate, it.material, it.progress,
+        it.machine, it.complete, `"${(it.remark||'').replace(/"/g,'""')}"`
+      ].join(','));
+    });
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '工作進度_總表.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function SortHeader({ k, children, align }) {
+    const isSorted = sortKey === k;
+    return (
+      <th
+        className={`sortable ${isSorted ? 'sorted' : ''}`}
+        style={align === 'right' ? { textAlign: 'right' } : null}
+        onClick={() => toggleSort(k)}
+      >
+        {children}
+        <span className="sort-indicator">{isSorted ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
+      </th>
+    );
+  }
+
+  function DueCell({ item }) {
+    const st = K.statusOf(item);
+    const done = st === 'done' || st === 'cancelled';
+    if (!item.dueDate) return <span className="kt-due" style={{ color: '#8a93a3' }}>未訂期</span>;
+    const d = K.daysUntil(item.dueDate);
+    let cls = 'kt-due';
+    let suffix = '';
+    if (!done && d !== null) {
+      if (d < 0)      { cls += ' kt-due-red'; suffix = ` · 逾${-d}d`; }
+      else if (d <= 3){ cls += ' kt-due-red'; suffix = ` · ${d}d`; }
+      else if (d <= 7){ cls += ' kt-due-amber'; suffix = ` · ${d}d`; }
+      else            { suffix = ` · ${d}d`; }
+    }
+    return <span className={cls}>{item.dueDate}{suffix}</span>;
+  }
+
+  return (
+    <div className="table-view">
+      <div className="toolbar">
+        <div className="toolbar-title">訂單總表</div>
+        <span className="toolbar-sub">{total} / {data.length} 筆 · 點欄位標題可排序</span>
+
+        <div className="t-search">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <input value={search} onChange={e=>{ setSearch(e.target.value); setPage(1); }} placeholder="搜尋 EF / 客戶"/>
+        </div>
+
+        <select className="t-sel" value={statusF} onChange={e=>{setStatusF(e.target.value); setPage(1);}}>
+          <option value="">所有狀態</option>
+          <option value="todo">待開始</option>
+          <option value="blocked">等待材料</option>
+          <option value="progress">進行中</option>
+          <option value="done">已完成</option>
+          <option value="cancelled">已取消</option>
+        </select>
+
+        <select className="t-sel" value={engF} onChange={e=>{setEngF(e.target.value); setPage(1);}}>
+          <option value="">所有工程師</option>
+          {K.ENG_ORDER.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}
+        </select>
+
+        <select className="t-sel" value={machF} onChange={e=>{setMachF(e.target.value); setPage(1);}}>
+          <option value="">所有機台</option>
+          {K.MACHINES.map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <select className="t-sel" value={matF} onChange={e=>{setMatF(e.target.value); setPage(1);}}>
+          <option value="">所有材料狀況</option>
+          {K.MATERIALS.map(m=><option key={m} value={m}>{m}</option>)}
+        </select>
+
+        <button className="t-btn" onClick={clearFilters} title="清除所有篩選與排序">清除</button>
+        <button className="t-btn" onClick={exportCSV}>匯出 CSV</button>
+      </div>
+
+      <div className="table-wrap">
+        <table className="kt">
+          <thead>
+            <tr>
+              <SortHeader k="seq" align="right">序列</SortHeader>
+              <SortHeader k="id">EF 單號</SortHeader>
+              <SortHeader k="customer">客戶名稱</SortHeader>
+              <SortHeader k="engineer">執行工程師</SortHeader>
+              <SortHeader k="dueDate">期望交期</SortHeader>
+              <SortHeader k="startDate">開始日</SortHeader>
+              <SortHeader k="endDate">完成日</SortHeader>
+              <th>材料</th>
+              <SortHeader k="progress">進度</SortHeader>
+              <SortHeader k="machine">機台</SortHeader>
+              <th>狀態</th>
+              <th>備註</th>
+              <th className="col-actions">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageData.map(it => {
+              const st = K.statusOf(it);
+              const tone = K.ENG_TONE[it.engineer] || { fg: '#5a6270', bg: '#eef0f3' };
+              return (
+                <tr key={it.seq}>
+                  <td className="col-seq">{it.seq}</td>
+                  <td className="col-id">{it.id}</td>
+                  <td className="col-customer">{it.customer}</td>
+                  <td className="col-eng">
+                    <span className="kt-eng">
+                      <span className="kt-eng-dot" style={{ color: tone.fg, background: tone.bg }}>
+                        {K.ENG_INIT[it.engineer]||it.engineer.slice(0,2)}
+                      </span>
+                      {K.ENG_LABEL[it.engineer]||it.engineer}
+                    </span>
+                  </td>
+                  <td className="col-date"><DueCell item={it}/></td>
+                  <td className="col-date">{it.startDate || '—'}</td>
+                  <td className="col-date">{it.endDate || '—'}</td>
+                  <td>
+                    <span className={it.material==='足夠'?'kt-mat-ok':'kt-mat-need'}>
+                      {it.material}
+                    </span>
+                  </td>
+                  <td className="col-prog">
+                    <div className="kt-prog">
+                      <div className="kt-prog-bar">
+                        <div className="kt-prog-fill" style={{
+                          width: `${it.progress}%`,
+                          background: st==='done' ? '#1d6f43' : st==='cancelled' ? '#cbd0d8' : '#0c7a99',
+                        }}/>
+                      </div>
+                      <span className="kt-prog-num">{it.progress}%</span>
+                    </div>
+                  </td>
+                  <td className="col-machine">{it.machine || '—'}</td>
+                  <td>
+                    <span className={`kt-pill kt-pill-${st}`}>{K.STATUS_TONE[st].label}</span>
+                  </td>
+                  <td style={{ color: '#5a6270', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {it.remark || '—'}
+                  </td>
+                  <td className="col-actions">
+                    <span className="kt-act">
+                      <button className="kt-actbtn" title="切換完成">✓</button>
+                      <button className="kt-actbtn" title="編輯">✎</button>
+                      <button className="kt-actbtn danger" title="刪除"
+                        onClick={()=>{ if(confirm('確定刪除此筆?')) setData(d=>d.filter(x=>x.seq!==it.seq)); }}>
+                        ✕
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+            {pageData.length === 0 && (
+              <tr><td colSpan="13"><div className="kt-empty">沒有符合條件的訂單</div></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="kt-pagination">
+        <div className="kt-pagination-info">
+          <span>每頁</span>
+          <select className="t-sel" style={{ height: 26, fontSize: 11.5 }} value={pageSize} onChange={e=>{ setPageSize(parseInt(e.target.value,10)); setPage(1); }}>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span>筆 · 共 {total} 筆</span>
+        </div>
+
+        <div className="kt-pagination-pages">
+          <button className="kt-page" disabled={safePage<=1} onClick={()=>setPage(safePage-1)}>‹</button>
+          {Array.from({ length: totalPages }).map((_,i)=>(
+            <button key={i} className="kt-page" aria-current={i+1===safePage}
+              onClick={()=>setPage(i+1)}>{i+1}</button>
+          ))}
+          <button className="kt-page" disabled={safePage>=totalPages} onClick={()=>setPage(safePage+1)}>›</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.TableView = TableView;
+
+</script>
+<script type="text/babel" data-presets="react">
+/* 看板 view — 經典卡片欄 */
+const { useState: useStateK, useMemo: useMemoK } = React;
+
+function KanbanView({ data, setData }) {
+  const K = window.K;
+  const [search, setSearch] = useStateK('');
+  const [engF, setEngF] = useStateK('');
+  const [machF, setMachF] = useStateK('');
+  const [groupBy, setGroupBy] = useStateK('status');
+  const [density, setDensity] = useStateK('comfortable');
+  const [showCancelled, setShowCancelled] = useStateK(true);
+  const [open, setOpen] = useStateK(null);
+  const [dragItem, setDragItem] = useStateK(null);
+
+  // -- 欄位定義 --
+  const STATUS_COLUMNS = [
+    { key: 'todo',     title: '待開始',  hint: '0%, 尚未排程',         tone: '#5a6270' },
+    { key: 'blocked',  title: '等待材料', hint: '需調撥 / 待客戶',      tone: '#c79b2a' },
+    { key: 'progress', title: '進行中',  hint: '已排程, 列印中',       tone: '#0c7a99' },
+    { key: 'done',     title: '已完成',  hint: '100% / 出貨',          tone: '#1d6f43' },
+    { key: 'cancelled',title: '已取消',  hint: '備註含「取消」',       tone: '#9aa3b2' },
+  ];
+  const PROGRESS_COLUMNS = [
+    { key: '0',   title: '0%',   hint: '尚未開始', tone: '#9aa3b2' },
+    { key: '25',  title: '25%',  hint: '備料/起印', tone: '#c79b2a' },
+    { key: '50',  title: '50%',  hint: '列印中',    tone: '#c79b2a' },
+    { key: '75',  title: '75%',  hint: '後處理',    tone: '#0c7a99' },
+    { key: '100', title: '100%', hint: '完成',     tone: '#1d6f43' },
+  ];
+  const ENGINEER_COLUMNS = K.ENG_ORDER.map(k => ({
+    key: k, title: K.ENG_LABEL[k], hint: k, tone: K.ENG_TONE[k].fg,
+  }));
+  const MACHINE_COLUMNS = K.MACHINES.map(k => ({
+    key: k, title: k, hint: '機台', tone: '#0c7a99',
+  }));
+
+  function columnKeyFor(item) {
+    if (groupBy === 'status')   return K.statusOf(item);
+    if (groupBy === 'progress') return String(item.progress);
+    if (groupBy === 'engineer') return item.engineer;
+    if (groupBy === 'machine')  return item.machine || '—';
+    return K.statusOf(item);
+  }
+  let cols =
+    groupBy === 'status'   ? STATUS_COLUMNS :
+    groupBy === 'progress' ? PROGRESS_COLUMNS :
+    groupBy === 'engineer' ? ENGINEER_COLUMNS :
+    MACHINE_COLUMNS;
+  if (groupBy === 'status' && !showCancelled) {
+    cols = cols.filter(c => c.key !== 'cancelled');
+  }
+
+  // -- 過濾 / 分組 --
+  const filtered = useMemoK(() => K.applyFilters(data, { search, engineer: engF, machine: machF }),
+    [data, search, engF, machF]);
+
+  const grouped = useMemoK(() => {
+    const m = {}; cols.forEach(c => { m[c.key] = []; });
+    filtered.forEach(it => {
+      const k = columnKeyFor(it);
+      if (m[k]) m[k].push(it);
+    });
+    return m;
+  }, [filtered, cols, groupBy]);
+
+  // -- KPI --
+  const stats = {
+    total: data.length,
+    wip: data.filter(d => K.statusOf(d) === 'progress').length,
+    blocked: data.filter(d => K.statusOf(d) === 'blocked').length,
+    due7: data.filter(d => {
+      const s = K.statusOf(d);
+      if (s === 'done' || s === 'cancelled') return false;
+      const du = K.daysUntil(d.dueDate);
+      return du !== null && du <= 7;
+    }).length,
+    done: data.filter(d => K.statusOf(d) === 'done').length,
+  };
+
+  function handleDrop(colKey) {
+    if (!dragItem) return;
+    setData(prev => prev.map(d => {
+      if (d.seq !== dragItem.seq) return d;
+      const u = { ...d };
+      if (groupBy === 'status') {
+        if (colKey === 'done')         { u.progress = 100; u.complete = '是'; u.remark = u.remark.replace('已取消', '').trim(); }
+        else if (colKey === 'todo')    { u.progress = 0;   u.complete = '否'; u.remark = u.remark.replace('已取消', '').trim(); }
+        else if (colKey === 'progress'){ if (u.progress === 0 || u.progress === 100) u.progress = 50; u.complete = '否'; u.remark = u.remark.replace('已取消', '').trim(); }
+        else if (colKey === 'blocked') { u.material = '需調撥'; u.complete = '否'; }
+        else if (colKey === 'cancelled'){ u.remark = u.remark ? `${u.remark} · 已取消` : '已取消'; }
+      } else if (groupBy === 'progress') {
+        u.progress = parseInt(colKey, 10);
+        u.complete = u.progress === 100 ? '是' : '否';
+      } else if (groupBy === 'engineer') {
+        u.engineer = colKey;
+      } else if (groupBy === 'machine') {
+        u.machine = colKey;
+      }
+      return u;
+    }));
+    setDragItem(null);
+  }
+
+  function updateItem(updated) {
+    setData(prev => prev.map(d => d.seq === updated.seq ? updated : d));
+    setOpen(updated);
+  }
+
+  function Avatar({ engineer }) {
+    const tone = K.ENG_TONE[engineer] || { fg: '#5a6270', bg: '#eef0f3' };
+    return (
+      <span className="avatar"
+        style={{ color: tone.fg, background: tone.bg }}
+        title={K.ENG_LABEL[engineer] || engineer}>
+        {K.ENG_INIT[engineer] || engineer.slice(0, 2)}
+      </span>
+    );
+  }
+
+  function DueChip({ dateStr, isDone }) {
+    if (!dateStr) return <span className="chip chip-muted">未訂期</span>;
+    const d = K.daysUntil(dateStr);
+    if (isDone) return <span className="chip chip-muted">{dateStr.slice(5)}</span>;
+    let cls = 'chip', label = dateStr.slice(5);
+    if (d < 0)        { cls += ' chip-red';    label = `逾期 ${-d}d`; }
+    else if (d <= 3)  { cls += ' chip-red';    label = `${dateStr.slice(5)} · ${d}d`; }
+    else if (d <= 7)  { cls += ' chip-amber';  label = `${dateStr.slice(5)} · ${d}d`; }
+    else              { cls += ' chip-muted';  label = `${dateStr.slice(5)} · ${d}d`; }
+    return <span className={cls}>{label}</span>;
+  }
+
+  function Card({ item }) {
+    const st = K.statusOf(item);
+    const done = st === 'done';
+    const cancelled = st === 'cancelled';
+    return (
+      <div
+        className={`card ${density === 'compact' ? 'card-compact' : ''} ${dragItem && dragItem.seq === item.seq ? 'card-dragging' : ''} ${cancelled ? 'card-cancelled' : ''}`}
+        draggable
+        onDragStart={() => setDragItem(item)}
+        onDragEnd={() => setDragItem(null)}
+        onClick={() => setOpen(item)}
+      >
+        <div className="card-top">
+          <span className="card-id">EF · {item.id.slice(-7)}</span>
+          <div className="card-top-right">
+            {item.material === '需調撥' && <span className="dot dot-amber" title="需調撥材料"></span>}
+            <Avatar engineer={item.engineer}/>
+          </div>
+        </div>
+        <div className="card-title">{item.customer}</div>
+        {density !== 'compact' && (
+          <div className="card-meta">
+            <span className="meta-machine">{item.machine || '未指派機台'}</span>
+            {item.remark && <span className="meta-remark" title={item.remark}>· {item.remark}</span>}
+          </div>
+        )}
+        <div className="card-progress">
+          <div className="progress-track">
+            <div className="progress-fill" style={{
+              width: `${item.progress}%`,
+              background: done ? '#1d6f43' : cancelled ? '#cbd0d8' : '#0c7a99',
+            }}/>
+          </div>
+          <span className="progress-num">{item.progress}%</span>
+        </div>
+        <div className="card-foot">
+          <DueChip dateStr={item.dueDate} isDone={done}/>
+          <span className="seq-num">#{String(item.seq).padStart(3, '0')}</span>
+        </div>
+      </div>
+    );
+  }
+
+  function Column({ col, items }) {
+    const [over, setOver] = useStateK(false);
+    return (
+      <div
+        className={`col ${over ? 'col-over' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={() => { setOver(false); handleDrop(col.key); }}
+      >
+        <div className="col-head">
+          <div className="col-head-left">
+            <span className="col-dot" style={{ background: col.tone }}/>
+            <span className="col-title">{col.title}</span>
+            <span className="col-count">{items.length}</span>
+          </div>
+          <span className="col-hint">{col.hint}</span>
+        </div>
+        <div className="col-body">
+          {items.map(it => <Card key={it.seq} item={it}/>)}
+          {items.length === 0 && <div className="col-empty">—</div>}
+        </div>
+      </div>
+    );
+  }
+
+  function Drawer() {
+    if (!open) return null;
+    const st = K.statusOf(open);
+    return (
+      <div className="drawer-wrap" onClick={() => setOpen(null)}>
+        <aside className="drawer" onClick={e => e.stopPropagation()}>
+          <header className="drawer-head">
+            <div>
+              <div className="drawer-eyebrow">EF 訂單詳情</div>
+              <div className="drawer-id">{open.id}</div>
+            </div>
+            <button className="icon-btn" onClick={() => setOpen(null)}>×</button>
+          </header>
+          <div className="drawer-customer">{open.customer}</div>
+          <div className="drawer-row">
+            <div className="drawer-field">
+              <div className="field-label">執行工程師</div>
+              <div className="field-value">
+                <Avatar engineer={open.engineer}/>
+                <span style={{ marginLeft: 8 }}>{K.ENG_LABEL[open.engineer]}</span>
+              </div>
+            </div>
+            <div className="drawer-field">
+              <div className="field-label">機台</div>
+              <div className="field-value">{open.machine || '—'}</div>
+            </div>
+          </div>
+          <div className="drawer-row">
+            <div className="drawer-field">
+              <div className="field-label">期望交期</div>
+              <div className="field-value"><DueChip dateStr={open.dueDate} isDone={st === 'done'}/></div>
+            </div>
+            <div className="drawer-field">
+              <div className="field-label">材料</div>
+              <div className="field-value">
+                <span className={`pill ${open.material === '需調撥' ? 'pill-amber' : 'pill-ok'}`}>
+                  {open.material}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="drawer-row">
+            <div className="drawer-field">
+              <div className="field-label">開始日期</div>
+              <div className="field-value mono">{open.startDate || '—'}</div>
+            </div>
+            <div className="drawer-field">
+              <div className="field-label">預計完成</div>
+              <div className="field-value mono">{open.endDate || '—'}</div>
+            </div>
+          </div>
+          <div className="drawer-field" style={{ marginTop: 18 }}>
+            <div className="field-label">進度</div>
+            <div className="progress-controls">
+              {[0, 25, 50, 75, 100].map(p => (
+                <button key={p}
+                  className={`prog-btn ${open.progress === p ? 'prog-btn-active' : ''}`}
+                  onClick={() => updateItem({ ...open, progress: p, complete: p === 100 ? '是' : '否' })}>
+                  {p}%
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="drawer-field" style={{ marginTop: 18 }}>
+            <div className="field-label">備註</div>
+            <div className="field-value remark-box">{open.remark || '—'}</div>
+          </div>
+          <footer className="drawer-foot">
+            <span>序列 #{String(open.seq).padStart(3, '0')}</span>
+            <span>狀態:{K.STATUS_TONE[st].label}</span>
+          </footer>
+        </aside>
+      </div>
+    );
+  }
+
+  return (
+    <div className="kanban-view">
+      {/* 工具列 */}
+      <div className="toolbar">
+        <div className="toolbar-title">看板檢視</div>
+        <div className="t-search">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="搜尋 EF / 客戶"/>
+        </div>
+        <select className="t-sel" value={engF} onChange={e => setEngF(e.target.value)}>
+          <option value="">所有工程師</option>
+          {K.ENG_ORDER.map(k => <option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}
+        </select>
+        <select className="t-sel" value={machF} onChange={e => setMachF(e.target.value)}>
+          <option value="">所有機台</option>
+          {K.MACHINES.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <div className="seg">
+          {[
+            { k: 'status',   label: '狀態' },
+            { k: 'progress', label: '進度' },
+            { k: 'engineer', label: '工程師' },
+            { k: 'machine',  label: '機台' },
+          ].map(o => (
+            <button key={o.k}
+              className={`seg-btn ${groupBy === o.k ? 'seg-btn-active' : ''}`}
+              onClick={() => setGroupBy(o.k)}>{o.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI */}
+      <div className="kpi-strip">
+        {[
+          { label: '總訂單',     value: stats.total },
+          { label: '進行中',     value: stats.wip },
+          { label: '等待材料',   value: stats.blocked, sub: '需調撥/待簽回', accent: '#c79b2a' },
+          { label: '7 天內到期', value: stats.due7,    sub: '未完成且交期 ≤ 7 天', accent: '#c0392b' },
+          { label: '已完成',     value: stats.done,    sub: '100% / 完成', accent: '#1d6f43' },
+        ].map((c, i) => (
+          <div key={i} className="kpi-cell">
+            <div className="kpi-label">{c.label}</div>
+            <div className="kpi-value" style={c.accent ? { color: c.accent } : null}>{c.value}</div>
+            <div className="kpi-sub">{c.sub || '即時更新'}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 看板 */}
+      <main className="board">
+        {cols.map(col => <Column key={col.key} col={col} items={grouped[col.key] || []}/>)}
+      </main>
+
+      <footer className="footnote">
+        <span>共 {filtered.length} / {data.length} 筆</span>
+        <span className="dot-sep"/>
+        <span>依「{ {status:'狀態',progress:'進度',engineer:'工程師',machine:'機台'}[groupBy] }」分欄</span>
+        <span className="dot-sep"/>
+        <span>拖曳卡片可在欄間移動</span>
+      </footer>
+
+      <Drawer/>
+    </div>
+  );
+}
+
+window.KanbanView = KanbanView;
+
+</script>
+<script type="text/babel" data-presets="react">
+/* 時間軸 / 甘特圖 view */
+const { useState: useStateG, useMemo: useMemoG } = React;
+
+function GanttView({ data }) {
+  const K = window.K;
+  const TODAY = K.TODAY;
+  const DAY = K.DAY;
+
+  const [rangeKey, setRangeKey] = useStateG('quarter');
+  const [engF, setEngF] = useStateG('');
+  const [tip, setTip] = useStateG(null);
+
+  const RANGES = [
+    { key:'month',  label:'本月',   spanDays: 30,  startOffset: -14 },
+    { key:'quarter',label:'3 個月', spanDays: 92,  startOffset: -30 },
+    { key:'half',   label:'半年',   spanDays: 180, startOffset: -60 },
+  ];
+
+  const range = RANGES.find(r => r.key === rangeKey);
+  const start = new Date(TODAY.getTime() + range.startOffset * DAY);
+  start.setHours(0,0,0,0);
+  const days = [];
+  for (let d = new Date(start); d < new Date(start.getTime() + range.spanDays * DAY); d = new Date(d.getTime() + DAY)) {
+    days.push(new Date(d));
+  }
+
+  const monthsAgg = [];
+  days.forEach(d => {
+    const ym = `${d.getFullYear()}-${d.getMonth()}`;
+    const last = monthsAgg[monthsAgg.length-1];
+    if (last && last.ym === ym) last.count++;
+    else monthsAgg.push({ ym, count: 1, year: d.getFullYear(), month: d.getMonth() });
+  });
+
+  const items = data.filter(it => !engF || it.engineer === engF);
+  const lanes = K.ENG_ORDER.filter(e => !engF || engF === e).map(eng => ({
+    eng, items: items.filter(it => it.engineer === eng),
+  }));
+
+  function parseDate(s) {
+    if (!s) return null;
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  function barPos(it) {
+    const sd = parseDate(it.startDate);
+    const dd = parseDate(it.dueDate);
+    if (!dd) return null;
+    const barStart = sd || new Date(dd.getTime() - 7 * DAY);
+    const startIdx = Math.round((barStart - start) / DAY);
+    const dueIdx = Math.round((dd - start) / DAY);
+    if (dueIdx < 0 || startIdx > days.length) return null;
+    const clippedStart = Math.max(0, startIdx);
+    const clippedEnd = Math.min(days.length, dueIdx + 1);
+    return {
+      left: clippedStart * 22,
+      width: Math.max(28, (clippedEnd - clippedStart) * 22),
+      noStart: !sd,
+      overdue: dd < TODAY && K.statusOf(it) !== 'done' && K.statusOf(it) !== 'cancelled',
+    };
+  }
+  function todayPos() {
+    const idx = (TODAY - start) / DAY;
+    if (idx < 0 || idx > days.length) return null;
+    return idx * 22;
+  }
+  const isWeekend = (d) => { const w = d.getDay(); return w === 0 || w === 6; };
+  const isMonday = (d) => d.getDay() === 1;
+  const isToday = (d) =>
+    d.getFullYear() === TODAY.getFullYear() &&
+    d.getMonth() === TODAY.getMonth() &&
+    d.getDate() === TODAY.getDate();
+
+  const tpos = todayPos();
+
+  return (
+    <div className="gantt-view">
+      <div className="toolbar">
+        <div className="toolbar-title">時間軸 / 甘特圖</div>
+        <span className="toolbar-sub">{items.length} 筆訂單 · 滑鼠移到 bar 顯示詳情</span>
+        <span className="today-pill">
+          <span className="dot"></span>
+          今天 <b>{K.fmtYmd(TODAY)}</b>
+        </span>
+        <select className="t-sel" value={engF} onChange={e => setEngF(e.target.value)}>
+          <option value="">所有工程師</option>
+          {K.ENG_ORDER.map(k => <option key={k} value={k}>{K.ENG_FULLLABEL[k]}</option>)}
+        </select>
+        <div className="seg">
+          {RANGES.map(r => (
+            <button key={r.key}
+              className={`seg-btn ${rangeKey === r.key ? 'seg-btn-active' : ''}`}
+              onClick={() => setRangeKey(r.key)}>{r.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="legend">
+        <span className="lg"><span className="lg-chip todo"/>待開始</span>
+        <span className="lg"><span className="lg-chip blocked"/>等待材料</span>
+        <span className="lg"><span className="lg-chip progress"/>進行中</span>
+        <span className="lg"><span className="lg-chip done"/>已完成</span>
+        <span className="lg"><span className="lg-chip cancelled"/>已取消</span>
+        <span className="lg-spacer"/>
+        <span className="lg-hint">bar 內填色 = 進度 %</span>
+      </div>
+
+      <div className="gantt">
+        <div className="gantt-left">
+          <div className="lane-head-sticky">工程師</div>
+          {lanes.map(l => (
+            <div key={l.eng} className="lane">
+              <span className="lane-avatar" style={{
+                color: K.ENG_TONE[l.eng].fg,
+                background: K.ENG_TONE[l.eng].bg,
+              }}>{K.ENG_INIT[l.eng]}</span>
+              <div className="lane-meta">
+                <span className="lane-name">{K.ENG_FULLLABEL[l.eng]}</span>
+                <span className="lane-sub">{l.items.length} 訂單</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="gantt-right" style={{ minWidth: days.length * 22 + 'px' }}>
+          <div className="scale" style={{ width: days.length * 22 + 'px' }}>
+            <div className="scale-months">
+              {monthsAgg.map((m, i) => (
+                <div key={i} className="scale-month" style={{ width: m.count * 22 + 'px' }}>
+                  {m.year} · {String(m.month + 1).padStart(2, '0')} 月
+                </div>
+              ))}
+            </div>
+            <div className="scale-days">
+              {days.map((d, i) => (
+                <div key={i} className={[
+                  'scale-day',
+                  isWeekend(d) ? 'weekend' : '',
+                  isMonday(d) ? 'is-monday' : '',
+                  isToday(d) ? 'is-today' : '',
+                ].filter(Boolean).join(' ')}>
+                  {d.getDate()}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {tpos !== null && (
+            <div className="today-line" style={{ left: tpos + 'px', top: 48 }}/>
+          )}
+
+          {lanes.map((l, li) => (
+            <div key={l.eng} className={`row ${li % 2 === 1 ? 'alt' : ''}`} style={{ width: days.length * 22 + 'px' }}>
+              <div className="grid-lines">
+                {days.map((d, i) => (
+                  <div key={i} className={[
+                    'grid-cell',
+                    isWeekend(d) ? 'weekend' : '',
+                    isMonday(d) ? 'is-monday' : '',
+                  ].filter(Boolean).join(' ')}/>
+                ))}
+              </div>
+
+              {l.items.map(it => {
+                const pos = barPos(it);
+                if (!pos) return null;
+                const st = K.statusOf(it);
+                const cls = `bar ${st} ${pos.noStart ? 'todo-pending' : ''} ${pos.overdue ? 'overdue' : ''}`;
+                return (
+                  <div key={it.seq} className={cls}
+                    style={{ left: pos.left + 'px', width: pos.width + 'px' }}
+                    onMouseEnter={e => setTip({
+                      item: it,
+                      x: e.currentTarget.offsetLeft + pos.width + 10,
+                      y: e.currentTarget.offsetTop - 6,
+                    })}
+                    onMouseLeave={() => setTip(null)}
+                  >
+                    {!pos.noStart && st !== 'todo' && (
+                      <div className="bar-fill" style={{ width: `${it.progress}%` }}/>
+                    )}
+                    <span className="bar-text">
+                      EF·{it.id.slice(-7)} · {it.customer.length > 10 ? it.customer.slice(0, 10) + '…' : it.customer}
+                    </span>
+                    {!pos.noStart && st !== 'done' && st !== 'cancelled' && pos.overdue && (
+                      <div className="bar-due-marker"/>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {tip && (
+            <div className="tooltip" style={{ left: tip.x + 'px', top: tip.y + 48 + 'px' }}>
+              <div className="tooltip-title">{tip.item.customer}</div>
+              <div className="tooltip-row">EF · <b>{tip.item.id}</b></div>
+              <div className="tooltip-row">機台 · <b>{tip.item.machine || '—'}</b></div>
+              <div className="tooltip-row">進度 · <b>{tip.item.progress}%</b></div>
+              <div className="tooltip-row">期望交期 · <b>{tip.item.dueDate || '—'}</b></div>
+              <div className="tooltip-row">開始日 · <b>{tip.item.startDate || '未排程'}</b></div>
+              <div className="tooltip-row">材料 · <b>{tip.item.material}</b></div>
+              {tip.item.remark && <div className="tooltip-row" style={{ marginTop: 4 }}>備註 · <b>{tip.item.remark}</b></div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.GanttView = GanttView;
+
+</script>
+<script type="text/babel" data-presets="react">
+/* Dashboard view — 3 預設 + 3 自由選擇 */
+const { useState: useStateD, useMemo: useMemoD } = React;
+
+// 維度定義
+const DIMENSIONS = {
+  status: {
+    label: '狀態',
+    extract: (it) => window.K.statusOf(it),
+    order: ['todo', 'blocked', 'progress', 'done', 'cancelled'],
+    label_for: (k) => window.K.STATUS_TONE[k].label,
+    color_for: (k) => window.K.STATUS_TONE[k].fg,
+  },
+  engineer: {
+    label: '工程師',
+    extract: (it) => it.engineer,
+    order: window.K.ENG_ORDER,
+    label_for: (k) => window.K.ENG_LABEL[k] || k,
+    color_for: (k) => (window.K.ENG_TONE[k] || { fg: '#0c7a99' }).fg,
+  },
+  progress: {
+    label: '進度',
+    extract: (it) => String(it.progress),
+    order: ['0', '25', '50', '75', '100'],
+    label_for: (k) => k + '%',
+    color_for: (k) => {
+      const n = parseInt(k, 10);
+      if (n === 0) return '#9aa3b2';
+      if (n === 100) return '#1d6f43';
+      return '#0c7a99';
+    },
+  },
+  machine: {
+    label: '機台',
+    extract: (it) => it.machine || '未指派',
+    order: null,
+    label_for: (k) => k,
+    color_for: () => '#0c7a99',
+  },
+  material: {
+    label: '材料',
+    extract: (it) => it.material,
+    order: ['足夠', '需調撥'],
+    label_for: (k) => k,
+    color_for: (k) => k === '足夠' ? '#1d6f43' : '#c79b2a',
+  },
+  customer: {
+    label: '客戶 (Top 8)',
+    extract: (it) => it.customer,
+    order: null,
+    label_for: (k) => k.length > 12 ? k.slice(0, 12) + '…' : k,
+    color_for: () => '#0c7a99',
+  },
+};
+
+function aggregate(data, dimKey) {
+  const dim = DIMENSIONS[dimKey];
+  const counts = {};
+  data.forEach(it => {
+    const k = dim.extract(it);
+    counts[k] = (counts[k] || 0) + 1;
+  });
+  let keys;
+  if (dim.order) {
+    keys = dim.order.filter(k => counts[k] !== undefined);
+    // 加入 order 沒有列到的(避免漏掉)
+    Object.keys(counts).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+  } else {
+    keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    if (dimKey === 'customer') keys = keys.slice(0, 8);
+  }
+  return keys.map(k => ({
+    key: k,
+    label: dim.label_for(k),
+    value: counts[k] || 0,
+    color: dim.color_for(k),
+  }));
+}
+
+// ─── 圖表元件 ───────────────────
+
+function VerticalBar({ data, height = 200 }) {
+  if (data.length === 0) return <div className="chart-empty">無資料</div>;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const padding = { top: 16, right: 8, bottom: 28, left: 28 };
+  const W = 320, H = height;
+  const innerW = W - padding.left - padding.right;
+  const innerH = H - padding.top - padding.bottom;
+  const barW = innerW / data.length;
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(p => Math.round(max * p));
+
+  return (
+    <svg className="svg-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      {/* gridlines */}
+      {gridLines.map((v, i) => {
+        const y = padding.top + innerH - (v / max) * innerH;
+        return (
+          <g key={i}>
+            <line x1={padding.left} x2={W - padding.right} y1={y} y2={y} className="vbar-grid"/>
+            <text x={padding.left - 4} y={y + 3} fontSize="9" textAnchor="end" fill="#8a93a3">{v}</text>
+          </g>
+        );
+      })}
+      {/* bars */}
+      {data.map((d, i) => {
+        const h = (d.value / max) * innerH;
+        const x = padding.left + i * barW + barW * 0.2;
+        const w = barW * 0.6;
+        const y = padding.top + innerH - h;
+        return (
+          <g key={d.key}>
+            <rect x={x} y={padding.top} width={w} height={innerH}
+              className="vbar-track" rx="2"/>
+            <rect x={x} y={y} width={w} height={h}
+              fill={d.color} className="vbar-bar" rx="2"/>
+            <text x={x + w/2} y={y - 4} fontSize="10" textAnchor="middle" fill="#0a0e14" fontWeight="600">
+              {d.value}
+            </text>
+            <text x={x + w/2} y={H - padding.bottom + 14} fontSize="9.5" textAnchor="middle" fill="#5a6270">
+              {d.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function HorizontalBar({ data }) {
+  if (data.length === 0) return <div className="chart-empty">無資料</div>;
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div className="hbar-list">
+      {data.map(d => (
+        <div key={d.key} className="hbar-row">
+          <div className="hbar-label" title={d.label}>{d.label}</div>
+          <div className="hbar-track">
+            <div className="hbar-fill" style={{
+              width: `${(d.value / max) * 100}%`,
+              background: d.color,
+            }}/>
+          </div>
+          <div className="hbar-num">{d.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DonutChart({ data, centerLabel = '總計' }) {
+  if (data.length === 0) return <div className="chart-empty">無資料</div>;
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const W = 200, R = 78, r = 52, cx = W/2, cy = W/2;
+  let cumulative = 0;
+  const segments = data.map(d => {
+    const start = cumulative / total;
+    cumulative += d.value;
+    const end = cumulative / total;
+    return { ...d, start, end };
+  });
+  function arcPath(start, end) {
+    if (end - start >= 0.9999) {
+      // full circle — draw as two arcs
+      return [
+        `M ${cx + R} ${cy}`,
+        `A ${R} ${R} 0 1 1 ${cx - R} ${cy}`,
+        `A ${R} ${R} 0 1 1 ${cx + R} ${cy}`,
+        `L ${cx + r} ${cy}`,
+        `A ${r} ${r} 0 1 0 ${cx - r} ${cy}`,
+        `A ${r} ${r} 0 1 0 ${cx + r} ${cy}`,
+        'Z',
+      ].join(' ');
+    }
+    const a0 = start * Math.PI * 2 - Math.PI / 2;
+    const a1 = end * Math.PI * 2 - Math.PI / 2;
+    const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+    const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+    const x2 = cx + r * Math.cos(a1), y2 = cy + r * Math.sin(a1);
+    const x3 = cx + r * Math.cos(a0), y3 = cy + r * Math.sin(a0);
+    const large = end - start > 0.5 ? 1 : 0;
+    return [
+      `M ${x0} ${y0}`,
+      `A ${R} ${R} 0 ${large} 1 ${x1} ${y1}`,
+      `L ${x2} ${y2}`,
+      `A ${r} ${r} 0 ${large} 0 ${x3} ${y3}`,
+      'Z',
+    ].join(' ');
+  }
+  return (
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      <div style={{ position: 'relative', width: W, height: W }}>
+        <svg width={W} height={W} viewBox={`0 0 ${W} ${W}`}>
+          {segments.map(seg => (
+            <path key={seg.key} d={arcPath(seg.start, seg.end)} fill={seg.color}
+              stroke="#fff" strokeWidth="1.5"/>
+          ))}
+        </svg>
+        <div className="donut-center">
+          <div className="donut-center-value">{total}</div>
+          <div className="donut-center-label">{centerLabel}</div>
+        </div>
+      </div>
+      <div className="chart-legend" style={{ marginTop: 14, borderTop: 0, paddingTop: 0 }}>
+        {segments.map(seg => (
+          <span key={seg.key} className="chart-legend-item">
+            <span className="chart-legend-dot" style={{ background: seg.color }}/>
+            {seg.label} · {seg.value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PieChart({ data, centerLabel = '總計' }) {
+  // 跟 Donut 一樣,但內半徑為 0
+  if (data.length === 0) return <div className="chart-empty">無資料</div>;
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const W = 200, R = 84, cx = W/2, cy = W/2;
+  let cumulative = 0;
+  const segments = data.map(d => {
+    const start = cumulative / total;
+    cumulative += d.value;
+    const end = cumulative / total;
+    return { ...d, start, end };
+  });
+  function piePath(start, end) {
+    if (end - start >= 0.9999) {
+      return [
+        `M ${cx + R} ${cy}`,
+        `A ${R} ${R} 0 1 1 ${cx - R} ${cy}`,
+        `A ${R} ${R} 0 1 1 ${cx + R} ${cy}`,
+        'Z',
+      ].join(' ');
+    }
+    const a0 = start * Math.PI * 2 - Math.PI / 2;
+    const a1 = end * Math.PI * 2 - Math.PI / 2;
+    const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+    const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+    const large = end - start > 0.5 ? 1 : 0;
+    return [
+      `M ${cx} ${cy}`,
+      `L ${x0} ${y0}`,
+      `A ${R} ${R} 0 ${large} 1 ${x1} ${y1}`,
+      'Z',
+    ].join(' ');
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      <svg width={W} height={W} viewBox={`0 0 ${W} ${W}`}>
+        {segments.map(seg => (
+          <path key={seg.key} d={piePath(seg.start, seg.end)} fill={seg.color}
+            stroke="#fff" strokeWidth="1.5"/>
+        ))}
+      </svg>
+      <div className="chart-legend" style={{ marginTop: 14, borderTop: 0, paddingTop: 0 }}>
+        {segments.map(seg => (
+          <span key={seg.key} className="chart-legend-item">
+            <span className="chart-legend-dot" style={{ background: seg.color }}/>
+            {seg.label} · {seg.value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LineChart({ data, height = 200 }) {
+  // 折線適合時序資料 — 把資料當作有順序的時間軸
+  if (data.length === 0) return <div className="chart-empty">無資料</div>;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const padding = { top: 16, right: 12, bottom: 28, left: 28 };
+  const W = 320, H = height;
+  const innerW = W - padding.left - padding.right;
+  const innerH = H - padding.top - padding.bottom;
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+  const points = data.map((d, i) => ({
+    x: padding.left + i * stepX,
+    y: padding.top + innerH - (d.value / max) * innerH,
+    value: d.value,
+    label: d.label,
+  }));
+  const pathD = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+  const areaD = points.length > 0
+    ? `${pathD} L ${points[points.length-1].x} ${padding.top + innerH} L ${points[0].x} ${padding.top + innerH} Z`
+    : '';
+  const gridLines = [0, 0.5, 1].map(p => Math.round(max * p));
+
+  return (
+    <svg className="svg-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      {gridLines.map((v, i) => {
+        const y = padding.top + innerH - (v / max) * innerH;
+        return (
+          <g key={i}>
+            <line x1={padding.left} x2={W - padding.right} y1={y} y2={y} className="line-grid"/>
+            <text x={padding.left - 4} y={y + 3} fontSize="9" textAnchor="end" fill="#8a93a3">{v}</text>
+          </g>
+        );
+      })}
+      <path d={areaD} className="line-area"/>
+      <path d={pathD} className="line-path"/>
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r="3.5" className="line-dot"/>
+          <text x={p.x} y={H - padding.bottom + 14} fontSize="9" textAnchor="middle" fill="#5a6270">
+            {p.label}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function ChartByType({ type, data, centerLabel }) {
+  if (type === 'bar') return <VerticalBar data={data}/>;
+  if (type === 'hbar') return <HorizontalBar data={data}/>;
+  if (type === 'donut') return <DonutChart data={data} centerLabel={centerLabel}/>;
+  if (type === 'pie') return <PieChart data={data} centerLabel={centerLabel}/>;
+  if (type === 'line') return <LineChart data={data}/>;
+  return null;
+}
+
+// ─── 主元件 ──────────────────────
+
+function DashboardView({ data }) {
+  const K = window.K;
+
+  // 3 自由選擇 slot 的狀態
+  const [c1, setC1] = useStateD({ dim: 'machine',  type: 'donut' });
+  const [c2, setC2] = useStateD({ dim: 'material', type: 'donut' });
+  const [c3, setC3] = useStateD({ dim: 'customer', type: 'hbar' });
+
+  // KPI
+  const stats = {
+    total: data.length,
+    wip: data.filter(d => K.statusOf(d) === 'progress').length,
+    blocked: data.filter(d => K.statusOf(d) === 'blocked').length,
+    due7: data.filter(d => {
+      const s = K.statusOf(d);
+      if (s === 'done' || s === 'cancelled') return false;
+      const du = K.daysUntil(d.dueDate);
+      return du !== null && du <= 7;
+    }).length,
+    done: data.filter(d => K.statusOf(d) === 'done').length,
+  };
+
+  // 預設 3 個圖表
+  const statusData = useMemoD(() => aggregate(data, 'status'), [data]);
+  const engineerData = useMemoD(() => aggregate(data, 'engineer'), [data]);
+  const progressData = useMemoD(() => aggregate(data, 'progress'), [data]);
+
+  // 3 個自由 slot
+  const customCharts = [
+    { state: c1, setState: setC1, idx: 1 },
+    { state: c2, setState: setC2, idx: 2 },
+    { state: c3, setState: setC3, idx: 3 },
+  ];
+
+  const CHART_TYPES = [
+    { value: 'bar',   label: '長條圖' },
+    { value: 'hbar',  label: '橫條圖' },
+    { value: 'donut', label: '環狀圖' },
+    { value: 'pie',   label: '圓餅圖' },
+    { value: 'line',  label: '折線圖' },
+  ];
+
+  return (
+    <div className="dash">
+      {/* KPI */}
+      <div className="dash-kpis">
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">總訂單</div>
+          <div className="dash-kpi-value">{stats.total}</div>
+          <div className="dash-kpi-sub">全部資料筆數</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">進行中</div>
+          <div className="dash-kpi-value">{stats.wip}</div>
+          <div className="dash-kpi-sub">已開工未完成</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">等待材料</div>
+          <div className="dash-kpi-value" style={{ color: '#c79b2a' }}>{stats.blocked}</div>
+          <div className="dash-kpi-sub">需調撥 / 待簽回</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">7 天內到期</div>
+          <div className="dash-kpi-value" style={{ color: '#c0392b' }}>{stats.due7}</div>
+          <div className="dash-kpi-sub">未完成且交期 ≤ 7 天</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">已完成</div>
+          <div className="dash-kpi-value" style={{ color: '#1d6f43' }}>{stats.done}</div>
+          <div className="dash-kpi-sub">100% / 完成</div>
+        </div>
+      </div>
+
+      {/* 預設圖表 */}
+      <div className="dash-section">
+        <div className="dash-section-title">預設分析</div>
+        <div className="dash-section-sub">DEFAULT VIEWS</div>
+      </div>
+      <div className="dash-grid">
+        <div className="chart-card">
+          <div className="chart-card-head">
+            <div className="chart-card-title">狀態分布</div>
+            <div className="chart-card-meta">DONUT</div>
+          </div>
+          <div className="chart-body">
+            <DonutChart data={statusData} centerLabel="總訂單"/>
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-head">
+            <div className="chart-card-title">工程師負荷</div>
+            <div className="chart-card-meta">HORIZONTAL BAR</div>
+          </div>
+          <div className="chart-body">
+            <HorizontalBar data={engineerData}/>
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-card-head">
+            <div className="chart-card-title">進度分布</div>
+            <div className="chart-card-meta">VERTICAL BAR</div>
+          </div>
+          <div className="chart-body">
+            <VerticalBar data={progressData}/>
+          </div>
+        </div>
+      </div>
+
+      {/* 自由選擇 */}
+      <div className="dash-section">
+        <div className="dash-section-title">自由分析</div>
+        <div className="dash-section-sub">CUSTOM — 選擇維度與圖表類型</div>
+      </div>
+      <div className="dash-grid">
+        {customCharts.map(({ state, setState, idx }) => {
+          const aggData = aggregate(data, state.dim);
+          return (
+            <div key={idx} className="chart-card custom">
+              <div className="chart-card-head">
+                <div className="chart-card-title">自由分析 #{idx}</div>
+                <select className="chart-mini-sel" value={state.dim}
+                  onChange={e => setState({ ...state, dim: e.target.value })}>
+                  {Object.entries(DIMENSIONS).map(([k, d]) => (
+                    <option key={k} value={k}>依 {d.label}</option>
+                  ))}
+                </select>
+                <select className="chart-mini-sel" value={state.type}
+                  onChange={e => setState({ ...state, type: e.target.value })}>
+                  {CHART_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="chart-body">
+                <ChartByType type={state.type} data={aggData}
+                  centerLabel={DIMENSIONS[state.dim].label}/>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+window.DashboardView = DashboardView;
+window.VerticalBar = VerticalBar;
+window.HorizontalBar = HorizontalBar;
+window.DonutChart = DonutChart;
+window.PieChart = PieChart;
+window.LineChart = LineChart;
+
+</script>
+
+<!-- WorkBoard 主元件 -->
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+const TABS = [
+  { key:'table',     label:'總表' },
+  { key:'kanban',    label:'看板' },
+  { key:'gantt',     label:'時間軸' },
+  { key:'dashboard', label:'Dashboard' },
+];
+
+const TAB_ICONS = {
+  table:(<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="10" rx="1.2" stroke="currentColor" strokeWidth="1.3"/><line x1="1.5" y1="5.5" x2="12.5" y2="5.5" stroke="currentColor" strokeWidth="1.3"/><line x1="5" y1="2" x2="5" y2="12" stroke="currentColor" strokeWidth="1.3"/></svg>),
+  kanban:(<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="3" height="10" rx="0.8" stroke="currentColor" strokeWidth="1.3"/><rect x="5.5" y="2" width="3" height="6.5" rx="0.8" stroke="currentColor" strokeWidth="1.3"/><rect x="9.5" y="2" width="3" height="8.5" rx="0.8" stroke="currentColor" strokeWidth="1.3"/></svg>),
+  gantt:(<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="1.5" y1="3" x2="9.5" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="4" y1="7" x2="12.5" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="11" x2="8" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>),
+  dashboard:(<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 11.5V8.5M5 11.5V5M8 11.5V7M11 11.5V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="12.5" x2="13" y2="12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>),
+};
+
+/* ── 訂單 Modal (新增/編輯) ── */
+function OrderModal({ order, onClose, onSave, canDelete }) {
+  const K = window.K;
+  const empty = { seq:'', id:'', customer:'', engineer:K.ENG_ORDER[0], dueDate:'', startDate:'', endDate:'', material:'足夠', progress:0, machine:K.MACHINES[0], complete:'否', remark:'' };
+  const [form, setForm] = useState(order ? {...order} : empty);
+  const [busy, setBusy] = useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const save = async () => {
+    if (!form.customer || !form.dueDate) { alert('請填寫客戶名稱與期望交期'); return; }
+    setBusy(true);
+    try { await onSave(form); onClose(); }
+    catch(e) { alert(e.message||'儲存失敗'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.35)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:500}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:'#fff',borderRadius:12,width:640,maxWidth:'95vw',maxHeight:'90vh',overflowY:'auto',boxShadow:'0 16px 40px rgba(0,0,0,.2)'}}>
+        <div style={{padding:'20px 24px 0',display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+          <h3 style={{fontSize:15,fontWeight:700}}>{order ? '✏️ 編輯訂單' : '➕ 新增訂單'}</h3>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer',color:'#8a93a3',padding:'2px 6px',borderRadius:4}}>×</button>
+        </div>
+        <div style={{padding:'0 24px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:14}}>
+            <div><label style={{display:'block',fontSize:11.5,fontWeight:600,color:'#5a6270',marginBottom:5}}>EF 單號</label>
+              <input value={form.id||''} onChange={e=>set('id',e.target.value)} placeholder="202512100001" style={INP}/></div>
+            <div><label style={{display:'block',fontSize:11.5,fontWeight:600,color:'#5a6270',marginBottom:5}}>客戶名稱 *</label>
+              <input value={form.customer} onChange={e=>set('customer',e.target.value)} style={INP}/></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:14}}>
+            <div><label style={LBL}>執行工程師</label>
+              <select value={form.engineer} onChange={e=>set('engineer',e.target.value)} style={INP}>
+                {K.ENG_ORDER.map(e=><option key={e} value={e}>{K.ENG_LABEL[e]||e}</option>)}</select></div>
+            <div><label style={LBL}>機台</label>
+              <select value={form.machine} onChange={e=>set('machine',e.target.value)} style={INP}>
+                {K.MACHINES.map(m=><option key={m}>{m}</option>)}</select></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:14}}>
+            <div><label style={LBL}>開始執行日</label><input type="date" value={form.startDate||''} onChange={e=>set('startDate',e.target.value)} style={INP}/></div>
+            <div><label style={LBL}>預計完成日</label><input type="date" value={form.endDate||''} onChange={e=>set('endDate',e.target.value)} style={INP}/></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:14}}>
+            <div><label style={LBL}>期望交期 *</label><input type="date" value={form.dueDate||''} onChange={e=>set('dueDate',e.target.value)} style={INP}/></div>
+            <div><label style={LBL}>材料庫存</label>
+              <select value={form.material} onChange={e=>set('material',e.target.value)} style={INP}>
+                {K.MATERIALS.map(m=><option key={m}>{m}</option>)}</select></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:14}}>
+            <div><label style={LBL}>進度 %</label>
+              <select value={form.progress} onChange={e=>set('progress',+e.target.value)} style={INP}>
+                {K.PROGRESS_VALUES.map(p=><option key={p} value={p}>{p}%</option>)}</select></div>
+            <div><label style={LBL}>完成</label>
+              <select value={form.complete} onChange={e=>set('complete',e.target.value)} style={INP}>
+                <option>否</option><option>是</option></select></div>
+          </div>
+          <div style={{marginBottom:16}}><label style={LBL}>備註</label>
+            <textarea value={form.remark||''} onChange={e=>set('remark',e.target.value)} rows={3} style={{...INP,resize:'vertical'}}/></div>
+        </div>
+        <div style={{padding:'16px 24px',display:'flex',justifyContent:'flex-end',gap:8,borderTop:'1px solid #e6e8ec',marginTop:4}}>
+          <button onClick={onClose} style={BTN}>取消</button>
+          <button onClick={save} disabled={busy} style={BTNP}>{busy?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const INP = {width:'100%',padding:'8px 11px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none'};
+const LBL = {display:'block',fontSize:11.5,fontWeight:600,color:'#5a6270',marginBottom:5};
+const BTN = {height:34,padding:'0 16px',border:'1px solid #e6e8ec',background:'#fff',color:'#3b4250',fontSize:13,fontWeight:500,borderRadius:6,cursor:'pointer',fontFamily:'inherit'};
+const BTNP = {height:34,padding:'0 16px',border:'none',background:'#0a0e14',color:'#fff',fontSize:13,fontWeight:600,borderRadius:6,cursor:'pointer',fontFamily:'inherit'};
+
+/* ── WorkBoard 主元件 ── */
+function WorkBoard({ currentUser, standalone }) {
+  const [tab, setTab] = useState('table');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [modal, setModal] = useState(false);
+  const [editOrder, setEditOrder] = useState(null);
+  const unsubRef = useRef(null);
+  const K = window.K;
+
+  const canEdit   = currentUser && (currentUser.permissions||[]).some(p=>['admin','edit_board'].includes(p));
+  const canDelete = currentUser && (currentUser.permissions||[]).some(p=>['admin','delete_board'].includes(p));
+
+  useEffect(() => {
+    if (!window._db) { setError('Firebase 尚未初始化，請確認 firebase-config.js'); setLoading(false); return; }
+    unsubRef.current = window.FBOrders.onSnapshot(rows => {
+      setData(rows);
+      setLoading(false);
+    });
+    return () => { if(unsubRef.current) unsubRef.current(); };
+  }, []);
+
+  // 同步 parent frame tab bar
+  useEffect(() => {
+    if (!standalone) return;
+    const topbar = document.getElementById('wb-topbar');
+    const tabsEl = document.getElementById('wb-tabs');
+    if (!topbar || !tabsEl) return;
+    topbar.style.display = 'flex';
+    tabsEl.innerHTML = '';
+    TABS.forEach(t => {
+      const btn = document.createElement('button');
+      btn.role = 'tab';
+      btn.className = 'shell-tab' + (tab === t.key ? ' sel' : '');
+      btn.setAttribute('aria-selected', tab === t.key);
+      btn.innerHTML = t.label;
+      btn.style.cssText = tab === t.key
+        ? 'position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#0a0e14;padding:14px 16px;cursor:pointer'
+        : 'position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:#5a6270;padding:14px 16px;cursor:pointer';
+      btn.onclick = () => setTab(t.key);
+      tabsEl.appendChild(btn);
+    });
+  }, [tab, standalone]);
+
+  const nextSeq = () => data.length ? Math.max(...data.map(d=>d.seq||0))+1 : 1;
+
+  const handleSave = async form => {
+    if (editOrder) {
+      await window.FBOrders.update(editOrder._id, form);
+      showMsg('訂單已更新 ✓');
+    } else {
+      await window.FBOrders.add({ ...form, seq: nextSeq() });
+      showMsg('訂單已新增 ✓');
+    }
+  };
+
+  const handleDelete = async seq => {
+    const item = data.find(d => d.seq === seq);
+    if (!item) return;
+    if (!confirm('確定刪除此筆訂單？')) return;
+    await window.FBOrders.del(item._id);
+    showMsg('已刪除','inf');
+  };
+
+  // TableView 的 setData proxy：攔截刪除操作
+  const proxySetData = updater => {
+    const next = typeof updater === 'function' ? updater(data) : updater;
+    const removed = data.filter(d => !next.find(n => n.seq === d.seq));
+    removed.forEach(r => { if(canDelete) window.FBOrders.del(r._id).then(()=>showMsg('已刪除','inf')); });
+    const changed = next.filter(n => {
+      const orig = data.find(d => d.seq === n.seq);
+      return orig && JSON.stringify(orig) !== JSON.stringify(n);
+    });
+    changed.forEach(n => { window.FBOrders.update(n._id, n).then(()=>showMsg('已更新 ✓')); });
+  };
+
+  if (loading) return <div className="fb-loading">⏳ 從 Firebase 載入資料...</div>;
+  if (error)   return <div className="fb-err">⚠️ {error}</div>;
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0}}>
+      {/* Tab bar (嵌入模式) */}
+      {!standalone && (
+        <div className="shell-top">
+          <nav className="shell-tabs" role="tablist">
+            {TABS.map(t=>(
+              <button key={t.key} role="tab" aria-selected={tab===t.key} className="shell-tab" onClick={()=>setTab(t.key)}>
+                <span className="shell-tab-icon">{TAB_ICONS[t.key]}</span>{t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="shell-spacer"/>
+          <div className="shell-aux">WORK BOARD</div>
+        </div>
+      )}
+
+      <div className="shell-body" style={{flex:1,minHeight:0,position:'relative'}}>
+        {/* 新增訂單按鈕 */}
+        {canEdit && (
+          <div style={{position:'absolute',top:14,right:28,zIndex:10}}>
+            <button className="t-btn t-btn-primary" onClick={()=>{setEditOrder(null);setModal(true);}}>+ 新增訂單</button>
+          </div>
+        )}
+        {tab==='table'     && <TableView     data={data} setData={proxySetData}/>}
+        {tab==='kanban'    && <KanbanView    data={data} setData={proxySetData}/>}
+        {tab==='gantt'     && <GanttView     data={data}/>}
+        {tab==='dashboard' && <DashboardView data={data}/>}
+      </div>
+
+      {modal && <OrderModal
+        order={editOrder}
+        onClose={()=>setModal(false)}
+        onSave={async form => { await handleSave(form); setModal(false); }}
+        canDelete={canDelete}
+      />}
+    </div>
+  );
+}
+
+function showMsg(msg, type) {
+  type = type || 'ok';
+  var c = document.getElementById('wb-toasts');
+  if (!c) { c = document.createElement('div'); c.id='wb-toasts'; c.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px'; document.body.appendChild(c); }
+  var el = document.createElement('div');
+  el.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;font-weight:500;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);animation:toastIn .2s ease;background:' + (type==='ok'?'#1d6f43':type==='err'?'#c0392b':'#0c7a99');
+  el.textContent = (type==='ok'?'✓ ':type==='err'?'✕ ':'ℹ ') + msg;
+  c.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3000);
+}
+
+// ── 掛載邏輯 ──
+// 模式 A: 從 index.html iframe 呼叫 window.mountWorkBoard(user)
+// 模式 B: 獨立開啟，等 Firebase Auth 確認身份
+window.mountWorkBoard = function(user) {
+  const root = document.getElementById('wb-root');
+  ReactDOM.createRoot(root).render(<WorkBoard currentUser={user} standalone={false}/>);
+};
+
+// 獨立頁面模式
+(function() {
+  const isStandalone = window.self === window.top;
+  if (!isStandalone) return; // 由 index 控制
+
+  // 等 Firebase config 就緒再 auth
+  var tries = 0;
+  var check = setInterval(function() {
+    tries++;
+    if (window._fbReady) {
+      clearInterval(check);
+      window._auth.onAuthStateChanged(function(fbUser) {
+        if (!fbUser) { window.location.href = 'index.html'; return; }
+        window._db.collection('users').doc(fbUser.uid).get().then(function(doc) {
+          var user = doc.exists ? Object.assign({uid:fbUser.uid}, doc.data()) : {uid:fbUser.uid, email:fbUser.email, permissions:['view_board']};
+          document.getElementById('wb-topbar').style.display = 'flex';
+          ReactDOM.createRoot(document.getElementById('wb-root')).render(<WorkBoard currentUser={user} standalone={true}/>);
+        });
+      });
+    }
+    if (tries > 40) { clearInterval(check); document.getElementById('wb-root').innerHTML = '<div class="fb-err">⚠️ 無法載入 Firebase，請確認 firebase-config.js</div>'; }
+  }, 250);
+})();
+</script>
+
+<style>@keyframes toastIn{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+</body>
+</html>

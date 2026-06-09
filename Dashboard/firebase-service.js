@@ -104,6 +104,28 @@
     viewer:   ['view_board','view_issues','view_report'],
   };
 
+  // ── Settings (工程師/機台設定，存 Firestore) ──
+  window.FBSettings = {
+    // 讀取設定（一次性）
+    get: async function () {
+      var doc = await window._db.collection('settings').doc('workspace').get();
+      return doc.exists ? doc.data() : null;
+    },
+    // 儲存設定
+    save: async function (data) {
+      await window._db.collection('settings').doc('workspace').set(
+        Object.assign({}, data, { _ts: ts() })
+      );
+    },
+    // 即時監聽設定變動（跨裝置同步）
+    onSnapshot: function (cb) {
+      return window._db.collection('settings').doc('workspace')
+        .onSnapshot(function (doc) {
+          cb(doc.exists ? doc.data() : null);
+        });
+    }
+  };
+
   // ── Toast ──
   window.showToast = function (msg, type) {
     type = type || 'ok';

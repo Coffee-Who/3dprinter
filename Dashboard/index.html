@@ -2174,29 +2174,26 @@ html, body {
 
   window.K = K;
 
-  // ── 頁面載入時，從 localStorage 還原後台設定 ──
-  // （確保重新整理後工程師/機台名稱仍是最新的）
-  (function restoreSettings() {
-    try {
-      const savedEng = JSON.parse(localStorage.getItem('settings_engineers') || 'null');
-      if (savedEng && Array.isArray(savedEng)) {
-        window._settings_engineers = savedEng.map(e => e.key);
-        savedEng.forEach(e => {
-          K.ENG_LABEL[e.key]    = e.label;
-          K.ENG_FULLLABEL[e.key]= e.label + ' (' + e.key + ')';
-          if (!K.ENG_TONE[e.key]) K.ENG_TONE[e.key] = { fg:'#5a6270', bg:'#eef0f3' };
-          if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
-        });
-      }
-    } catch(e) { console.warn('[settings] 工程師設定還原失敗', e); }
-
-    try {
-      const savedMch = JSON.parse(localStorage.getItem('settings_machines') || 'null');
-      if (savedMch && Array.isArray(savedMch)) {
-        window._settings_machines = savedMch.map(m => m.name);
-      }
-    } catch(e) { console.warn('[settings] 機台設定還原失敗', e); }
-  })();
+  // ── 套用設定到 K（供 Firebase 讀回後呼叫）──
+  window.applySettings = function (settings) {
+    if (!settings) return;
+    var eng = settings.engineers;
+    var mch = settings.machines;
+    if (eng && Array.isArray(eng)) {
+      window._settings_engineers = eng.map(function(e){ return e.key; });
+      eng.forEach(function(e) {
+        K.ENG_LABEL[e.key]     = e.label;
+        K.ENG_FULLLABEL[e.key] = e.label + ' (' + e.key + ')';
+        if (!K.ENG_TONE[e.key]) K.ENG_TONE[e.key] = { fg:'#5a6270', bg:'#eef0f3' };
+        if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
+      });
+    }
+    if (mch && Array.isArray(mch)) {
+      window._settings_machines = mch.map(function(m){ return m.name; });
+    }
+    // 通知 WorkBoard 重新渲染
+    if (window._onSettingsUpdated) window._onSettingsUpdated();
+  };
 })();
 
 </script>
@@ -4226,8 +4223,19 @@ function SettingsTab() {
   const defaultEngineers = K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]||k}));
   const defaultMachines  = K.MACHINES.map(m=>({name:m}));
 
-  const [engineers,   setEngineers]   = useStateApp(()=>JSON.parse(localStorage.getItem('settings_engineers')||'null')||defaultEngineers);
-  const [machines,    setMachines]    = useStateApp(()=>JSON.parse(localStorage.getItem('settings_machines') ||'null')||defaultMachines);
+  const [engineers,   setEngineers]   = useStateApp(()=>{
+    // 優先用已從 Firebase 載入的設定，否則用預設值
+    if (window._settings_engineers) {
+      return window._settings_engineers.map(k=>({key:k, label:K.ENG_LABEL[k]||k}));
+    }
+    return defaultEngineers;
+  });
+  const [machines,    setMachines]    = useStateApp(()=>{
+    if (window._settings_machines) {
+      return window._settings_machines.map(n=>({name:n}));
+    }
+    return defaultMachines;
+  });
   const [newEngKey,   setNewEngKey]   = useStateApp('');
   const [newEngLabel, setNewEngLabel] = useStateApp('');
   const [newMachine,  setNewMachine]  = useStateApp('');
@@ -4241,16 +4249,19 @@ function SettingsTab() {
     window._settings_engineers = list.map(e=>e.key);
     list.forEach(e=>{
       K.ENG_LABEL[e.key] = e.label;
+      K.ENG_FULLLABEL[e.key] = e.label + ' (' + e.key + ')';
       if (!K.ENG_TONE[e.key]) K.ENG_TONE[e.key] = {fg:'#5a6270',bg:'#eef0f3'};
       if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
     });
-    localStorage.setItem('settings_engineers', JSON.stringify(list));
+    // 存到 Firebase（跨裝置同步）
+    FBSettings.save({ engineers: list, machines: machines });
     if (window._onSettingsUpdated) window._onSettingsUpdated();
   };
   const syncMachines = (list) => {
     setMachines(list);
     window._settings_machines = list.map(m=>m.name);
-    localStorage.setItem('settings_machines', JSON.stringify(list));
+    // 存到 Firebase（跨裝置同步）
+    FBSettings.save({ engineers: engineers, machines: list });
     if (window._onSettingsUpdated) window._onSettingsUpdated();
   };
 
@@ -4473,6 +4484,12 @@ function App() {
 
   useEffectApp(()=>{
     if (!window._fbReady) { setChecking(false); return; }
+
+    // 訂閱 Firestore settings，跨裝置即時同步工程師/機台設定
+    const unsubSettings = FBSettings.onSnapshot(function(settings) {
+      if (settings) window.applySettings(settings);
+    });
+
     FBAuth.onStateChanged(async fbUser => {
       if (fbUser) {
         const u = await FBAuth.getUser(fbUser.uid);
@@ -4481,11 +4498,14 @@ function App() {
       }
       setChecking(false);
     });
+
+    return () => unsubSettings();
   },[]);
 
   if (checking) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#8a93a3',fontSize:14}}>⏳</div>;
   if (!user)    return <LoginPage onLogin={setUser}/>;
   return <Shell user={user} onLogout={async()=>{ await FBAuth.signOut(); setUser(null); }}/>;
+}
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);

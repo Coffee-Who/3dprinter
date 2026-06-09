@@ -126,6 +126,13 @@
     const [editO,     setEditO]     = useState(null);    // 正在編輯的訂單
     const [editMode,  setEditMode]  = useState(false);   // 表格編輯模式
     const [confirmDel,setConfirmDel]= useState(null);    // 待確認刪除的訂單
+    const [labelVer,  setLabelVer]  = useState(0);       // 設定更新時遞增，強制重新渲染
+
+    // 監聽後台設定更新（工程師/機台名稱改變時觸發）
+    useEffect(() => {
+      window._onSettingsUpdated = () => setLabelVer(v => v + 1);
+      return () => { window._onSettingsUpdated = null; };
+    }, []);
 
     const canEdit = window.hasPerm(user, 'edit_board');
     const canDel  = window.hasPerm(user, 'delete_board');
@@ -233,6 +240,7 @@
               canDel={canDel}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              labelVer={labelVer}
             />
           )}
           {tab==='kanban'    && <window.KanbanView    data={data} setData={()=>{}}/>}
@@ -262,7 +270,7 @@
   }
 
   // ── 總表元件（自製，不依賴原版 TableView，支援 editMode） ──
-  function WorkTable({ data, editMode, canEdit, canDel, onEdit, onDelete }) {
+  function WorkTable({ data, editMode, canEdit, canDel, onEdit, onDelete, labelVer }) {
     const K = window.K;
     const [search,   setSearch]   = useState('');
     const [fEng,     setFEng]     = useState('');
@@ -271,20 +279,9 @@
     const [sortKey,  setSortKey]  = useState('seq');
     const [sortDir,  setSortDir]  = useState('asc');
     const [page,     setPage]     = useState(1);
-    const [labelVer, setLabelVer] = useState(0); // 設定更新時遞增，強制重新渲染
     const PAGE_SIZE = 20;
 
-    // 監聽設定更新通知
-    useEffect(() => {
-      const prev = window._onSettingsUpdated;
-      window._onSettingsUpdated = () => {
-        setLabelVer(v => v + 1);
-        if (prev) prev();
-      };
-      return () => { window._onSettingsUpdated = prev; };
-    }, []);
-
-    // 每次都即時從 window 讀取最新設定
+    // 每次都即時從 window 讀取最新設定（labelVer 變動時觸發重新渲染）
     const engineers = window._settings_engineers || K.ENG_ORDER;
     const machines  = window._settings_machines  || K.MACHINES;
 

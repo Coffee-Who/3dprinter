@@ -4434,8 +4434,8 @@ function Shell({ user, onLogout }) {
         </div>
       </aside>
       <div className="shell-main" style={{display:'flex',flexDirection:'column',flex:1,minWidth:0,height:'100vh',overflow:'hidden'}}>
-        {app==='board'  && <window.WorkBoardApp key={'board-'+settingsVer}  user={user}/>}
-        {app==='issues' && <window.IssuesApp    key={'issues-'+settingsVer} user={user}/>}
+        {app==='board'  && <window.WorkBoardApp user={user}/>}
+        {app==='issues' && <window.IssuesApp    user={user}/>}
       </div>
       {showAdmin&&<AdminModal currentUser={user} onClose={()=>setShowAdmin(false)}/>}
     </div>

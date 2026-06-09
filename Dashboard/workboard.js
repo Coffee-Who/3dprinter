@@ -271,8 +271,20 @@
     const [sortKey,  setSortKey]  = useState('seq');
     const [sortDir,  setSortDir]  = useState('asc');
     const [page,     setPage]     = useState(1);
+    const [labelVer, setLabelVer] = useState(0); // 設定更新時遞增，強制重新渲染
     const PAGE_SIZE = 20;
 
+    // 監聽設定更新通知
+    useEffect(() => {
+      const prev = window._onSettingsUpdated;
+      window._onSettingsUpdated = () => {
+        setLabelVer(v => v + 1);
+        if (prev) prev();
+      };
+      return () => { window._onSettingsUpdated = prev; };
+    }, []);
+
+    // 每次都即時從 window 讀取最新設定
     const engineers = window._settings_engineers || K.ENG_ORDER;
     const machines  = window._settings_machines  || K.MACHINES;
 

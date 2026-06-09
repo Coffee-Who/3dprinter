@@ -2173,6 +2173,30 @@ html, body {
   };
 
   window.K = K;
+
+  // ── 頁面載入時，從 localStorage 還原後台設定 ──
+  // （確保重新整理後工程師/機台名稱仍是最新的）
+  (function restoreSettings() {
+    try {
+      const savedEng = JSON.parse(localStorage.getItem('settings_engineers') || 'null');
+      if (savedEng && Array.isArray(savedEng)) {
+        window._settings_engineers = savedEng.map(e => e.key);
+        savedEng.forEach(e => {
+          K.ENG_LABEL[e.key]    = e.label;
+          K.ENG_FULLLABEL[e.key]= e.label + ' (' + e.key + ')';
+          if (!K.ENG_TONE[e.key]) K.ENG_TONE[e.key] = { fg:'#5a6270', bg:'#eef0f3' };
+          if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
+        });
+      }
+    } catch(e) { console.warn('[settings] 工程師設定還原失敗', e); }
+
+    try {
+      const savedMch = JSON.parse(localStorage.getItem('settings_machines') || 'null');
+      if (savedMch && Array.isArray(savedMch)) {
+        window._settings_machines = savedMch.map(m => m.name);
+      }
+    } catch(e) { console.warn('[settings] 機台設定還原失敗', e); }
+  })();
 })();
 
 </script>

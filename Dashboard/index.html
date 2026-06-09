@@ -4221,19 +4221,86 @@ function SettingsTab() {
       if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
     });
     localStorage.setItem('settings_engineers', JSON.stringify(list));
+    if (window._onSettingsUpdated) window._onSettingsUpdated();
   };
   const syncMachines = (list) => {
     setMachines(list);
     window._settings_machines = list.map(m=>m.name);
     localStorage.setItem('settings_machines', JSON.stringify(list));
+    if (window._onSettingsUpdated) window._onSettingsUpdated();
   };
 
-  const addEng  = () => { if(!newEngKey.trim()||!newEngLabel.trim())return; if(engineers.find(e=>e.key===newEngKey.trim())){showToast('ID已存在','err');return;} syncEngineers([...engineers,{key:newEngKey.trim(),label:newEngLabel.trim()}]); setNewEngKey(''); setNewEngLabel(''); showToast('工程師已新增 ✓'); };
-  const saveEng = (i) => { const l=[...engineers]; l[i]={...l[i],label:editEngVal}; syncEngineers(l); setEditEngIdx(null); showToast('已更新 ✓'); };
-  const delEng  = (i) => { if(!confirm('刪除此工程師？'))return; syncEngineers(engineers.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
-  const addMch  = () => { if(!newMachine.trim())return; if(machines.find(m=>m.name===newMachine.trim())){showToast('名稱已存在','err');return;} syncMachines([...machines,{name:newMachine.trim()}]); setNewMachine(''); showToast('機台已新增 ✓'); };
-  const saveMch = (i) => { const l=[...machines]; l[i]={name:editMchVal}; syncMachines(l); setEditMchIdx(null); showToast('已更新 ✓'); };
-  const delMch  = (i) => { if(!confirm('刪除此機台？'))return; syncMachines(machines.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
+  // 批次更新 Firestore 中所有訂單的 engineer 欄位（舊 key → 新 key）
+  const updateOrdersEngineer = async (oldKey, newKey) => {
+    if (oldKey === newKey || !window._db) return;
+    const snap = await window._db.collection('orders').where('engineer','==',oldKey).get();
+    if (snap.empty) return;
+    const batch = window._db.batch();
+    snap.docs.forEach(d => batch.update(d.ref, { engineer: newKey }));
+    await batch.commit();
+    showToast(`已更新 ${snap.size} 筆訂單的工程師名稱`, 'inf');
+  };
+
+  // 批次更新 Firestore 中所有訂單的 machine 欄位（舊名→新名）
+  const updateOrdersMachine = async (oldName, newName) => {
+    if (oldName === newName || !window._db) return;
+    const snap = await window._db.collection('orders').where('machine','==',oldName).get();
+    if (snap.empty) return;
+    const batch = window._db.batch();
+    snap.docs.forEach(d => batch.update(d.ref, { machine: newName }));
+    await batch.commit();
+    showToast(`已更新 ${snap.size} 筆訂單的機台名稱`, 'inf');
+  };
+
+  const addEng  = () => {
+    if(!newEngKey.trim()||!newEngLabel.trim()) return;
+    if(engineers.find(e=>e.key===newEngKey.trim())){showToast('ID已存在','err');return;}
+    syncEngineers([...engineers,{key:newEngKey.trim(),label:newEngLabel.trim()}]);
+    setNewEngKey(''); setNewEngLabel('');
+    showToast('工程師已新增 ✓');
+  };
+  const saveEng = async (i) => {
+    const oldKey   = engineers[i].key;
+    const oldLabel = engineers[i].label;
+    const newLabel = editEngVal.trim();
+    if (!newLabel) return;
+    const l = [...engineers]; l[i] = {...l[i], label:newLabel};
+    syncEngineers(l);
+    setEditEngIdx(null);
+    // 因為 engineer 欄位存的是 key（如 Jimmy），名字改變不需要更新 Firestore
+    // 但要更新 K.ENG_LABEL 讓畫面即時顯示新名字（syncEngineers 已處理）
+    showToast('已更新 ✓');
+  };
+  const delEng  = (i) => {
+    if(!confirm('刪除此工程師？'))return;
+    syncEngineers(engineers.filter((_,j)=>j!==i));
+    showToast('已刪除','inf');
+  };
+
+  const addMch  = () => {
+    if(!newMachine.trim()) return;
+    if(machines.find(m=>m.name===newMachine.trim())){showToast('名稱已存在','err');return;}
+    syncMachines([...machines,{name:newMachine.trim()}]);
+    setNewMachine('');
+    showToast('機台已新增 ✓');
+  };
+  const saveMch = async (i) => {
+    const oldName = machines[i].name;
+    const newName = editMchVal.trim();
+    if (!newName) return;
+    const l = [...machines]; l[i] = {name:newName};
+    syncMachines(l);
+    setEditMchIdx(null);
+    showToast('更新中，請稍候...', 'inf');
+    // 批次更新 Firestore 所有使用舊機台名的訂單
+    await updateOrdersMachine(oldName, newName);
+    showToast('機台名稱已同步更新 ✓');
+  };
+  const delMch  = (i) => {
+    if(!confirm('刪除此機台？'))return;
+    syncMachines(machines.filter((_,j)=>j!==i));
+    showToast('已刪除','inf');
+  };
 
   const INP = {padding:'7px 10px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none',background:'#fff',width:'100%'};
   const INP_EDIT = {...INP, flex:1, border:'1.5px solid #0c7a99', width:'auto'};
@@ -4321,9 +4388,13 @@ const APPS = [
 
 function Shell({ user, onLogout }) {
   const K = window.K;
-  const [app, setApp] = useStateApp('board');
-  const [showAdmin, setShowAdmin] = useStateApp(false);
+  const [app,          setApp]          = useStateApp('board');
+  const [showAdmin,    setShowAdmin]    = useStateApp(false);
+  const [settingsVer,  setSettingsVer]  = useStateApp(0); // 每次設定更新就遞增，強制子元件重新渲染
   const isAdmin = window.hasPerm(user, 'admin');
+
+  // 讓 SettingsTab 可以通知 Shell 設定已更新
+  window._onSettingsUpdated = () => setSettingsVer(v => v + 1);
 
   useEffectApp(()=>{
     const h=(window.location.hash||'').replace('#','').split('/')[0];
@@ -4363,8 +4434,8 @@ function Shell({ user, onLogout }) {
         </div>
       </aside>
       <div className="shell-main" style={{display:'flex',flexDirection:'column',flex:1,minWidth:0,height:'100vh',overflow:'hidden'}}>
-        {app==='board'  && <window.WorkBoardApp user={user}/>}
-        {app==='issues' && <window.IssuesApp    user={user}/>}
+        {app==='board'  && <window.WorkBoardApp key={'board-'+settingsVer}  user={user}/>}
+        {app==='issues' && <window.IssuesApp    key={'issues-'+settingsVer} user={user}/>}
       </div>
       {showAdmin&&<AdminModal currentUser={user} onClose={()=>setShowAdmin(false)}/>}
     </div>

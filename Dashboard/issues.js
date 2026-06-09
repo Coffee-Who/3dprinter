@@ -13,7 +13,8 @@
 
   // ── 異常 Modal ──
   function AnomalyModal({ item, onClose, onSave }) {
-    const empty = { customer:'', date:'', product:'', engineer: K.ENG_ORDER[0], status:'處理中', progresses:[] };
+    const engineers = window._settings_engineers || K.ENG_ORDER;
+    const empty = { customer:'', date:'', product:'', engineer: engineers[0] || K.ENG_ORDER[0], status:'處理中', progresses:[] };
     const [form, setForm] = useState(item ? { ...item, progresses: [...(item.progresses||[])].map(p=>({...p})) } : empty);
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState('');
@@ -43,7 +44,7 @@
               <div className="m-field"><label style={LBL}>品名 *</label><input style={S_INP} value={form.product} onChange={e=>set('product',e.target.value)}/></div>
               <div className="m-field"><label style={LBL}>工程師</label>
                 <select style={S_INP} value={form.engineer} onChange={e=>set('engineer',e.target.value)}>
-                  {K.ENG_ORDER.map(e=><option key={e} value={e}>{K.ENG_LABEL[e]||e}</option>)}</select></div>
+                  {engineers.map(e=><option key={e} value={e}>{K.ENG_LABEL[e]||e}</option>)}</select></div>
             </div>
             <div className="m-field"><label style={LBL}>狀態</label>
               <select style={S_INP} value={form.status} onChange={e=>set('status',e.target.value)}>
@@ -74,7 +75,8 @@
 
   // ── IPA Modal ──
   function IPAModal({ item, onClose, onSave }) {
-    const empty = { purchaseDate:'', useDate:'', product:'20L-IPA 異丙醇', quantity:1, person: K.ENG_ORDER[0], remark:'' };
+    const engineers = window._settings_engineers || K.ENG_ORDER;
+    const empty = { purchaseDate:'', useDate:'', product:'20L-IPA 異丙醇', quantity:1, person: engineers[0] || K.ENG_ORDER[0], remark:'' };
     const [form, setForm] = useState(item?{...item}:empty);
     const [busy, setBusy] = useState(false);
     const set = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -94,7 +96,7 @@
               <div className="m-field"><label style={LBL}>採購日期 *</label><input style={S_INP} type="date" value={form.purchaseDate||''} onChange={e=>set('purchaseDate',e.target.value)}/></div>
               <div className="m-field"><label style={LBL}>採購人員</label>
                 <select style={S_INP} value={form.person} onChange={e=>set('person',e.target.value)}>
-                  {K.ENG_ORDER.map(e=><option key={e} value={e}>{K.ENG_LABEL[e]||e}</option>)}</select></div>
+                  {engineers.map(e=><option key={e} value={e}>{K.ENG_LABEL[e]||e}</option>)}</select></div>
             </div>
             <div className="m-row">
               <div className="m-field"><label style={LBL}>品名</label><input style={S_INP} value={form.product} onChange={e=>set('product',e.target.value)}/></div>
@@ -165,9 +167,23 @@
     const [personF,    setPersonF]    = useState('');
     const [search3,    setSearch3]    = useState('');
     const [methodF,    setMethodF]    = useState('');
+    const [labelVer,   setLabelVer]   = useState(0); // 設定更新時遞增
 
     const canE = window.hasPerm(user, 'edit_issues');
     const canD = window.hasPerm(user, 'delete_issues');
+
+    // 監聽後台工程師/機台設定更新
+    useEffect(() => {
+      const prev = window._onSettingsUpdated;
+      window._onSettingsUpdated = () => {
+        setLabelVer(v => v + 1);
+        if (prev) prev();
+      };
+      return () => { window._onSettingsUpdated = prev; };
+    }, []);
+
+    // 即時讀取最新工程師/機台設定
+    const engineers = window._settings_engineers || K.ENG_ORDER;
 
     useEffect(() => {
       let n = 0;
@@ -249,7 +265,7 @@
               <div className="toolbar" style={{borderTop:'1px solid var(--line-soft)',paddingTop:10,paddingBottom:10}}>
                 <div className="t-search" style={{marginRight:'auto'}}><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg><input value={search1} onChange={e=>setSearch1(e.target.value)} placeholder="搜尋客戶 / 品名"/></div>
                 <select className="t-sel" value={statusF} onChange={e=>setStatusF(e.target.value)}><option value="">所有狀態</option><option>處理中</option><option>已完成</option><option>暫停</option></select>
-                <select className="t-sel" value={engF} onChange={e=>setEngF(e.target.value)}><option value="">所有工程師</option>{K.ENG_ORDER.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}</select>
+                <select className="t-sel" value={engF} onChange={e=>setEngF(e.target.value)}><option value="">所有工程師</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}</select>
                 {canE&&<button className="t-btn t-btn-primary" onClick={()=>{setEditItem(null);setModal('a');}}>+ 新增異常</button>}
               </div>
               <div className="table-wrap"><table className="kt"><thead><tr>
@@ -281,7 +297,7 @@
               <div className="toolbar" style={{borderTop:'1px solid var(--line-soft)',paddingTop:10,paddingBottom:10}}>
                 <div className="t-search" style={{marginRight:'auto'}}><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg><input value={search2} onChange={e=>setSearch2(e.target.value)} placeholder="搜尋品名"/></div>
                 <span className="toolbar-sub">合計 <b style={{color:'#0a0e14'}}>{filtI.reduce((s,r)=>s+Number(r.quantity||0),0)}</b> 桶</span>
-                <select className="t-sel" value={personF} onChange={e=>setPersonF(e.target.value)}><option value="">所有人員</option>{K.ENG_ORDER.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}</select>
+                <select className="t-sel" value={personF} onChange={e=>setPersonF(e.target.value)}><option value="">所有人員</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]}</option>)}</select>
                 {canE&&<button className="t-btn t-btn-primary" onClick={()=>{setEditItem(null);setModal('i');}}>+ 新增採購</button>}
               </div>
               <div className="table-wrap"><table className="kt"><thead><tr>

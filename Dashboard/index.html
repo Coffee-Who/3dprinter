@@ -4183,106 +4183,7 @@ function AdminModal({ currentUser, onClose }) {
           </>}
 
           {/* ── 工程師 / 機台設定 ── */}
-          {tab==='settings'&&(()=>{
-            const K = window.K;
-            const defaultEngineers = K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]||k}));
-            const defaultMachines  = K.MACHINES.map(m=>({name:m}));
-            const [engineers, setEngineers] = useStateApp(()=>JSON.parse(localStorage.getItem('settings_engineers')||'null')||defaultEngineers);
-            const [machines,  setMachines]  = useStateApp(()=>JSON.parse(localStorage.getItem('settings_machines') ||'null')||defaultMachines);
-            const [newEngKey,   setNewEngKey]   = useStateApp('');
-            const [newEngLabel, setNewEngLabel] = useStateApp('');
-            const [newMachine,  setNewMachine]  = useStateApp('');
-            const [editEngIdx,  setEditEngIdx]  = useStateApp(null);
-            const [editMchIdx,  setEditMchIdx]  = useStateApp(null);
-            const [editEngVal,  setEditEngVal]  = useStateApp('');
-            const [editMchVal,  setEditMchVal]  = useStateApp('');
-
-            const syncEngineers = (list) => {
-              setEngineers(list);
-              window._settings_engineers = list.map(e=>e.key);
-              list.forEach(e=>{ K.ENG_LABEL[e.key]=e.label; if(!K.ENG_TONE[e.key]) K.ENG_TONE[e.key]={fg:'#5a6270',bg:'#eef0f3'}; if(!K.ENG_INIT[e.key]) K.ENG_INIT[e.key]=e.key.slice(0,2).toUpperCase(); });
-              localStorage.setItem('settings_engineers', JSON.stringify(list));
-            };
-            const syncMachines = (list) => {
-              setMachines(list);
-              window._settings_machines = list.map(m=>m.name);
-              localStorage.setItem('settings_machines', JSON.stringify(list));
-            };
-
-            const addEng = () => {
-              if(!newEngKey.trim()||!newEngLabel.trim()) return;
-              if(engineers.find(e=>e.key===newEngKey.trim())){showToast('ID已存在','err');return;}
-              syncEngineers([...engineers,{key:newEngKey.trim(),label:newEngLabel.trim()}]);
-              setNewEngKey(''); setNewEngLabel(''); showToast('工程師已新增 ✓');
-            };
-            const saveEng = (i) => { const list=[...engineers]; list[i]={...list[i],label:editEngVal}; syncEngineers(list); setEditEngIdx(null); showToast('已更新 ✓'); };
-            const delEng  = (i) => { if(!confirm('刪除此工程師？'))return; syncEngineers(engineers.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
-            const addMch  = () => { if(!newMachine.trim())return; if(machines.find(m=>m.name===newMachine.trim())){showToast('名稱已存在','err');return;} syncMachines([...machines,{name:newMachine.trim()}]); setNewMachine(''); showToast('機台已新增 ✓'); };
-            const saveMch = (i) => { const list=[...machines]; list[i]={name:editMchVal}; syncMachines(list); setEditMchIdx(null); showToast('已更新 ✓'); };
-            const delMch  = (i) => { if(!confirm('刪除此機台？'))return; syncMachines(machines.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
-
-            const INP2 = {padding:'7px 10px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none',background:'#fff',width:'100%'};
-
-            return (
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,paddingBottom:4}}>
-                {/* 工程師 */}
-                <div>
-                  <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>👤 執行工程師 <span style={{fontSize:11,color:'#8a93a3',fontWeight:400}}>({engineers.length} 位)</span></div>
-                  {engineers.map((e,i)=>(
-                    <div key={e.key} style={{display:'flex',gap:6,alignItems:'center',background:'#fafbfc',border:'1px solid #e6e8ec',borderRadius:6,padding:'7px 10px',marginBottom:6}}>
-                      <span style={{fontSize:11,fontFamily:'monospace',color:'#0c7a99',background:'#e6f1f6',padding:'2px 7px',borderRadius:4,flexShrink:0}}>{e.key}</span>
-                      {editEngIdx===i ? (
-                        <>
-                          <input style={{...INP2,flex:1,border:'1.5px solid #0c7a99',width:'auto'}} value={editEngVal} onChange={ev=>setEditEngVal(ev.target.value)} autoFocus onKeyDown={ev=>{if(ev.key==='Enter')saveEng(i);if(ev.key==='Escape')setEditEngIdx(null);}}/>
-                          <button onClick={()=>saveEng(i)} style={{background:'#0c7a99',border:'none',color:'#fff',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12}}>✓</button>
-                          <button onClick={()=>setEditEngIdx(null)} style={{background:'none',border:'1px solid #e6e8ec',color:'#5a6270',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12}}>✕</button>
-                        </>
-                      ):(
-                        <>
-                          <span style={{flex:1,fontSize:13}}>{e.label}</span>
-                          <button onClick={()=>{setEditEngIdx(i);setEditEngVal(e.label);}} style={{background:'none',border:'none',cursor:'pointer',color:'#0c7a99',fontSize:14,padding:'0 4px'}}>✎</button>
-                          <button onClick={()=>delEng(i)} style={{background:'none',border:'none',cursor:'pointer',color:'#c0392b',fontSize:14,padding:'0 4px'}}>✕</button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  <div style={{background:'#f5f8ff',border:'1px dashed #b3c7e6',borderRadius:6,padding:10,display:'flex',flexDirection:'column',gap:6}}>
-                    <div style={{fontSize:11.5,fontWeight:600,color:'#5a6270'}}>+ 新增工程師</div>
-                    <input style={INP2} placeholder="英文 ID（如 Kevin）" value={newEngKey} onChange={e=>setNewEngKey(e.target.value)}/>
-                    <input style={INP2} placeholder="顯示名稱（如 陳大明）" value={newEngLabel} onChange={e=>setNewEngLabel(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addEng()}/>
-                    <button className="btn-save" style={{alignSelf:'flex-end'}} onClick={addEng}>新增</button>
-                  </div>
-                </div>
-
-                {/* 機台 */}
-                <div>
-                  <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>🖨️ 機台 <span style={{fontSize:11,color:'#8a93a3',fontWeight:400}}>({machines.length} 台)</span></div>
-                  {machines.map((m,i)=>(
-                    <div key={i} style={{display:'flex',gap:6,alignItems:'center',background:'#fafbfc',border:'1px solid #e6e8ec',borderRadius:6,padding:'7px 10px',marginBottom:6}}>
-                      {editMchIdx===i ? (
-                        <>
-                          <input style={{...INP2,flex:1,border:'1.5px solid #0c7a99',width:'auto'}} value={editMchVal} onChange={ev=>setEditMchVal(ev.target.value)} autoFocus onKeyDown={ev=>{if(ev.key==='Enter')saveMch(i);if(ev.key==='Escape')setEditMchIdx(null);}}/>
-                          <button onClick={()=>saveMch(i)} style={{background:'#0c7a99',border:'none',color:'#fff',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12}}>✓</button>
-                          <button onClick={()=>setEditMchIdx(null)} style={{background:'none',border:'1px solid #e6e8ec',color:'#5a6270',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12}}>✕</button>
-                        </>
-                      ):(
-                        <>
-                          <span style={{flex:1,fontSize:13,fontWeight:500}}>{m.name}</span>
-                          <button onClick={()=>{setEditMchIdx(i);setEditMchVal(m.name);}} style={{background:'none',border:'none',cursor:'pointer',color:'#0c7a99',fontSize:14,padding:'0 4px'}}>✎</button>
-                          <button onClick={()=>delMch(i)} style={{background:'none',border:'none',cursor:'pointer',color:'#c0392b',fontSize:14,padding:'0 4px'}}>✕</button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  <div style={{background:'#f5f8ff',border:'1px dashed #b3c7e6',borderRadius:6,padding:10,display:'flex',flexDirection:'column',gap:6}}>
-                    <div style={{fontSize:11.5,fontWeight:600,color:'#5a6270'}}>+ 新增機台</div>
-                    <input style={INP2} placeholder="機台名稱（如 Form4B）" value={newMachine} onChange={e=>setNewMachine(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addMch()}/>
-                    <button className="btn-save" style={{alignSelf:'flex-end'}} onClick={addMch}>新增</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          {tab==='settings' && <SettingsTab/>}
 
         </div>
         <div className="m-foot">
@@ -4291,6 +4192,121 @@ function AdminModal({ currentUser, onClose }) {
         </div>
       </div>
       {modal&&<UserModal item={editU} isCreate={isCreate} onClose={()=>setModal(false)} onSave={handleSave}/>}
+    </div>
+  );
+}
+
+// ── 工程師 / 機台設定 Tab（獨立元件，解決 Hook 規則問題）──
+function SettingsTab() {
+  const K = window.K;
+  const defaultEngineers = K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]||k}));
+  const defaultMachines  = K.MACHINES.map(m=>({name:m}));
+
+  const [engineers,   setEngineers]   = useStateApp(()=>JSON.parse(localStorage.getItem('settings_engineers')||'null')||defaultEngineers);
+  const [machines,    setMachines]    = useStateApp(()=>JSON.parse(localStorage.getItem('settings_machines') ||'null')||defaultMachines);
+  const [newEngKey,   setNewEngKey]   = useStateApp('');
+  const [newEngLabel, setNewEngLabel] = useStateApp('');
+  const [newMachine,  setNewMachine]  = useStateApp('');
+  const [editEngIdx,  setEditEngIdx]  = useStateApp(null);
+  const [editMchIdx,  setEditMchIdx]  = useStateApp(null);
+  const [editEngVal,  setEditEngVal]  = useStateApp('');
+  const [editMchVal,  setEditMchVal]  = useStateApp('');
+
+  const syncEngineers = (list) => {
+    setEngineers(list);
+    window._settings_engineers = list.map(e=>e.key);
+    list.forEach(e=>{
+      K.ENG_LABEL[e.key] = e.label;
+      if (!K.ENG_TONE[e.key]) K.ENG_TONE[e.key] = {fg:'#5a6270',bg:'#eef0f3'};
+      if (!K.ENG_INIT[e.key]) K.ENG_INIT[e.key] = e.key.slice(0,2).toUpperCase();
+    });
+    localStorage.setItem('settings_engineers', JSON.stringify(list));
+  };
+  const syncMachines = (list) => {
+    setMachines(list);
+    window._settings_machines = list.map(m=>m.name);
+    localStorage.setItem('settings_machines', JSON.stringify(list));
+  };
+
+  const addEng  = () => { if(!newEngKey.trim()||!newEngLabel.trim())return; if(engineers.find(e=>e.key===newEngKey.trim())){showToast('ID已存在','err');return;} syncEngineers([...engineers,{key:newEngKey.trim(),label:newEngLabel.trim()}]); setNewEngKey(''); setNewEngLabel(''); showToast('工程師已新增 ✓'); };
+  const saveEng = (i) => { const l=[...engineers]; l[i]={...l[i],label:editEngVal}; syncEngineers(l); setEditEngIdx(null); showToast('已更新 ✓'); };
+  const delEng  = (i) => { if(!confirm('刪除此工程師？'))return; syncEngineers(engineers.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
+  const addMch  = () => { if(!newMachine.trim())return; if(machines.find(m=>m.name===newMachine.trim())){showToast('名稱已存在','err');return;} syncMachines([...machines,{name:newMachine.trim()}]); setNewMachine(''); showToast('機台已新增 ✓'); };
+  const saveMch = (i) => { const l=[...machines]; l[i]={name:editMchVal}; syncMachines(l); setEditMchIdx(null); showToast('已更新 ✓'); };
+  const delMch  = (i) => { if(!confirm('刪除此機台？'))return; syncMachines(machines.filter((_,j)=>j!==i)); showToast('已刪除','inf'); };
+
+  const INP = {padding:'7px 10px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none',background:'#fff',width:'100%'};
+  const INP_EDIT = {...INP, flex:1, border:'1.5px solid #0c7a99', width:'auto'};
+  const BTN_OK  = {background:'#0c7a99',border:'none',color:'#fff',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12};
+  const BTN_CN  = {background:'none',border:'1px solid #e6e8ec',color:'#5a6270',borderRadius:5,cursor:'pointer',padding:'3px 8px',fontSize:12};
+  const BTN_EDIT = {background:'none',border:'none',cursor:'pointer',color:'#0c7a99',fontSize:15,padding:'0 4px'};
+  const BTN_DEL  = {background:'none',border:'none',cursor:'pointer',color:'#c0392b',fontSize:15,padding:'0 4px'};
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24,paddingBottom:4}}>
+
+      {/* ── 工程師 ── */}
+      <div>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>
+          👤 執行工程師 <span style={{fontSize:11,color:'#8a93a3',fontWeight:400}}>({engineers.length} 位)</span>
+        </div>
+        {engineers.map((e,i)=>(
+          <div key={e.key} style={{display:'flex',gap:6,alignItems:'center',background:'#fafbfc',border:'1px solid #e6e8ec',borderRadius:6,padding:'7px 10px',marginBottom:6}}>
+            <span style={{fontSize:11,fontFamily:'monospace',color:'#0c7a99',background:'#e6f1f6',padding:'2px 7px',borderRadius:4,flexShrink:0}}>{e.key}</span>
+            {editEngIdx===i ? (
+              <>
+                <input style={INP_EDIT} value={editEngVal} onChange={ev=>setEditEngVal(ev.target.value)} autoFocus
+                  onKeyDown={ev=>{if(ev.key==='Enter')saveEng(i);if(ev.key==='Escape')setEditEngIdx(null);}}/>
+                <button style={BTN_OK} onClick={()=>saveEng(i)}>✓</button>
+                <button style={BTN_CN} onClick={()=>setEditEngIdx(null)}>✕</button>
+              </>
+            ):(
+              <>
+                <span style={{flex:1,fontSize:13}}>{e.label}</span>
+                <button style={BTN_EDIT} onClick={()=>{setEditEngIdx(i);setEditEngVal(e.label);}}>✎</button>
+                <button style={BTN_DEL}  onClick={()=>delEng(i)}>✕</button>
+              </>
+            )}
+          </div>
+        ))}
+        <div style={{background:'#f5f8ff',border:'1px dashed #b3c7e6',borderRadius:6,padding:10,display:'flex',flexDirection:'column',gap:6}}>
+          <div style={{fontSize:11.5,fontWeight:600,color:'#5a6270'}}>+ 新增工程師</div>
+          <input style={INP} placeholder="英文 ID（如 Kevin）" value={newEngKey} onChange={e=>setNewEngKey(e.target.value)}/>
+          <input style={INP} placeholder="顯示名稱（如 陳大明）" value={newEngLabel} onChange={e=>setNewEngLabel(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addEng()}/>
+          <button className="btn-save" style={{alignSelf:'flex-end'}} onClick={addEng}>新增</button>
+        </div>
+      </div>
+
+      {/* ── 機台 ── */}
+      <div>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>
+          🖨️ 機台 <span style={{fontSize:11,color:'#8a93a3',fontWeight:400}}>({machines.length} 台)</span>
+        </div>
+        {machines.map((m,i)=>(
+          <div key={i} style={{display:'flex',gap:6,alignItems:'center',background:'#fafbfc',border:'1px solid #e6e8ec',borderRadius:6,padding:'7px 10px',marginBottom:6}}>
+            {editMchIdx===i ? (
+              <>
+                <input style={INP_EDIT} value={editMchVal} onChange={ev=>setEditMchVal(ev.target.value)} autoFocus
+                  onKeyDown={ev=>{if(ev.key==='Enter')saveMch(i);if(ev.key==='Escape')setEditMchIdx(null);}}/>
+                <button style={BTN_OK} onClick={()=>saveMch(i)}>✓</button>
+                <button style={BTN_CN} onClick={()=>setEditMchIdx(null)}>✕</button>
+              </>
+            ):(
+              <>
+                <span style={{flex:1,fontSize:13,fontWeight:500}}>{m.name}</span>
+                <button style={BTN_EDIT} onClick={()=>{setEditMchIdx(i);setEditMchVal(m.name);}}>✎</button>
+                <button style={BTN_DEL}  onClick={()=>delMch(i)}>✕</button>
+              </>
+            )}
+          </div>
+        ))}
+        <div style={{background:'#f5f8ff',border:'1px dashed #b3c7e6',borderRadius:6,padding:10,display:'flex',flexDirection:'column',gap:6}}>
+          <div style={{fontSize:11.5,fontWeight:600,color:'#5a6270'}}>+ 新增機台</div>
+          <input style={INP} placeholder="機台名稱（如 Form4B）" value={newMachine} onChange={e=>setNewMachine(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addMch()}/>
+          <button className="btn-save" style={{alignSelf:'flex-end'}} onClick={addMch}>新增</button>
+        </div>
+      </div>
+
     </div>
   );
 }

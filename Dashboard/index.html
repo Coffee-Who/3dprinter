@@ -1046,114 +1046,267 @@ window.GanttView = GanttView;
 <script type="text/babel" data-presets="react">
 function DashboardView({ data }) {
   const K = window.K;
-  const { useMemo: useMemoD } = React;
-  const stats = useMemoD(() => {
-    const total = data.length;
-    const done = data.filter(d=>K.statusOf(d)==='done').length;
-    const wip = data.filter(d=>K.statusOf(d)==='progress').length;
-    const blocked = data.filter(d=>K.statusOf(d)==='blocked').length;
-    const overdue = data.filter(d=>{ const st=K.statusOf(d); if(st==='done'||st==='cancelled')return false; const v=K.daysUntil(d.dueDate); return v!==null&&v<0; }).length;
-    const avgProg = total ? Math.round(data.reduce((s,d)=>s+(d.progress||0),0)/total) : 0;
-    const byEng = {}; K.ENG_ORDER.forEach(k=>{byEng[k]=0;}); data.forEach(d=>{if(d.engineer)byEng[d.engineer]=(byEng[d.engineer]||0)+1;});
-    const byMach = {}; K.MACHINES.forEach(k=>{byMach[k]=0;}); data.forEach(d=>{if(d.machine)byMach[d.machine]=(byMach[d.machine]||0)+1;});
-    const statusDist = { todo:data.filter(d=>K.statusOf(d)==='todo').length, blocked, progress:wip, done, cancelled:data.filter(d=>K.statusOf(d)==='cancelled').length };
-    return { total, done, wip, blocked, overdue, avgProg, byEng, byMach, statusDist };
+  const { useMemo, useState } = React;
+
+  const STATUS_COLORS = { todo:'#cbd0d8', blocked:'#c79b2a', progress:'#0c7a99', done:'#1d6f43', cancelled:'#b0b5bf' };
+  const ENG_COLORS = ['#0c7a99','#6b3fa0','#1d6f43','#a05a00','#c0392b','#2471a3'];
+  const MACH_COLORS = ['#0c7a99','#1d6f43','#c79b2a','#6b3fa0'];
+
+  // ── KPI 統計 ──
+  const stats = useMemo(() => {
+    const total    = data.length;
+    const wip      = data.filter(d=>K.statusOf(d)==='progress').length;
+    const blocked  = data.filter(d=>K.statusOf(d)==='blocked').length;
+    const done     = data.filter(d=>K.statusOf(d)==='done').length;
+    const due7     = data.filter(d=>{ const s=K.statusOf(d); if(s==='done'||s==='cancelled')return false; const v=K.daysUntil(d.dueDate); return v!==null&&v<=7&&v>=0; }).length;
+    const statusDist = {
+      todo:      data.filter(d=>K.statusOf(d)==='todo').length,
+      blocked,
+      progress:  wip,
+      done,
+      cancelled: data.filter(d=>K.statusOf(d)==='cancelled').length,
+    };
+    const engineers = window._settings_engineers||K.ENG_ORDER;
+    const machines  = window._settings_machines||K.MACHINES;
+    const byEng={}, byMach={}, byProg={0:0,25:0,50:0,75:0,100:0}, byMat={};
+    engineers.forEach(k=>{byEng[k]=0;}); machines.forEach(m=>{byMach[m]=0;});
+    data.forEach(d=>{
+      if(d.engineer) byEng[d.engineer]=(byEng[d.engineer]||0)+1;
+      if(d.machine)  byMach[d.machine]=(byMach[d.machine]||0)+1;
+      const p = K.PROGRESS_VALUES.includes(d.progress)?d.progress:0;
+      byProg[p]=(byProg[p]||0)+1;
+      const mat=d.material||'足夠'; byMat[mat]=(byMat[mat]||0)+1;
+    });
+    const byCustomer={};
+    data.forEach(d=>{ const c=d.customer||'—'; byCustomer[c]=(byCustomer[c]||0)+1; });
+    return { total,wip,blocked,done,due7,statusDist,byEng,byMach,byProg,byMat,byCustomer,engineers,machines };
   }, [data]);
 
-  const STATUS_COLORS = { todo:'#cbd0d8', blocked:'#c79b2a', progress:'#0c7a99', done:'#1d6f43', cancelled:'#e6e8ec' };
-
-  function HBar({ label, value, max, color }) {
-    const pct = max ? Math.round((value/max)*100) : 0;
-    return (
-      <div className="hbar-row">
-        <span className="hbar-label">{label}</span>
-        <div className="hbar-track"><div className="hbar-fill" style={{width:`${pct}%`,background:color||'var(--accent)'}}/></div>
-        <span className="hbar-num">{value}</span>
-      </div>
-    );
-  }
-
-  function Donut({ data: slices }) {
+  // ── 圖表元件 ──
+  function DonutChart({ slices, centerLabel }) {
     const total = slices.reduce((s,x)=>s+x.value,0);
     if (!total) return <div className="chart-empty">無資料</div>;
+    const R=68, cx=90, cy=90, thick=20;
     let acc=0;
-    const R=70, cx=90, cy=90, stroke=22;
-    const paths = slices.map(sl => {
-      if (!sl.value) return null;
+    const paths=slices.filter(s=>s.value>0).map(sl=>{
       const pct=sl.value/total;
-      const start=acc*2*Math.PI-Math.PI/2; acc+=pct; const end=acc*2*Math.PI-Math.PI/2;
+      const s0=acc*2*Math.PI-Math.PI/2; acc+=pct; const s1=acc*2*Math.PI-Math.PI/2;
       const large=pct>0.5?1:0;
-      const x1=cx+R*Math.cos(start),y1=cy+R*Math.sin(start),x2=cx+R*Math.cos(end),y2=cy+R*Math.sin(end);
-      return <path key={sl.label} d={`M ${cx} ${cy} L ${x1} ${y1} A ${R} ${R} 0 ${large} 1 ${x2} ${y2} Z`} fill={sl.color} stroke="#fff" strokeWidth="2"/>;
+      const x1=cx+R*Math.cos(s0),y1=cy+R*Math.sin(s0),x2=cx+R*Math.cos(s1),y2=cy+R*Math.sin(s1);
+      return <path key={sl.label} d={`M${cx} ${cy} L${x1} ${y1} A${R} ${R} 0 ${large} 1 ${x2} ${y2}Z`} fill={sl.color} stroke="#fff" strokeWidth="2"/>;
     });
     return (
-      <div style={{position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <svg width="180" height="180" viewBox="0 0 180 180">{paths}<circle cx={cx} cy={cy} r={R-stroke} fill="#fff"/></svg>
-        <div className="donut-center">
-          <div className="donut-center-value">{total}</div>
-          <div className="donut-center-label">總計</div>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,width:'100%'}}>
+        <div style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            {paths}
+            <circle cx={cx} cy={cy} r={R-thick} fill="#fff"/>
+          </svg>
+          <div style={{position:'absolute',textAlign:'center',pointerEvents:'none'}}>
+            <div style={{fontSize:28,fontWeight:700,fontFamily:'var(--font-mono)',letterSpacing:'-0.02em',color:'var(--ink)',lineHeight:1}}>{total}</div>
+            <div style={{fontSize:10,color:'var(--ink-4)',fontFamily:'var(--font-mono)',marginTop:3,letterSpacing:'0.06em',textTransform:'uppercase'}}>{centerLabel||'總計'}</div>
+          </div>
+        </div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:'4px 10px',justifyContent:'center',fontSize:10.5,color:'var(--ink-3)',fontFamily:'var(--font-mono)'}}>
+          {slices.filter(s=>s.value>0).map(s=>(
+            <span key={s.label} style={{display:'inline-flex',alignItems:'center',gap:4}}>
+              <span style={{width:8,height:8,borderRadius:2,background:s.color,flexShrink:0}}/>
+              {s.label} · {s.value}
+            </span>
+          ))}
         </div>
       </div>
     );
   }
 
-  const maxEng  = Math.max(1,...Object.values(stats.byEng));
-  const maxMach = Math.max(1,...Object.values(stats.byMach));
-  const engineers = window._settings_engineers||K.ENG_ORDER;
-  const machines  = window._settings_machines||K.MACHINES;
-  const statusSlices = Object.entries(stats.statusDist).map(([k,v])=>({label:K.STATUS_TONE[k]?.label||k,value:v,color:STATUS_COLORS[k]}));
+  function HBarChart({ items, colorFn }) {
+    const max = Math.max(1,...items.map(i=>i.value));
+    return (
+      <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',padding:'4px 0'}}>
+        {items.filter(i=>i.value>0).map((item,idx)=>(
+          <div key={item.label} style={{display:'grid',gridTemplateColumns:'90px 1fr 28px',gap:10,alignItems:'center'}}>
+            <span style={{fontSize:11.5,color:'var(--ink-2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.label}</span>
+            <div style={{height:14,background:'var(--bg-soft)',borderRadius:4,overflow:'hidden',position:'relative'}}>
+              <div style={{position:'absolute',inset:'0 auto 0 0',borderRadius:4,transition:'width .3s',background:colorFn?colorFn(item,idx):'var(--accent)',width:`${Math.round(item.value/max*100)}%`}}/>
+            </div>
+            <span style={{fontSize:11,fontFamily:'var(--font-mono)',color:'var(--ink-2)',textAlign:'right'}}>{item.value}</span>
+          </div>
+        ))}
+        {items.every(i=>i.value===0)&&<div className="chart-empty">無資料</div>}
+      </div>
+    );
+  }
+
+  function VBarChart({ items, colorFn }) {
+    const max = Math.max(1,...items.map(i=>i.value));
+    const H = 140;
+    return (
+      <div style={{width:'100%',display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+        <svg width="100%" height={H+30} viewBox={`0 0 ${items.length*56} ${H+30}`} preserveAspectRatio="xMidYMid meet">
+          {[0,Math.ceil(max/2),max].map((v,i)=>{
+            const y=H-Math.round(v/max*H);
+            return <g key={i}><line x1={0} y1={y} x2={items.length*56} y2={y} stroke="var(--line-soft)" strokeWidth="1"/><text x={-2} y={y+4} fontSize="9" fill="var(--ink-4)" textAnchor="end">{v}</text></g>;
+          })}
+          {items.map((item,idx)=>{
+            const bw=34, bx=idx*56+11;
+            const bh=max>0?Math.max(2,Math.round(item.value/max*H)):0;
+            const by=H-bh;
+            const fill=colorFn?colorFn(item,idx):'var(--accent)';
+            return (
+              <g key={item.label}>
+                <rect x={bx} y={by} width={bw} height={bh} fill={fill} rx="3"/>
+                {item.value>0&&<text x={bx+bw/2} y={by-4} fontSize="9" fill="var(--ink-3)" textAnchor="middle">{item.value}</text>}
+                <text x={bx+bw/2} y={H+14} fontSize="9" fill="var(--ink-4)" textAnchor="middle">{item.label}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  }
+
+  // ── 自由分析 ──
+  const DIM_OPTIONS = [
+    { key:'status',   label:'依 狀態' },
+    { key:'engineer', label:'依 工程師' },
+    { key:'progress', label:'依 進度' },
+    { key:'machine',  label:'依 機台' },
+    { key:'material', label:'依 材料' },
+    { key:'customer', label:'依 客戶（Top 8）' },
+  ];
+  const CHART_OPTIONS = [
+    { key:'donut', label:'環狀圖' },
+    { key:'hbar',  label:'橫條圖' },
+    { key:'vbar',  label:'直條圖' },
+  ];
+
+  function buildSlices(dim) {
+    switch(dim) {
+      case 'status': return Object.entries(stats.statusDist).map(([k,v],i)=>({ label:K.STATUS_TONE[k]?.label||k, value:v, color:STATUS_COLORS[k] }));
+      case 'engineer': return stats.engineers.map((k,i)=>({ label:K.ENG_LABEL[k]||k, value:stats.byEng[k]||0, color:ENG_COLORS[i%ENG_COLORS.length] }));
+      case 'progress': return K.PROGRESS_VALUES.map((p,i)=>({ label:`${p}%`, value:stats.byProg[p]||0, color:MACH_COLORS[i%MACH_COLORS.length] }));
+      case 'machine':  return stats.machines.map((m,i)=>({ label:m, value:stats.byMach[m]||0, color:MACH_COLORS[i%MACH_COLORS.length] }));
+      case 'material': return Object.entries(stats.byMat).map(([k,v],i)=>({ label:k, value:v, color:i===0?'#1d6f43':'#c79b2a' }));
+      case 'customer': {
+        const sorted=Object.entries(stats.byCustomer).sort((a,b)=>b[1]-a[1]).slice(0,8);
+        return sorted.map(([k,v],i)=>({ label:k, value:v, color:'#0c7a99' }));
+      }
+      default: return [];
+    }
+  }
+
+  function CustomChart({ idx }) {
+    const [dim,   setDim]   = useState(idx===0?'machine':idx===1?'material':'customer');
+    const [chart, setChart] = useState(idx===2?'hbar':'donut');
+    const slices = buildSlices(dim);
+    const colorFn = (item, i) => slices[i]?.color || 'var(--accent)';
+    const centerLabel = DIM_OPTIONS.find(d=>d.key===dim)?.label.replace('依 ','');
+
+    const SEL = { height:32, padding:'0 26px 0 10px', border:'1px solid var(--line)', borderRadius:6, background:'var(--bg)', color:'var(--ink-2)', font:'inherit', fontSize:12.5, cursor:'pointer', WebkitAppearance:'none', appearance:'none', backgroundImage:"url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4'/></svg>\")", backgroundRepeat:'no-repeat', backgroundPosition:'right 7px center', flex:1, minWidth:0 };
+
+    return (
+      <div style={{border:'1px solid var(--line)',borderRadius:8,background:'var(--bg)',padding:'14px 16px 18px',display:'flex',flexDirection:'column',gap:14}}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <span style={{fontSize:11,color:'var(--accent)',marginRight:2}}>⊕</span>
+          <span style={{fontSize:12.5,fontWeight:600,color:'var(--ink)'}}>自由分析 #{idx+1}</span>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <select style={SEL} value={dim} onChange={e=>setDim(e.target.value)}>
+            {DIM_OPTIONS.map(d=><option key={d.key} value={d.key}>{d.label}</option>)}
+          </select>
+          <select style={SEL} value={chart} onChange={e=>setChart(e.target.value)}>
+            {CHART_OPTIONS.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+        </div>
+        <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:200}}>
+          {chart==='donut' && <DonutChart slices={slices} centerLabel={centerLabel}/>}
+          {chart==='hbar'  && <HBarChart  items={slices} colorFn={colorFn}/>}
+          {chart==='vbar'  && <VBarChart  items={slices} colorFn={colorFn}/>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── 預設固定圖表 ──
+  const statusSlices  = Object.entries(stats.statusDist).map(([k,v])=>({ label:K.STATUS_TONE[k]?.label||k, value:v, color:STATUS_COLORS[k] }));
+  const engItems      = stats.engineers.map((k,i)=>({ label:K.ENG_LABEL[k]||k, value:stats.byEng[k]||0, color:ENG_COLORS[i%ENG_COLORS.length] }));
+  const progItems     = K.PROGRESS_VALUES.map((p,i)=>({ label:`${p}%`, value:stats.byProg[p]||0, color:MACH_COLORS[i%MACH_COLORS.length] }));
+
+  const CARD = { border:'1px solid var(--line)', borderRadius:8, background:'var(--bg)', padding:'14px 16px 18px', display:'flex', flexDirection:'column', gap:12 };
+  const CARD_HEAD = { display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 };
+  const CARD_TITLE = { fontSize:12.5, fontWeight:600, color:'var(--ink)' };
+  const CARD_BADGE = { fontSize:10, fontFamily:'var(--font-mono)', color:'var(--ink-4)', letterSpacing:'0.06em', textTransform:'uppercase' };
 
   return (
-    <div className="dash">
-      <div className="dash-kpis">
+    <div style={{flex:1,overflow:'auto',padding:'0 28px 32px',background:'var(--bg)'}}>
+
+      {/* KPI */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:0,borderBottom:'1px solid var(--line)',margin:'0 -28px 0',padding:'0 28px'}}>
         {[
-          {label:'總訂單',   value:stats.total,   sub:'所有工作'},
-          {label:'進行中',   value:stats.wip,     sub:'列印中'},
-          {label:'等待材料', value:stats.blocked,  sub:'需調撥'},
-          {label:'已逾期',   value:stats.overdue,  sub:'未完成'},
-          {label:'平均進度', value:`${stats.avgProg}%`, sub:'全部工作'},
-        ].map(k=>(
-          <div key={k.label} className="dash-kpi">
-            <div className="dash-kpi-label">{k.label}</div>
-            <div className="dash-kpi-value">{k.value}</div>
-            <div className="dash-kpi-sub">{k.sub}</div>
+          { label:'總訂單',    value:stats.total,  sub:'全部資料筆數',          color:'var(--ink)' },
+          { label:'進行中',    value:stats.wip,    sub:'已開工未完成',          color:'var(--ink)' },
+          { label:'等待材料',  value:stats.blocked,sub:'需調撥 / 待備料',       color:'#c79b2a'    },
+          { label:'7 天內到期',value:stats.due7,   sub:'未完成且交期 ≤ 7 天',  color:'#c0392b'    },
+          { label:'已完成',    value:stats.done,   sub:'100% / 完成',          color:'#1d6f43'    },
+        ].map((k,i)=>(
+          <div key={k.label} style={{padding:'18px 24px 20px',borderRight:i<4?'1px solid var(--line-soft)':'none'}}>
+            <div style={{fontSize:11,letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--ink-4)',fontWeight:600,fontFamily:'var(--font-mono)'}}>{k.label}</div>
+            <div style={{fontSize:32,fontWeight:700,fontFamily:'var(--font-mono)',letterSpacing:'-0.02em',color:k.color,marginTop:4,lineHeight:1.1}}>{k.value}</div>
+            <div style={{fontSize:11,color:'var(--ink-4)',marginTop:4,fontFamily:'var(--font-mono)'}}>{k.sub}</div>
           </div>
         ))}
       </div>
-      <div className="dash-section">
-        <span className="dash-section-title">工作分布</span>
-        <span className="dash-section-sub">by engineer · machine · status</span>
+
+      {/* 預設分析 */}
+      <div style={{display:'flex',alignItems:'baseline',gap:10,padding:'20px 0 14px'}}>
+        <span style={{fontSize:14,fontWeight:700,color:'var(--ink)'}}>預設分析</span>
+        <span style={{fontSize:10.5,color:'var(--ink-4)',fontFamily:'var(--font-mono)',letterSpacing:'0.06em',textTransform:'uppercase'}}>DEFAULT VIEWS</span>
       </div>
-      <div className="dash-grid">
-        <div className="chart-card">
-          <div className="chart-card-head"><span className="chart-card-title">工程師負載</span><span className="chart-card-meta">{stats.total} 件</span></div>
-          <div className="chart-body" style={{flexDirection:'column',alignItems:'stretch'}}>
-            <div className="hbar-list">
-              {engineers.map(k=><HBar key={k} label={K.ENG_LABEL[k]||k} value={stats.byEng[k]||0} max={maxEng} color={K.ENG_TONE[k]?.fg||'var(--accent)'}/>)}
-            </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,marginBottom:32}}>
+
+        {/* 狀態分布 Donut */}
+        <div style={CARD}>
+          <div style={CARD_HEAD}>
+            <span style={CARD_TITLE}>狀態分布</span>
+            <span style={CARD_BADGE}>DONUT</span>
+          </div>
+          <div style={{display:'flex',justifyContent:'center',alignItems:'center',flex:1,minHeight:220}}>
+            <DonutChart slices={statusSlices} centerLabel="總訂單"/>
           </div>
         </div>
-        <div className="chart-card">
-          <div className="chart-card-head"><span className="chart-card-title">機台使用</span><span className="chart-card-meta">{stats.total} 件</span></div>
-          <div className="chart-body" style={{flexDirection:'column',alignItems:'stretch'}}>
-            <div className="hbar-list">
-              {machines.map(m=><HBar key={m} label={m} value={stats.byMach[m]||0} max={maxMach}/>)}
-            </div>
+
+        {/* 工程師負荷 HBar */}
+        <div style={CARD}>
+          <div style={CARD_HEAD}>
+            <span style={CARD_TITLE}>工程師負荷</span>
+            <span style={CARD_BADGE}>HORIZONTAL BAR</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',flex:1,minHeight:220}}>
+            <HBarChart items={engItems} colorFn={(item,i)=>ENG_COLORS[i%ENG_COLORS.length]}/>
           </div>
         </div>
-        <div className="chart-card">
-          <div className="chart-card-head"><span className="chart-card-title">狀態分布</span></div>
-          <div className="chart-body" style={{flexDirection:'column'}}>
-            <Donut data={statusSlices}/>
-            <div className="chart-legend">
-              {statusSlices.map(s=>(
-                <span key={s.label} className="chart-legend-item">
-                  <span className="chart-legend-dot" style={{background:s.color}}/>{s.label} ({s.value})
-                </span>
-              ))}
-            </div>
+
+        {/* 進度分布 VBar */}
+        <div style={CARD}>
+          <div style={CARD_HEAD}>
+            <span style={CARD_TITLE}>進度分布</span>
+            <span style={CARD_BADGE}>VERTICAL BAR</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',flex:1,minHeight:220}}>
+            <VBarChart items={progItems} colorFn={(item,i)=>MACH_COLORS[i%MACH_COLORS.length]}/>
           </div>
         </div>
+      </div>
+
+      {/* 自由分析 */}
+      <div style={{display:'flex',alignItems:'baseline',gap:10,padding:'4px 0 14px'}}>
+        <span style={{fontSize:14,fontWeight:700,color:'var(--ink)'}}>自由分析</span>
+        <span style={{fontSize:10.5,color:'var(--ink-4)',fontFamily:'var(--font-mono)',letterSpacing:'0.06em',textTransform:'uppercase'}}>CUSTOM — 選擇維度與圖表類型</span>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+        <CustomChart idx={0}/>
+        <CustomChart idx={1}/>
+        <CustomChart idx={2}/>
       </div>
     </div>
   );
@@ -1490,7 +1643,7 @@ function Shell({ user, onLogout }) {
       show: canIssues },
     { key:'admin', label:'後台管理', sub:'ADMIN',
       icon:<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M3 15c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-      show: isAdmin },
+      show: true },
   ].filter(n => n.show);
 
   return (
@@ -1517,6 +1670,9 @@ function Shell({ user, onLogout }) {
         <div className="sidebar-foot">
           <span style={{color:'var(--ink-2)',fontWeight:600}}>{user.displayName}</span>
           <span className="sidebar-foot-date">{dateStr}</span>
+          <span style={{fontSize:9,color:'#8a93a3',wordBreak:'break-all',fontFamily:'monospace'}}>
+            perms: {JSON.stringify(user.permissions)}
+          </span>
           <button onClick={onLogout} style={{marginTop:6,background:'none',border:'1px solid var(--line)',borderRadius:5,padding:'4px 10px',fontSize:11,cursor:'pointer',color:'var(--ink-3)',fontFamily:'inherit'}}>登出</button>
         </div>
       </aside>

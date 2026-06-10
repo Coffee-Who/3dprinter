@@ -469,63 +469,54 @@
       { key:'stats',   label:'分析',     count:null },
     ];
 
-    const SUB_STYLE = (active) => ({
-      display:'flex', alignItems:'center', gap:8,
-      padding:'9px 14px',
-      border:'none', background: active ? '#fff' : 'transparent',
-      borderRadius:6, cursor:'pointer', textAlign:'left',
-      font:'inherit', fontSize:13, fontWeight: active?600:500,
-      color: active ? 'var(--ink)' : 'var(--ink-3)',
-      boxShadow: active ? '0 0 0 1px var(--line)' : 'none',
-      transition:'all .12s', width:'100%',
-    });
-    const COUNT_BADGE = (active) => ({
-      fontSize:10, fontFamily:'var(--font-mono)', padding:'1px 6px',
-      borderRadius:999, background: active?'var(--accent-soft)':'#eef0f3',
-      color: active?'var(--accent)':'var(--ink-4)',
-      fontWeight:600, marginLeft:'auto',
-    });
-
     if (loading) return (
       <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:300,color:'#8a93a3',fontSize:14}}>
         ⏳ 從 Firebase 載入中...
       </div>
     );
 
-    return (
-      <div style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
+    // 每個 tab 對應的新增按鈕
+    const addBtn = {
+      anomaly: canE && <button className="btn-add" onClick={()=>{setEditItem(null);setModal('a');}}>+ 新增異常</button>,
+      ipa:     canE && <button className="btn-add" onClick={()=>{setEditItem(null);setModal('i');}}>+ 新增採購</button>,
+      tools:   canE && <button className="btn-add" onClick={()=>{setEditItem(null);setModal('e');}}>+ 新增設備</button>,
+      stats:   null,
+    };
 
-        {/* 左側 subtab 導覽 */}
-        <div style={{width:180,flexShrink:0,borderRight:'1px solid var(--line)',background:'var(--bg-soft)',display:'flex',flexDirection:'column',padding:'12px 8px',gap:2}}>
-          <div style={{fontSize:10,fontFamily:'var(--font-mono)',color:'var(--ink-4)',letterSpacing:'0.1em',textTransform:'uppercase',padding:'4px 8px 8px'}}>異常與資源</div>
-          {SUBTABS.map(t=>(
-            <button key={t.key} style={SUB_STYLE(sub===t.key)} onClick={()=>setSub(t.key)}>
-              <span>
-                {t.key==='anomaly'&&'⚠️'}
-                {t.key==='ipa'&&'🧪'}
-                {t.key==='tools'&&'🔧'}
-                {t.key==='stats'&&'📊'}
-              </span>
-              <span>{t.label}</span>
-              {t.count!==null&&<span style={COUNT_BADGE(sub===t.key)}>{t.count}</span>}
-            </button>
-          ))}
+    return (
+      <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0}}>
+
+        {/* Shell top — tab 列，跟工作看板一樣 */}
+        <div className="shell-top">
+          <nav className="shell-tabs" role="tablist">
+            {SUBTABS.map(t=>(
+              <button key={t.key} role="tab" aria-selected={sub===t.key} className="shell-tab" onClick={()=>setSub(t.key)}>
+                {t.label}
+                {t.count!==null&&(
+                  <span style={{fontSize:10,fontFamily:'var(--font-mono)',padding:'1px 6px',borderRadius:999,background:sub===t.key?'var(--accent-soft)':'#eef0f3',color:sub===t.key?'var(--accent)':'var(--ink-4)',fontWeight:600,marginLeft:4}}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="shell-spacer"/>
+          <div className="shell-aux">ISSUES · RESOURCES</div>
+          {addBtn[sub]&&<div style={{marginRight:8}}>{addBtn[sub]}</div>}
         </div>
 
-        {/* 右側內容 */}
+        {/* 內容區 */}
         <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
 
           {/* 客戶異常 */}
           {sub==='anomaly'&&<>
             <div className="toolbar">
-              <div className="toolbar-title">客戶異常</div>
               <div className="t-search">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 <input value={search1} onChange={e=>setSearch1(e.target.value)} placeholder="搜尋客戶 / 品名"/>
               </div>
               <select className="t-sel" value={statusF} onChange={e=>setStatusF(e.target.value)}><option value="">所有狀態</option><option>處理中</option><option>已完成</option><option>暫停</option></select>
               <select className="t-sel" value={engF} onChange={e=>setEngF(e.target.value)}><option value="">所有工程師</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]||k}</option>)}</select>
-              {canE&&<button className="t-btn t-btn-primary" onClick={()=>{setEditItem(null);setModal('a');}}>+ 新增異常</button>}
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>
@@ -566,14 +557,12 @@
           {/* IPA 採購 */}
           {sub==='ipa'&&<>
             <div className="toolbar">
-              <div className="toolbar-title">IPA 採購</div>
               <div className="t-search">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 <input value={search2} onChange={e=>setSearch2(e.target.value)} placeholder="搜尋品名"/>
               </div>
               <span className="toolbar-sub">合計 <b style={{color:'#0a0e14'}}>{filtI.reduce((s,r)=>s+Number(r.quantity||0),0)}</b> 桶</span>
               <select className="t-sel" value={personF} onChange={e=>setPersonF(e.target.value)}><option value="">所有人員</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]||k}</option>)}</select>
-              {canE&&<button className="t-btn t-btn-primary" onClick={()=>{setEditItem(null);setModal('i');}}>+ 新增採購</button>}
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>
@@ -600,14 +589,12 @@
           {/* 設備清單 */}
           {sub==='tools'&&<>
             <div className="toolbar">
-              <div className="toolbar-title">設備清單</div>
               <div className="t-search">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                 <input value={search3} onChange={e=>setSearch3(e.target.value)} placeholder="搜尋品名 / 用途"/>
               </div>
               <span className="toolbar-sub">合計 <b style={{color:'#0a0e14'}}>NT$ {filtT.reduce((s,r)=>s+(Number(r.price||0)*Number(r.quantity||1)),0).toLocaleString()}</b></span>
               <select className="t-sel" value={methodF} onChange={e=>setMethodF(e.target.value)}><option value="">所有方式</option><option>Easy Flow</option><option>零用金</option></select>
-              {canE&&<button className="t-btn t-btn-primary" onClick={()=>{setEditItem(null);setModal('e');}}>+ 新增設備</button>}
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>

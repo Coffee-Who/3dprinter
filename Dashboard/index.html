@@ -1314,72 +1314,7 @@ function DashboardView({ data }) {
 window.DashboardView = DashboardView;
 </script>
 
-<!-- ⑤ IssuesStats -->
-<script type="text/babel" data-presets="react">
-function IssuesStats({ anomalies, ipa, tools }) {
-  const K = window.K;
-  const { useMemo: useMemoIS } = React;
-  const totalSpend = tools.reduce((s,r)=>s+(Number(r.price||0)*Number(r.quantity||1)),0);
-  const totalIPA   = ipa.reduce((s,r)=>s+Number(r.quantity||0),0);
-  const openAnomaly = anomalies.filter(a=>a.status==='處理中').length;
-  const byStatus = useMemoIS(()=>{ const m={'處理中':0,'已完成':0,'暫停':0}; anomalies.forEach(a=>{m[a.status]=(m[a.status]||0)+1;}); return m; },[anomalies]);
-  const byEng    = useMemoIS(()=>{ const m={}; anomalies.forEach(a=>{m[a.engineer]=(m[a.engineer]||0)+1;}); return m; },[anomalies]);
-  const maxEng = Math.max(1,...Object.values(byEng));
-
-  function HBar({ label, value, max, color }) {
-    const pct = max ? Math.round((value/max)*100) : 0;
-    return (
-      <div className="hbar-row">
-        <span className="hbar-label">{label}</span>
-        <div className="hbar-track"><div className="hbar-fill" style={{width:`${pct}%`,background:color||'var(--accent)'}}/></div>
-        <span className="hbar-num">{value}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="iss-analytic">
-      <div className="dash-kpis">
-        {[
-          {label:'異常總數',  value:anomalies.length},
-          {label:'處理中',   value:openAnomaly},
-          {label:'IPA 合計', value:`${totalIPA} 桶`},
-          {label:'設備支出', value:`NT$ ${totalSpend.toLocaleString()}`},
-          {label:'設備項目', value:tools.length},
-        ].map(k=>(
-          <div key={k.label} className="dash-kpi">
-            <div className="dash-kpi-label">{k.label}</div>
-            <div className="dash-kpi-value">{k.value}</div>
-          </div>
-        ))}
-      </div>
-      <div className="iss-grid">
-        <div className="chart-card">
-          <div className="chart-card-head"><span className="chart-card-title">異常狀態分布</span></div>
-          <div className="chart-body" style={{flexDirection:'column',alignItems:'stretch'}}>
-            <div className="hbar-list">
-              {Object.entries(byStatus).map(([s,v])=>(
-                <HBar key={s} label={s} value={v} max={Math.max(1,...Object.values(byStatus))}/>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="chart-card">
-          <div className="chart-card-head"><span className="chart-card-title">工程師異常分布</span></div>
-          <div className="chart-body" style={{flexDirection:'column',alignItems:'stretch'}}>
-            <div className="hbar-list">
-              {Object.entries(byEng).map(([k,v])=>(
-                <HBar key={k} label={K.ENG_LABEL[k]||k} value={v} max={maxEng} color={K.ENG_TONE[k]?.fg||'var(--accent)'}/>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-window.IssuesStats = IssuesStats;
-</script>
+<!-- ⑤ IssuesStats 已整合至 issues.js -->
 
 <!-- ⑥ workboard.js + issues.js -->
 <script type="text/babel" data-presets="react" src="workboard.js"></script>

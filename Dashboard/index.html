@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans TC',system-ui,sans-serif;background:#fff;height:100vh;overflow:hidden}
+body{font-family:'Noto Sans TC',system-ui,sans-serif;background:#fff;height:100vh;overflow:auto}
 :root {
   --bg: #ffffff;
   --bg-soft: #fafbfc;
@@ -40,7 +40,7 @@ body{font-family:'Noto Sans TC',system-ui,sans-serif;background:#fff;height:100v
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
 body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(10,14,20,0.035) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;mask-image:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.15));-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.15))}
 
-.shell{min-height:100vh;background:var(--bg);display:flex;position:relative;z-index:1}
+.shell{height:100vh;background:var(--bg);display:flex;position:relative;z-index:1;overflow:hidden}
 
 /* Sidebar */
 .shell-sidebar{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
@@ -65,7 +65,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .sb-admin-lbl{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px 2px}
 
 /* Main */
-.shell-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .shell-top{display:flex;align-items:center;gap:18px;padding:0 28px;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;min-height:48px}
 .shell-tabs{display:flex;gap:2px}
 .shell-tab{position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:var(--ink-3);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:color 0.15s}
@@ -75,11 +75,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .shell-tab-icon{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;color:currentColor;flex-shrink:0}
 .shell-spacer{flex:1}
 .shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.08em}
-.shell-body{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+.shell-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;background:var(--bg)}
 
 /* Table */
-.table-view{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--bg)}
-.toolbar{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:wrap}
+.table-view{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--bg);overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:wrap;flex-shrink:0}
 .toolbar-title{font-size:13px;font-weight:600;letter-spacing:-0.01em;color:var(--ink);margin-right:8px}
 .toolbar-sub{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono);margin-right:auto}
 .table-wrap{flex:1;overflow:auto;padding:0 28px 24px}
@@ -1276,35 +1276,110 @@ function LoginPage({ onLogin }) {
   );
 }
 
+/* 使用者 Modal — 獨立元件，使用 React.useState 避免 Hooks alias 問題 */
+function UserModal({ item, onClose, onSaved }) {
+  const PERMS   = window.PERMS_MAP   || {};
+  const PRESETS = window.ROLE_PRESETS || {};
+  const INP = { width:'100%', padding:'8px 11px', border:'1.5px solid #e6e8ec', borderRadius:6, fontSize:13, fontFamily:'inherit', outline:'none' };
+  const LBL = { display:'block', fontSize:11.5, fontWeight:600, color:'#5a6270', marginBottom:5 };
+
+  const empty = { displayName:'', email:'', password:'', permissions:['view_board','view_issues'], active:true };
+  const [form, setForm] = React.useState(item ? {...item, password:''} : empty);
+  const [busy, setBusy] = React.useState(false);
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+  const togglePerm = p => set('permissions', form.permissions.includes(p) ? form.permissions.filter(x=>x!==p) : [...form.permissions,p]);
+  const applyPreset = role => set('permissions', PRESETS[role]||[]);
+
+  const save = async () => {
+    if (!form.displayName || !form.email) { showToast('請填姓名與 Email','err'); return; }
+    if (!item && !form.password) { showToast('請設定密碼','err'); return; }
+    setBusy(true);
+    try {
+      if (item) {
+        await FBAuth.updateUser(item._id, { displayName:form.displayName, permissions:form.permissions, active:form.active });
+        showToast('已更新 ✓');
+      } else {
+        await FBAuth.createUser(form.email, form.password, { displayName:form.displayName, email:form.email, permissions:form.permissions, active:form.active });
+        showToast('已新增 ✓');
+      }
+      onSaved && onSaved();
+      onClose();
+    } catch(e) { showToast(e.message||'失敗','err'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="m-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="m-box" style={{width:560}}>
+        <div className="m-hd"><h3>{item?'✏️ 編輯使用者':'➕ 新增使用者'}</h3><button className="m-close" onClick={onClose}>×</button></div>
+        <div className="m-body">
+          <div className="m-row">
+            <div className="m-field"><label style={LBL}>顯示名稱 *</label><input style={INP} value={form.displayName} onChange={e=>set('displayName',e.target.value)}/></div>
+            <div className="m-field"><label style={LBL}>電子郵件 *</label><input style={INP} type="email" value={form.email} onChange={e=>set('email',e.target.value)} disabled={!!item}/></div>
+          </div>
+          {!item && <div className="m-field"><label style={LBL}>初始密碼 *</label><input style={INP} type="password" value={form.password} onChange={e=>set('password',e.target.value)}/></div>}
+          <div className="m-field">
+            <label style={LBL}>啟用狀態</label>
+            <div className="seg" style={{marginTop:4}}>
+              {[true,false].map(v=><button key={String(v)} className={`seg-btn${form.active===v?' active':''}`} onClick={()=>set('active',v)}>{v?'✅ 啟用':'⛔ 停用'}</button>)}
+            </div>
+          </div>
+          <div className="m-field">
+            <label style={LBL}>角色快速套用</label>
+            <div className="preset-row">
+              {[['admin','p-admin','管理員'],['manager','p-mgr','主管'],['operator','p-eng','工程師'],['viewer','p-view','查閱']].map(([r,cls,l])=>(
+                <button key={r} className={`preset-chip ${cls}`} onClick={()=>applyPreset(r)}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div className="m-field">
+            <label style={LBL}>個別權限</label>
+            <div className="perm-grid">
+              {Object.entries(PERMS).map(([p,label])=>(
+                <label key={p} className={`perm-chip${form.permissions.includes(p)?' on':''}`}>
+                  <input type="checkbox" checked={form.permissions.includes(p)} onChange={()=>togglePerm(p)}/>{label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="m-foot">
+          <button className="btn-cancel" onClick={onClose}>取消</button>
+          <button className="btn-save" onClick={save} disabled={busy}>{busy?'儲存中...':'💾 儲存'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* 管理員後台 */
 function AdminPanel({ user }) {
   const K = window.K;
-  const [sub, setSub] = useStateApp('users');
-  const [users, setUsers] = useStateApp([]);
-  const [settings, setSettings] = useStateApp(null);
-  const [loading, setLoading] = useStateApp(true);
-  const [userModal, setUserModal] = useStateApp(false);
-  const [editUser, setEditUser] = useStateApp(null);
+  const [sub, setSub] = React.useState('users');
+  const [users, setUsers] = React.useState([]);
+  const [settings, setSettings] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [userModal, setUserModal] = React.useState(false);
+  const [editUser, setEditUser] = React.useState(null);
+  const [engList, setEngList] = React.useState(null);
+  const [machList, setMachList] = React.useState(null);
 
-  useEffectApp(() => {
+  const INP = { width:'100%', padding:'8px 11px', border:'1.5px solid #e6e8ec', borderRadius:6, fontSize:13, fontFamily:'inherit', outline:'none' };
+  const LBL = { display:'block', fontSize:11.5, fontWeight:600, color:'#5a6270', marginBottom:5 };
+
+  React.useEffect(() => {
     (async () => {
       const [us, st] = await Promise.all([FBAuth.getUsers(), FBSettings.get()]);
       setUsers(us);
-      setSettings(st || { engineers: K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})), machines: K.MACHINES.map(m=>({name:m})) });
+      const s = st || { engineers: K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})), machines: K.MACHINES.map(m=>({name:m})) };
+      setSettings(s);
+      setEngList(s.engineers || K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})));
+      setMachList(s.machines  || K.MACHINES.map(m=>({name:m})));
       setLoading(false);
     })();
   }, []);
 
-  // 工程師設定
-  const [engList, setEngList] = useStateApp(null);
-  const [machList, setMachList] = useStateApp(null);
-
-  useEffectApp(() => {
-    if (settings) {
-      setEngList(settings.engineers || K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})));
-      setMachList(settings.machines || K.MACHINES.map(m=>({name:m})));
-    }
-  }, [settings]);
+  const refreshUsers = async () => { const us = await FBAuth.getUsers(); setUsers(us); };
 
   const saveSettings = async () => {
     const s = { engineers: engList, machines: machList };
@@ -1312,85 +1387,6 @@ function AdminPanel({ user }) {
     window.applySettings(s);
     showToast('設定已儲存 ✓');
   };
-
-  const PERMS = window.PERMS_MAP || {};
-  const PRESETS = window.ROLE_PRESETS || {};
-
-  const INP = { width:'100%', padding:'8px 11px', border:'1.5px solid #e6e8ec', borderRadius:6, fontSize:13, fontFamily:'inherit', outline:'none' };
-  const LBL = { display:'block', fontSize:11.5, fontWeight:600, color:'#5a6270', marginBottom:5 };
-
-  function UserModal({ item, onClose }) {
-    const empty = { displayName:'', email:'', password:'', permissions:['view_board','view_issues'], active:true };
-    const [form, setForm] = useStateApp(item ? {...item, password:''} : empty);
-    const [busy, setBusy] = useStateApp(false);
-    const set = (k,v) => setForm(f=>({...f,[k]:v}));
-    const togglePerm = p => {
-      const perms = form.permissions.includes(p) ? form.permissions.filter(x=>x!==p) : [...form.permissions, p];
-      set('permissions', perms);
-    };
-    const applyPreset = role => set('permissions', PRESETS[role]||[]);
-
-    const save = async () => {
-      if (!form.displayName || !form.email) { showToast('請填姓名與 Email','err'); return; }
-      if (!item && !form.password) { showToast('請設定密碼','err'); return; }
-      setBusy(true);
-      try {
-        if (item) {
-          await FBAuth.updateUser(item._id, { displayName:form.displayName, permissions:form.permissions, active:form.active });
-          showToast('已更新 ✓');
-        } else {
-          await FBAuth.createUser(form.email, form.password, { displayName:form.displayName, email:form.email, permissions:form.permissions, active:form.active });
-          showToast('已新增 ✓');
-        }
-        const us = await FBAuth.getUsers(); setUsers(us);
-        onClose();
-      } catch(e) { showToast(e.message||'失敗','err'); }
-      finally { setBusy(false); }
-    };
-
-    return (
-      <div className="m-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
-        <div className="m-box" style={{width:560}}>
-          <div className="m-hd"><h3>{item?'✏️ 編輯使用者':'➕ 新增使用者'}</h3><button className="m-close" onClick={onClose}>×</button></div>
-          <div className="m-body">
-            <div className="m-row">
-              <div className="m-field"><label style={LBL}>顯示名稱 *</label><input style={INP} value={form.displayName} onChange={e=>set('displayName',e.target.value)}/></div>
-              <div className="m-field"><label style={LBL}>電子郵件 *</label><input style={INP} type="email" value={form.email} onChange={e=>set('email',e.target.value)} disabled={!!item}/></div>
-            </div>
-            {!item && <div className="m-field"><label style={LBL}>初始密碼 *</label><input style={INP} type="password" value={form.password} onChange={e=>set('password',e.target.value)}/></div>}
-            <div className="m-field">
-              <label style={LBL}>啟用狀態</label>
-              <div className="seg" style={{marginTop:4}}>
-                {[true,false].map(v=><button key={String(v)} className={`seg-btn${form.active===v?' active':''}`} onClick={()=>set('active',v)}>{v?'✅ 啟用':'⛔ 停用'}</button>)}
-              </div>
-            </div>
-            <div className="m-field">
-              <label style={LBL}>角色快速套用</label>
-              <div className="preset-row">
-                {[['admin','p-admin','管理員'],['manager','p-mgr','主管'],['operator','p-eng','工程師'],['viewer','p-view','查閱']].map(([r,cls,l])=>(
-                  <button key={r} className={`preset-chip ${cls}`} onClick={()=>applyPreset(r)}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <div className="m-field">
-              <label style={LBL}>個別權限</label>
-              <div className="perm-grid">
-                {Object.entries(PERMS).map(([p,label])=>(
-                  <label key={p} className={`perm-chip${form.permissions.includes(p)?' on':''}`}>
-                    <input type="checkbox" checked={form.permissions.includes(p)} onChange={()=>togglePerm(p)}/>{label}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="m-foot">
-            <button className="btn-cancel" onClick={onClose}>取消</button>
-            <button className="btn-save" onClick={save} disabled={busy}>{busy?'儲存中...':'💾 儲存'}</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:300,color:'#8a93a3',fontSize:14}}>⏳ 載入中...</div>;
 
@@ -1431,7 +1427,7 @@ function AdminPanel({ user }) {
                     <td>
                       <span className="kt-act">
                         <button className="kt-actbtn" onClick={()=>{setEditUser(u);setUserModal(true);}}>✎</button>
-                        <button className="kt-actbtn danger" onClick={async()=>{ if(!confirm('確定刪除？'))return; await FBAuth.deleteUser(u._id); const us=await FBAuth.getUsers(); setUsers(us); showToast('已刪除','inf'); }}>✕</button>
+                        <button className="kt-actbtn danger" onClick={async()=>{ if(!confirm('確定刪除？'))return; await FBAuth.deleteUser(u._id); await refreshUsers(); showToast('已刪除','inf'); }}>✕</button>
                       </span>
                     </td>
                   </tr>
@@ -1468,7 +1464,7 @@ function AdminPanel({ user }) {
           </div>
         )}
       </div>
-      {userModal&&<UserModal item={editUser} onClose={()=>setUserModal(false)}/>}
+      {userModal&&<UserModal item={editUser} onClose={()=>setUserModal(false)} onSaved={refreshUsers}/>}
     </div>
   );
 }

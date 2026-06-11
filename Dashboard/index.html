@@ -1443,40 +1443,118 @@ function UserModal({ item, onClose, onSaved }) {
 /* 管理員後台 */
 function AdminPanel({ user }) {
   const K = window.K;
-  const [sub, setSub] = React.useState('users');
-  const [users, setUsers] = React.useState([]);
-  const [settings, setSettings] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [userModal, setUserModal] = React.useState(false);
-  const [editUser, setEditUser] = React.useState(null);
-  const [engList, setEngList] = React.useState(null);
-  const [machList, setMachList] = React.useState(null);
+  const {useState: useSt, useEffect: useEff} = React;
+  const [sub, setSub]           = useSt('users');
+  const [settingTab, setSettingTab] = useSt('workboard'); // workboard | issues | samples
+  const [users, setUsers]       = useSt([]);
+  const [loading, setLoading]   = useSt(true);
+  const [userModal, setUserModal] = useSt(false);
+  const [editUser, setEditUser] = useSt(null);
+  const [saving, setSaving]     = useSt(false);
 
-  const INP = { width:'100%', padding:'8px 11px', border:'1.5px solid #e6e8ec', borderRadius:6, fontSize:13, fontFamily:'inherit', outline:'none' };
-  const LBL = { display:'block', fontSize:11.5, fontWeight:600, color:'#5a6270', marginBottom:5 };
+  // 工作看板設定
+  const [wbEng,  setWbEng]  = useSt([]);
+  const [wbMach, setWbMach] = useSt([]);
+  // 異常與資源設定
+  const [isEng,  setIsEng]  = useSt([]);
+  const [isMach, setIsMach] = useSt([]);
+  // 是否同步工作看板設定
+  const [sync, setSync] = useSt(true);
+  // 樣品借用人清單
+  const [borrowers, setBorrowers] = useSt([]);
 
-  React.useEffect(() => {
-    (async () => {
+  const INP = {width:'100%',padding:'8px 11px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none'};
+  const DEF_ENG  = K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]||k}));
+  const DEF_MACH = K.MACHINES.map(m=>({name:m}));
+  const DEF_BORR = ['王小明','李美華','張大偉','陳怡君','林志豪'];
+
+  useEff(()=>{
+    (async()=>{
       const [us, st] = await Promise.all([FBAuth.getUsers(), FBSettings.get()]);
       setUsers(us);
-      const s = st || { engineers: K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})), machines: K.MACHINES.map(m=>({name:m})) };
-      setSettings(s);
-      setEngList(s.engineers || K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]})));
-      setMachList(s.machines  || K.MACHINES.map(m=>({name:m})));
+      if(st){
+        setWbEng(st.engineers   || DEF_ENG);
+        setWbMach(st.machines   || DEF_MACH);
+        setIsEng(st.is_engineers || st.engineers || DEF_ENG);
+        setIsMach(st.is_machines  || st.machines  || DEF_MACH);
+        setSync(st.sync_issues !== false);
+        setBorrowers(st.borrowers || DEF_BORR);
+      } else {
+        setWbEng(DEF_ENG); setWbMach(DEF_MACH);
+        setIsEng(DEF_ENG); setIsMach(DEF_MACH);
+        setBorrowers(DEF_BORR);
+      }
       setLoading(false);
     })();
-  }, []);
+  },[]);
 
-  const refreshUsers = async () => { const us = await FBAuth.getUsers(); setUsers(us); };
+  const refreshUsers = async()=>{ const us=await FBAuth.getUsers(); setUsers(us); };
 
-  const saveSettings = async () => {
-    const s = { engineers: engList, machines: machList };
+  // 同步開關：打開時把 issues 設定複製成 workboard 的值
+  const toggleSync = (val) => {
+    setSync(val);
+    if(val){ setIsEng([...wbEng]); setIsMach([...wbMach]); }
+  };
+  // workboard 變動時如果 sync=true，同步更新 issues
+  const setWbEngSync  = v => { setWbEng(v);  if(sync) setIsEng(v);  };
+  const setWbMachSync = v => { setWbMach(v); if(sync) setIsMach(v); };
+
+  const saveSettings = async()=>{
+    setSaving(true);
+    const s = {
+      engineers:    wbEng,
+      machines:     wbMach,
+      is_engineers: sync ? wbEng  : isEng,
+      is_machines:  sync ? wbMach : isMach,
+      sync_issues:  sync,
+      borrowers,
+    };
     await FBSettings.save(s);
     window.applySettings(s);
+    // 把 borrowers 寫進 samples.json（通知 iframe）
+    try {
+      const iframe = document.querySelector('iframe[title="3D列印樣品"]');
+      if(iframe && iframe.contentWindow && iframe.contentWindow.smSetBorrowers)
+        iframe.contentWindow.smSetBorrowers(borrowers);
+    } catch(e){}
+    setSaving(false);
     showToast('設定已儲存 ✓');
   };
 
-  if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:300,color:'#8a93a3',fontSize:14}}>⏳ 載入中...</div>;
+  const ListEditor = ({label, list, setList, keyField=false}) => (
+    <div style={{marginBottom:24}}>
+      <div style={{fontSize:13,fontWeight:700,color:'#0a0e14',marginBottom:10}}>{label}</div>
+      {list.map((item,i)=>(
+        <div key={i} style={{display:'flex',gap:8,marginBottom:7,alignItems:'center'}}>
+          {keyField && <input style={{...INP,width:110}} placeholder="Key (英文)" value={item.key||''} onChange={ev=>{const l=[...list];l[i]={...l[i],key:ev.target.value};setList(l);}}/>}
+          <input style={{...INP,flex:1}} placeholder={keyField?'顯示名稱':'名稱'} value={keyField?item.label||'':item.name||item} onChange={ev=>{const l=[...list];l[i]=keyField?{...l[i],label:ev.target.value}:{name:ev.target.value};setList(l);}}/>
+          <button className="kt-actbtn danger" title="刪除" onClick={()=>setList(list.filter((_,j)=>j!==i))}>✕</button>
+        </div>
+      ))}
+      <button className="btn-cancel" style={{marginTop:2,fontSize:12}} onClick={()=>setList([...list, keyField?{key:'',label:''}:{name:''}])}>＋ 新增</button>
+    </div>
+  );
+
+  const BorrowerEditor = () => (
+    <div style={{marginBottom:24}}>
+      <div style={{fontSize:13,fontWeight:700,color:'#0a0e14',marginBottom:10}}>借用人清單</div>
+      {borrowers.map((b,i)=>(
+        <div key={i} style={{display:'flex',gap:8,marginBottom:7,alignItems:'center'}}>
+          <input style={{...INP,flex:1}} placeholder="借用人姓名" value={b} onChange={ev=>{const l=[...borrowers];l[i]=ev.target.value;setBorrowers(l);}}/>
+          <button className="kt-actbtn danger" title="刪除" onClick={()=>setBorrowers(borrowers.filter((_,j)=>j!==i))}>✕</button>
+        </div>
+      ))}
+      <button className="btn-cancel" style={{marginTop:2,fontSize:12}} onClick={()=>setBorrowers([...borrowers,''])}>＋ 新增借用人</button>
+    </div>
+  );
+
+  if(loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:300,color:'#8a93a3',fontSize:14}}>⏳ 載入中...</div>;
+
+  const SETTING_TABS = [
+    {key:'workboard', label:'工作看板'},
+    {key:'issues',    label:'異常與資源'},
+    {key:'samples',   label:'3D列印樣品'},
+  ];
 
   return (
     <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0}}>
@@ -1490,6 +1568,8 @@ function AdminPanel({ user }) {
         <div className="shell-aux">ADMIN</div>
       </div>
       <div className="shell-body" style={{flex:1,minHeight:0,overflowY:'auto',padding:'20px 28px'}}>
+
+        {/* ── 使用者管理 ── */}
         {sub==='users'&&(
           <div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
@@ -1508,47 +1588,83 @@ function AdminPanel({ user }) {
                         ? <span className="role-chip admin">管理員</span>
                         : u.permissions?.includes('edit_board')
                           ? <span className="role-chip operator">工程師</span>
-                          : <span className="role-chip viewer">查閱</span>
-                      }
+                          : <span className="role-chip viewer">查閱</span>}
                     </td>
                     <td><span className={`st-dot${u.active?' on':' off'}`}>{u.active?'● 啟用':'● 停用'}</span></td>
-                    <td>
-                      <span className="kt-act">
-                        <button className="kt-actbtn" onClick={()=>{setEditUser(u);setUserModal(true);}}>✎</button>
-                        <button className="kt-actbtn danger" onClick={async()=>{ if(!confirm('確定刪除？'))return; await FBAuth.deleteUser(u._id); await refreshUsers(); showToast('已刪除','inf'); }}>✕</button>
-                      </span>
-                    </td>
+                    <td><span className="kt-act">
+                      <button className="kt-actbtn" onClick={()=>{setEditUser(u);setUserModal(true);}}>✎</button>
+                      <button className="kt-actbtn danger" onClick={async()=>{if(!confirm('確定刪除？'))return;await FBAuth.deleteUser(u._id);await refreshUsers();showToast('已刪除','inf');}}>✕</button>
+                    </span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        {sub==='settings'&&engList&&machList&&(
-          <div style={{maxWidth:600}}>
-            <h2 style={{fontSize:16,fontWeight:700,marginBottom:20}}>系統設定</h2>
-            <div style={{marginBottom:24}}>
-              <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>工程師清單</div>
-              {engList.map((e,i)=>(
-                <div key={i} style={{display:'flex',gap:8,marginBottom:8,alignItems:'center'}}>
-                  <input style={{...INP,width:120}} placeholder="Key (英文)" value={e.key} onChange={ev=>{const l=[...engList];l[i]={...l[i],key:ev.target.value};setEngList(l);}}/>
-                  <input style={{...INP,flex:1}} placeholder="顯示名稱" value={e.label} onChange={ev=>{const l=[...engList];l[i]={...l[i],label:ev.target.value};setEngList(l);}}/>
-                  <button className="kt-actbtn danger" onClick={()=>setEngList(engList.filter((_,j)=>j!==i))}>✕</button>
-                </div>
-              ))}
-              <button className="btn-cancel" style={{marginTop:4}} onClick={()=>setEngList([...engList,{key:'',label:''}])}>+ 新增工程師</button>
+
+        {/* ── 系統設定 ── */}
+        {sub==='settings'&&(
+          <div style={{maxWidth:680}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+              <h2 style={{fontSize:16,fontWeight:700}}>系統設定</h2>
+              <button className="btn-save" style={{padding:'0 24px',height:36,opacity:saving?.5:1}} onClick={saveSettings} disabled={saving}>
+                {saving?'儲存中…':'💾 儲存所有設定'}
+              </button>
             </div>
-            <div style={{marginBottom:24}}>
-              <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>機台清單</div>
-              {machList.map((m,i)=>(
-                <div key={i} style={{display:'flex',gap:8,marginBottom:8,alignItems:'center'}}>
-                  <input style={{...INP,flex:1}} placeholder="機台名稱" value={m.name} onChange={ev=>{const l=[...machList];l[i]={...l[i],name:ev.target.value};setMachList(l);}}/>
-                  <button className="kt-actbtn danger" onClick={()=>setMachList(machList.filter((_,j)=>j!==i))}>✕</button>
-                </div>
+
+            {/* 分頁切換 */}
+            <div style={{display:'flex',gap:4,marginBottom:24,background:'#f5f6f8',padding:4,borderRadius:8,width:'fit-content'}}>
+              {SETTING_TABS.map(t=>(
+                <button key={t.key} onClick={()=>setSettingTab(t.key)} style={{padding:'6px 18px',borderRadius:6,border:'none',fontSize:13,fontWeight:600,cursor:'pointer',transition:'all .15s',background:settingTab===t.key?'#fff':'transparent',color:settingTab===t.key?'#0a0e14':'#5a6270',boxShadow:settingTab===t.key?'0 1px 3px rgba(0,0,0,.1)':'none',fontFamily:'inherit'}}>
+                  {t.label}
+                </button>
               ))}
-              <button className="btn-cancel" style={{marginTop:4}} onClick={()=>setMachList([...machList,{name:''}])}>+ 新增機台</button>
             </div>
-            <button className="btn-save" style={{padding:'0 24px',height:38}} onClick={saveSettings}>💾 儲存設定</button>
+
+            {/* 工作看板設定 */}
+            {settingTab==='workboard'&&(
+              <div>
+                <ListEditor label="工程師清單" list={wbEng}  setList={setWbEngSync}  keyField={true}/>
+                <ListEditor label="機台清單"   list={wbMach} setList={setWbMachSync} keyField={false}/>
+              </div>
+            )}
+
+            {/* 異常與資源設定 */}
+            {settingTab==='issues'&&(
+              <div>
+                {/* 同步開關 */}
+                <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',background:sync?'#e6f1ea':'#f5f6f8',border:'1.5px solid',borderColor:sync?'#9acfb4':'#e6e8ec',borderRadius:8,marginBottom:20,cursor:'pointer'}} onClick={()=>toggleSync(!sync)}>
+                  <div style={{width:36,height:20,background:sync?'#1d6f43':'#cbd0d8',borderRadius:10,position:'relative',transition:'background .2s',flexShrink:0}}>
+                    <div style={{position:'absolute',top:2,left:sync?18:2,width:16,height:16,background:'#fff',borderRadius:'50%',transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,.2)'}}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:sync?'#1d6f43':'#3b4250'}}>
+                      {sync?'✅ 與工作看板同步':'使用個別設定'}
+                    </div>
+                    <div style={{fontSize:11,color:'#8a93a3',marginTop:2}}>
+                      {sync?'工程師與機台清單與工作看板相同，修改請至「工作看板」頁籤':'異常與資源使用獨立的工程師與機台清單'}
+                    </div>
+                  </div>
+                </div>
+                {sync
+                  ? <div style={{padding:'16px',background:'#fafbfc',border:'1px solid #e6e8ec',borderRadius:8,color:'#8a93a3',fontSize:13,textAlign:'center'}}>目前同步工作看板設定，如需個別設定請關閉同步</div>
+                  : <>
+                      <ListEditor label="工程師清單（獨立）" list={isEng}  setList={setIsEng}  keyField={true}/>
+                      <ListEditor label="機台清單（獨立）"   list={isMach} setList={setIsMach} keyField={false}/>
+                    </>
+                }
+              </div>
+            )}
+
+            {/* 3D列印樣品設定 */}
+            {settingTab==='samples'&&(
+              <div>
+                <BorrowerEditor/>
+                <div style={{padding:'12px 14px',background:'#e6f1f6',border:'1px solid #b5d4f4',borderRadius:8,fontSize:12,color:'#0c7a99'}}>
+                  💡 借用人清單會在儲存後即時更新至樣品管理頁面
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1620,10 +1736,8 @@ function Shell({ user, onLogout }) {
         {page==='admin'     && <AdminPanel          user={user}/>}
         <iframe
           src="tab-sample.html"
-          style={{display: page==='samples' ? 'flex' : 'none',
-                  width:'100%', height:'100%', border:'none',
-                  flex:1, minHeight:0}}
           title="3D列印樣品"
+          style={{display:page==='samples'?'flex':'none',width:'100%',height:'100%',border:'none',flex:1,minHeight:0}}
         />
       </main>
     </div>

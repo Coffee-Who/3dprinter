@@ -1466,7 +1466,7 @@ function AdminPanel({ user }) {
   const INP = {width:'100%',padding:'8px 11px',border:'1.5px solid #e6e8ec',borderRadius:6,fontSize:13,fontFamily:'inherit',outline:'none'};
   const DEF_ENG  = K.ENG_ORDER.map(k=>({key:k,label:K.ENG_LABEL[k]||k}));
   const DEF_MACH = K.MACHINES.map(m=>({name:m}));
-  const DEF_BORR = ['王小明','李美華','張大偉','陳怡君','林志豪'];
+  const DEF_BORR = [{key:'Wang',label:'王小明'},{key:'Lee',label:'李美華'},{key:'Chang',label:'張大偉'},{key:'Chen',label:'陳怡君'},{key:'Lin',label:'林志豪'}];
 
   useEff(()=>{
     (async()=>{
@@ -1478,7 +1478,8 @@ function AdminPanel({ user }) {
         setIsEng(st.is_engineers || st.engineers || DEF_ENG);
         setIsMach(st.is_machines  || st.machines  || DEF_MACH);
         setSync(st.sync_issues !== false);
-        setBorrowers(st.borrowers || DEF_BORR);
+        const rawB = st.borrowers || DEF_BORR;
+        setBorrowers(rawB.map(b => typeof b === 'string' ? {key:b, label:b} : b));
       } else {
         setWbEng(DEF_ENG); setWbMach(DEF_MACH);
         setIsEng(DEF_ENG); setIsMach(DEF_MACH);
@@ -1538,13 +1539,19 @@ function AdminPanel({ user }) {
   const BorrowerEditor = () => (
     <div style={{marginBottom:24}}>
       <div style={{fontSize:13,fontWeight:700,color:'#0a0e14',marginBottom:10}}>借用人清單</div>
+      <div style={{display:'grid',gridTemplateColumns:'110px 1fr 28px',gap:'0 8px',marginBottom:4}}>
+        <div style={{fontSize:11,fontWeight:600,color:'#8a93a3',padding:'0 2px'}}>英文名 / Key</div>
+        <div style={{fontSize:11,fontWeight:600,color:'#8a93a3',padding:'0 2px'}}>中文名稱</div>
+        <div/>
+      </div>
       {borrowers.map((b,i)=>(
-        <div key={i} style={{display:'flex',gap:8,marginBottom:7,alignItems:'center'}}>
-          <input style={{...INP,flex:1}} placeholder="借用人姓名" value={b} onChange={ev=>{const l=[...borrowers];l[i]=ev.target.value;setBorrowers(l);}}/>
+        <div key={i} style={{display:'grid',gridTemplateColumns:'110px 1fr 28px',gap:'0 8px',marginBottom:7,alignItems:'center'}}>
+          <input style={{...INP,width:'100%'}} placeholder="Key (英文)" value={b.key||''} onChange={ev=>{const l=[...borrowers];l[i]={...l[i],key:ev.target.value};setBorrowers(l);}}/>
+          <input style={{...INP,width:'100%'}} placeholder="顯示名稱" value={b.label||''} onChange={ev=>{const l=[...borrowers];l[i]={...l[i],label:ev.target.value};setBorrowers(l);}}/>
           <button className="kt-actbtn danger" title="刪除" onClick={()=>setBorrowers(borrowers.filter((_,j)=>j!==i))}>✕</button>
         </div>
       ))}
-      <button className="btn-cancel" style={{marginTop:2,fontSize:12}} onClick={()=>setBorrowers([...borrowers,''])}>＋ 新增借用人</button>
+      <button className="btn-cancel" style={{marginTop:2,fontSize:12}} onClick={()=>setBorrowers([...borrowers,{key:'',label:''}])}>＋ 新增借用人</button>
     </div>
   );
 

@@ -14,7 +14,7 @@
  *   - 樣品資料  → Firestore collection: samples
  *   - 歸還紀錄  → Firestore collection: returnHistory
  *   - 借用人清單 → Firestore settings/workspace.borrowers
- *   - 照片       → GitHub image/ 資料夾 (需 GitHub Token)
+ *   - 照片       → Firebase Storage (samples/ 資料夾，不需要 Token)
  */
 
 /* ══════════════════════════════════════════
@@ -250,6 +250,16 @@ input,select,button,textarea{font-family:inherit}
   if (window.echarts) return;
   const s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js';
+  document.head.appendChild(s);
+})();
+
+/* ══════════════════════════════════════════
+   2b. 注入 Firebase Storage SDK（如未載入）
+   ══════════════════════════════════════════ */
+(function injectStorage() {
+  if (typeof firebase === 'undefined' || firebase.storage) return;
+  const s = document.createElement('script');
+  s.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js';
   document.head.appendChild(s);
 })();
 
@@ -497,12 +507,9 @@ input,select,button,textarea{font-family:inherit}
    4. 樣品模組主邏輯
    ══════════════════════════════════════════ */
 'use strict';
-// ── GitHub config（照片仍用 GitHub）──
-const GH_USER = 'Coffee-Who';
-const GH_REPO = '3dprinter';
-const GH_PATH_IMG = 'image/';
-const LS_TOKEN = 'sw_gh_token_v3';
-let GH_TOKEN = localStorage.getItem(LS_TOKEN) || '';
+// ── Firebase Storage 設定 ──
+// 照片存於 Firebase Storage: samples/{timestamp}_{filename}
+// 不需要 GitHub Token
 
 // ── 狀態 ──
 let samples = [];
@@ -821,7 +828,7 @@ async function saveCard() {
   if (fileInp._b64 && !img) {
     toast('上傳照片中…', 'inf');
     const ext = fileInp._b64.split(';')[0].split('/')[1];
-    const url = await uploadImageToGH(`sample_${Date.now()}.${ext}`, fileInp._b64);
+    const url = await uploadImageToStorage(`sample_${Date.now()}.${ext}`, fileInp._b64);
     img = url || fileInp._b64;
     fileInp._b64 = null;
     if (url) toast('照片已上傳', 'ok');
@@ -872,27 +879,25 @@ async function deleteCard() {
   toast('已刪除', 'ok');
 }
 
-// ── Upload image to GitHub ──
-async function uploadImageToGH(filename, base64data) {
-  const token = GH_TOKEN || localStorage.getItem(LS_TOKEN) || '';
-  if (!token) { toast('請先設定 GitHub Token', 'err'); return null; }
-  const b64 = base64data.split(',')[1];
-  const path = GH_PATH_IMG + filename;
-  let sha = '';
+// ── Upload image to Firebase Storage ──
+async function uploadImageToStorage(filename, base64data) {
   try {
-    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`,
-      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' } });
-    if (r.ok) sha = (await r.json()).sha;
-  } catch (e) {}
-  try {
-    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`, {
-      method: 'PUT',
-      headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github.v3+json' },
-      body: JSON.stringify({ message: `Upload ${filename}`, content: b64, ...(sha ? { sha } : {}) })
-    });
-    if (r.ok) return `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${path}`;
-  } catch (e) {}
-  return null;
+    // 等待 Storage SDK 載入
+    let retries = 0;
+    while ((!firebase.storage || !firebase.app().options.storageBucket) && retries++ < 20) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+    const storage = firebase.storage();
+    const ref = storage.ref(`samples/${Date.now()}_${filename}`);
+    // base64data 可能是 data URL 或純 base64
+    const snapshot = await ref.putString(base64data, 'data_url');
+    const url = await snapshot.ref.getDownloadURL();
+    return url;
+  } catch (e) {
+    console.error('Storage 上傳失敗:', e);
+    toast('照片上傳失敗：' + (e.message || e), 'err');
+    return null;
+  }
 }
 
 async function uploadCardImg(e, fbid) {
@@ -902,7 +907,7 @@ async function uploadCardImg(e, fbid) {
     const b64 = ev.target.result;
     toast('上傳照片中…', 'inf');
     const ext = b64.split(';')[0].split('/')[1];
-    let url = await uploadImageToGH(`sample_${fbid}_${Date.now()}.${ext}`, b64);
+    let url = await uploadImageToStorage(`sample_${fbid}_${Date.now()}.${ext}`, b64);
     if (!url) url = b64;
     await window._db.collection('samples').doc(fbid).update({ img: url });
     toast('照片已更新 ✓', 'ok');

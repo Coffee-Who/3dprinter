@@ -1579,6 +1579,9 @@ function Shell({ user, onLogout }) {
     { key:'admin', label:'後台管理', sub:'ADMIN',
       icon:<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M3 15c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
       show: true },
+    { key:'samples', label:'3D列印樣品', sub:'SAMPLES',
+      icon:<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2.5" y="2.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M6 9h6M9 6v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+      show: true },
   ].filter(n => n.show);
 
   return (
@@ -1615,6 +1618,7 @@ function Shell({ user, onLogout }) {
         {page==='workboard' && <window.WorkBoardApp user={user}/>}
         {page==='issues'    && <window.IssuesApp    user={user}/>}
         {page==='admin'     && <AdminPanel          user={user}/>}
+        {page==='samples'   && (() => { window.location.href='tab-sample.html'; return null; })()}
       </main>
     </div>
   );

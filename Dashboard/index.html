@@ -397,8 +397,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 <!-- Firebase 設定 -->
 <script src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <!-- Firebase 服務層 -->
 <script src="firebase-service.js"></script>
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
 <!-- 共用常數 / Helpers -->
 <script>
@@ -1512,11 +1515,10 @@ function AdminPanel({ user }) {
     };
     await FBSettings.save(s);
     window.applySettings(s);
-    // 把 borrowers 寫進 samples.json（通知 iframe）
+    // 通知樣品模組更新借用人清單
     try {
-      const iframe = document.querySelector('iframe[title="3D列印樣品"]');
-      if(iframe && iframe.contentWindow && iframe.contentWindow.smSetBorrowers)
-        iframe.contentWindow.smSetBorrowers(borrowers);
+      if(window.smSetBorrowers)
+        window.smSetBorrowers(borrowers.map(b=>typeof b==='string'?b:(b.label||b.key||b)));
     } catch(e){}
     setSaving(false);
     showToast('設定已儲存 ✓');
@@ -1741,11 +1743,9 @@ function Shell({ user, onLogout }) {
         {page==='workboard' && <window.WorkBoardApp user={user}/>}
         {page==='issues'    && <window.IssuesApp    user={user}/>}
         {page==='admin'     && <AdminPanel          user={user}/>}
-        <iframe
-          src="tab-sample.html"
-          title="3D列印樣品"
-          style={{display:page==='samples'?'flex':'none',width:'100%',height:'100%',border:'none',flex:1,minHeight:0}}
-        />
+        {page==='samples'&&(
+          <div id="sm-mount" style={{flex:1,minHeight:0,overflow:'auto',display:'flex',flexDirection:'column'}}/>
+        )}
       </main>
     </div>
   );
@@ -1785,5 +1785,6 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
+<script src="tab-sample.js"></script>
 </body>
 </html>

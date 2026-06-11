@@ -500,7 +500,9 @@ input,select,button,textarea{font-family:inherit}
   </div>
 </div>
   `;
-  document.body.appendChild(div);
+  // 優先掛到 index.html 的 sm-mount 容器，否則直接掛到 body
+  const mount = document.getElementById('sm-mount') || document.body;
+  mount.appendChild(div);
 })();
 
 /* ══════════════════════════════════════════
@@ -1301,4 +1303,20 @@ document.querySelectorAll('.mo').forEach(mo => {
 });
 
 // ── Init ──
-init();
+// 若在 index.html 內嵌模式，等待 React 渲染 sm-mount 後才初始化
+(function smWaitAndInit() {
+  const mount = document.getElementById('sm-mount');
+  const direct = document.getElementById('pg-hdr');
+  if (mount || direct) {
+    // 若是 sm-mount 模式，把 pg-hdr 移進去
+    if (mount && !direct) {
+      const wrap = document.getElementById('sm-root-wrap');
+      if (wrap && wrap.parentNode === document.body) {
+        mount.appendChild(wrap);
+      }
+    }
+    init();
+  } else {
+    setTimeout(smWaitAndInit, 80);
+  }
+})();

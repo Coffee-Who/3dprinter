@@ -1,433 +1,1196 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>3D列印樣品 · 實威國際</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=DM+Sans:opsz,wght@9..40,400;9..40,700&display=swap" rel="stylesheet">
 <style>
-:root{--bg0:#000;--bg1:#0d1117;--bg2:#161b22;--bg3:#21262d;--bd:#21262d;--bd2:#30363d;--t1:#e6edf3;--t2:#8b949e;--t3:#484f58;--ac:#2563EB;--ac2:#1d4ed8;--abg:#0d1433;--red:#f85149;--grn:#3fb950;--ylw:#d29922;--sh:0 2px 12px rgba(0,0,0,.4)}
-body.lm{--bg0:#f4f5f8;--bg1:#fff;--bg2:#f6f8fa;--bg3:#e1e4e8;--bd:#d0d7de;--bd2:#b1bac4;--t1:#1f2328;--t2:#656d76;--t3:#8c959f;--abg:#EFF4FF;--sh:0 2px 12px rgba(0,0,0,.08)}
+/* ── reset & tokens ── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans','Noto Sans TC',sans-serif;color:var(--t1);background:var(--bg0);min-height:100vh;overflow-y:auto}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
-/* topbar */
-#topbar{background:var(--bg1);border-bottom:1px solid var(--bd);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100}
-.logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:9px}
-.logo-box{width:28px;height:28px;background:var(--ac);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px}
-.logo-sep{width:1px;height:14px;background:var(--bd2)}.logo-sub{font-size:11px;color:var(--t2)}
-.tr{display:flex;align-items:center;gap:8px}
-.tbtn{background:var(--bg2);border:1px solid var(--bd);padding:5px 12px;border-radius:20px;cursor:pointer;font-size:13px;color:var(--t2);font-family:inherit;transition:.15s}.tbtn:hover{color:var(--t1)}
-.vbg{font-size:10px;color:var(--t3);background:var(--bg2);border:1px solid var(--bd);padding:3px 8px;border-radius:4px}
-/* navtab */
-#navtab{background:var(--bg1);border-bottom:1px solid var(--bd);display:flex;padding:0 16px;overflow-x:auto;position:sticky;top:52px;z-index:99}
-.ntab{padding:12px 16px;font-size:13px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:color .15s;user-select:none;font-weight:500}
-.ntab:hover{color:var(--t1)}.ntab.on{color:var(--t1);border-bottom-color:var(--ac)}
-.sbg{font-size:9px;background:var(--bg3);color:var(--t2);padding:1px 5px;border-radius:3px}
+:root{
+  --bg:#f5f6f8;--surf:#fff;--line:#e6e8ec;--line-soft:#eef0f3;
+  --t1:#1a1d23;--t2:#3b4250;--t3:#5a6270;--t4:#8a93a3;
+  --blue:#185fa5;--blue-bg:#e6f1fb;--blue-bd:#b5d4f4;
+  --teal:#0c7a99;--teal-bg:#e6f1f6;
+  --green:#1d6f43;--green-bg:#e6f1ea;
+  --red:#a32d2d;--red-bg:#fcebeb;
+  --amber:#8b6b13;--amber-bg:#fbf3dc;
+  --sh:0 2px 12px rgba(0,0,0,.08)
+}
+body{font-family:'DM Sans','Noto Sans TC',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+input,select,button,textarea{font-family:inherit}
 
-/* ── Title (scrollable, centered) ── */
-.stitle{text-align:center;padding:24px 22px 18px;border-bottom:1px solid var(--bd)}
-.stitle h2{font-size:clamp(20px,4vw,32px);font-weight:900;letter-spacing:-.5px}
-.stitle h2 em{font-style:normal;color:var(--ac)}
-.stitle p{font-size:13px;color:var(--t2);margin-top:5px}
-.stitle-meta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:var(--bg2);border:1px solid var(--bd2);font-size:12px;color:var(--t2)}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:p 1.6s infinite;display:inline-block}
-@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+/* ── page header ── */
+.pg-hdr{background:var(--surf);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:50}
+.pg-title{font-size:15px;font-weight:700;color:var(--t1)}
+.pg-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.sync-pill{display:flex;align-items:center;gap:5px;background:var(--green-bg);border:1px solid #9acfb4;border-radius:20px;padding:3px 10px;font-size:11px;color:var(--green);font-weight:600}
+.dot{width:6px;height:6px;border-radius:50%;background:#3fb950;animation:blink 1.6s infinite;flex-shrink:0}
+.sync-pill.err{background:var(--red-bg);border-color:#f5b0b0;color:var(--red)}
+.sync-pill.err .dot{background:var(--red)}
+.sync-pill.spin{background:var(--amber-bg);border-color:#f5d5a0;color:var(--amber)}
+.sync-pill.spin .dot{background:var(--amber);animation:blink .6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── Content wrap ── */
-.sp{padding:0 22px 60px;max-width:1200px;margin:0 auto}
+/* ── category tabs ── */
+.ctabs{display:flex;padding:0 20px;background:var(--surf);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:65px;z-index:49}
+.ctab{padding:9px 16px;font-size:12px;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px;user-select:none;flex-shrink:0}
+.ctab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.ctab:hover:not(.on){color:var(--t1)}
 
-/* ── Category tabs (centered) ── */
-.ctabs{display:flex;justify-content:center;gap:8px;overflow-x:auto;padding:18px 0 16px;-webkit-overflow-scrolling:touch}
-.ctab{padding:7px 20px;border-radius:20px;border:1px solid var(--bd2);background:transparent;color:var(--t2);font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s}
-.ctab:hover{border-color:var(--ac);color:var(--ac)}.ctab.on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.cpanel{display:none}.cpanel.on{display:block}
+/* ── toolbar ── */
+.toolbar{display:flex;align-items:center;gap:8px;padding:9px 20px;background:var(--surf);border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.t-search{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--line);border-radius:6px;padding:5px 10px}
+.t-search input{border:none;background:none;outline:none;font-size:12px;color:var(--t1);width:120px}
+.t-sel{padding:5px 8px;border:1.5px solid var(--line);border-radius:6px;font-size:12px;background:var(--surf);color:var(--t2);cursor:pointer}
+.tbtn{height:30px;padding:0 12px;border:1.5px solid var(--line);border-radius:6px;font-size:12px;font-weight:600;background:var(--surf);color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:.12s}
+.tbtn:hover{background:var(--bg)}
+.tbtn.green{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.tbtn.blue{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+.size-group{display:flex;border:1.5px solid var(--line);border-radius:6px;overflow:hidden}
+.sbtn{padding:4px 10px;font-size:11px;font-weight:700;border:none;border-right:1px solid var(--line);background:var(--surf);color:var(--t3);cursor:pointer;transition:.12s}
+.sbtn:last-child{border-right:none}
+.sbtn.on{background:var(--blue);color:#fff}
+.sp{flex:1}
 
-/* Btn */
-.btn{font-family:inherit;font-size:13px;font-weight:500;padding:6px 14px;border-radius:6px;border:1px solid var(--bd2);background:var(--bg2);color:var(--t1);cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.btn:hover{background:var(--bg3)}.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}.btn.p:hover{background:var(--ac2)}
-.btn.w{background:rgba(210,153,34,.15);color:var(--ylw);border-color:var(--ylw)}
-.btn.d{background:rgba(248,81,73,.15);color:var(--red);border-color:var(--red)}
-.btn.g{background:rgba(63,185,80,.15);color:var(--grn);border-color:var(--grn)}
-.btn.sm{font-size:11px;padding:4px 10px}
-.btn.adm{background:var(--abg);color:var(--ac);border-color:rgba(37,99,235,.4)}.btn.adm.on{background:var(--ac);color:#fff}
+/* ── stat row ── */
+.stat-row{display:flex;gap:8px;padding:14px 20px;flex-wrap:wrap}
+.sc{background:var(--surf);border:1.5px solid var(--line);border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:10px}
+.sc-icon{font-size:18px}
+.sc-num{font-size:22px;font-weight:700;line-height:1}
+.sc-lbl{font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;font-weight:700}
+.sc.bw .sc-num{color:var(--red)}
+.sc.av .sc-num{color:var(--green)}
+.sc.tot .sc-num{color:var(--blue)}
 
-/* Sync */
-.sbar2{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t2);background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:4px 10px}
-.sd{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--t3)}
-.sd.ok{background:var(--grn)}.sd.err{background:var(--red)}.sd.spin{background:var(--ylw);animation:p .8s infinite}
+/* ── card grid ── */
+.cg{display:grid;gap:10px;padding:0 20px 20px}
+.cg.sz-lg{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.cg.sz-md{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.cg.sz-sm{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+@media(max-width:640px){
+  .cg.sz-md{grid-template-columns:repeat(3,1fr)}
+  .cg.sz-sm{grid-template-columns:repeat(4,1fr)}
+}
 
-/* Action bar */
-.acts{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.card{background:var(--surf);border:1.5px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;transition:.15s}
+.card:hover{border-color:var(--blue-bd);box-shadow:var(--sh)}
+.card-img{position:relative;width:100%;aspect-ratio:1/1;background:var(--line-soft);display:flex;align-items:center;justify-content:center;color:#c8cdd6;overflow:hidden;cursor:pointer}
+.card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card-img .ph{font-size:32px;opacity:.4}
+.sz-md .card-img .ph,.sz-sm .card-img .ph{font-size:20px}
+.sp-pill{position:absolute;top:5px;left:5px;font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;pointer-events:none}
+.sp-av{background:var(--green-bg);color:var(--green)}
+.sp-bw{background:var(--red-bg);color:var(--red)}
+.upload-btn{position:absolute;bottom:5px;right:5px;background:rgba(26,29,35,.75);color:#fff;border:none;border-radius:5px;padding:3px 7px;font-size:9px;cursor:pointer;display:none;align-items:center;gap:3px}
+.upload-btn input{display:none}
+.card:hover .upload-btn{display:flex}
 
-/* Stats */
-.srow{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-.sc{background:var(--bg1);border:1px solid var(--bd2);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;min-width:110px}
-.si{font-size:20px}.sn{font-size:22px;font-weight:900;line-height:1}.sl{font-size:10px;color:var(--t3);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-.sc.out .sn{color:var(--red)}.sc.in .sn{color:var(--grn)}.sc.tot .sn{color:var(--ac)}
+.card-body{padding:8px 10px 6px;flex:1}
+.card-name{font-size:11px;font-weight:700;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.card-desc{font-size:9px;color:var(--t3);line-height:1.5;margin-bottom:5px}
+.sz-md .card-desc,.sz-sm .card-desc{display:none}
+.mrow{display:flex;gap:3px;font-size:9px;margin-bottom:1px}
+.ml{color:var(--t4);font-weight:700;min-width:30px;font-size:9px;flex-shrink:0}
+.mv{color:var(--t1)}
+.mv.rd{color:var(--red);font-weight:700}
+.sz-md .mrow,.sz-sm .mrow{display:none}
+.note-box{background:var(--blue-bg);border-left:3px solid var(--blue-bd);border-radius:0 4px 4px 0;padding:4px 7px;font-size:9px;color:var(--t3);font-style:italic;margin-top:3px}
+.sz-md .note-box,.sz-sm .note-box{display:none}
 
-/* Admin bar */
-.atb{display:none;margin-bottom:14px;padding:9px 13px;background:rgba(210,153,34,.07);border:1px dashed var(--ylw);border-radius:8px;align-items:center;gap:9px;flex-wrap:wrap}
-body.adm .atb{display:flex}
-.atbl{font-size:10px;font-weight:700;color:var(--ylw);text-transform:uppercase;letter-spacing:.08em}
+.card-foot{padding:6px 8px 8px;border-top:1px solid var(--line-soft)}
+.footrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.fsel{flex:1;min-width:0;padding:4px 5px;border-radius:4px;border:1.5px solid var(--line);font-size:10px;background:var(--bg);color:var(--t1)}
+.fdate{width:90px;padding:4px 5px;border-radius:4px;border:1.5px solid var(--line);font-size:10px;background:var(--bg);color:var(--t3)}
+.cfbtn{padding:4px 9px;border-radius:4px;border:1.5px solid var(--blue);background:var(--blue);color:#fff;font-size:10px;cursor:pointer;font-weight:700;white-space:nowrap;transition:.12s}
+.cfbtn:hover{background:var(--teal);border-color:var(--teal)}
+.cfbtn.ret{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.cfbtn.ret:hover{background:var(--red);color:#fff}
+.sz-md .card-foot,.sz-sm .card-foot{display:none}
 
-/* Card grid */
-.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:36px}
-.card{background:var(--bg1);border:1px solid var(--bd2);border-radius:10px;overflow:hidden;transition:.2s;display:flex;flex-direction:column}
-.card:hover{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
-.ci{position:relative;width:100%;padding-top:100%;background:var(--bg2);overflow:hidden}
-.ci img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.cph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;opacity:.14}
-.upbtn{position:absolute;bottom:7px;right:7px;background:rgba(13,17,23,.85);border:1px solid var(--bd2);border-radius:5px;padding:4px 8px;font-size:10px;cursor:pointer;display:none;align-items:center;gap:3px;color:var(--t2);font-family:inherit}
-body.adm .upbtn{display:flex}
-.stbg{position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:#fff}
-.stbg.bw{background:var(--red)}.stbg.av{background:var(--grn)}
-.cb{padding:12px 13px 9px;flex:1;display:flex;flex-direction:column;gap:6px}
-.ct{font-size:13px;font-weight:700;line-height:1.3}.cd{font-size:11px;color:var(--t2);line-height:1.6}
-.cm{display:flex;flex-direction:column;gap:3px}
-.mr{display:flex;align-items:center;gap:6px;font-size:11px}
-.ml{font-weight:700;color:var(--t3);min-width:44px;font-size:10px;text-transform:uppercase;letter-spacing:.05em}.mv{color:var(--t1);font-weight:500}
-.cn2{background:var(--abg);border-left:3px solid rgba(37,99,235,.4);border-radius:0 5px 5px 0;padding:5px 9px;font-size:10px;color:var(--t2);font-style:italic}
-.ap{display:none;border-top:1px dashed var(--bd2);margin-top:6px;padding-top:8px;flex-direction:column;gap:5px}
-body.adm .ap{display:flex}
-.ap label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:700}
-.ap input,.ap textarea{width:100%;padding:5px 8px;border-radius:5px;border:1px solid var(--bd2);font-size:11px;font-family:inherit;background:var(--bg2);color:var(--t1);outline:none}
-.ap textarea{min-height:48px;resize:vertical}
-.ap input:focus,.ap textarea:focus{border-color:var(--ac)}
-.cf{padding:8px 13px 12px;border-top:1px solid var(--bd)}
-.af,.rf{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-select.bs{flex:1;min-width:75px;padding:5px 7px;border-radius:5px;border:1px solid var(--bd2);font-family:inherit;font-size:11px;background:var(--bg2);color:var(--t1);outline:none;cursor:pointer}
-.diw{position:relative}
-.diw input{padding:5px 7px;border-radius:5px;border:1px solid var(--bd2);font-family:inherit;font-size:11px;background:var(--bg2);color:var(--t1);outline:none;cursor:pointer;width:100px}
+/* ── table ── */
+.tbl-wrap{padding:0 20px 20px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px;border-top:1px solid var(--line-soft);flex-wrap:wrap;gap:6px}
+.sec-title{font-size:13px;font-weight:700;color:var(--t1)}
+.sec-title span{color:var(--blue)}
+.drag-hint{font-size:10px;color:var(--t4);display:flex;align-items:center;gap:3px}
+.at{background:var(--surf);border:1.5px solid var(--line);border-radius:8px;overflow:hidden;overflow-x:auto}
+.at-head{display:grid;background:#f8f9fb;padding:8px 14px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--t4);border-bottom:1.5px solid var(--line);min-width:600px}
+.at-head>div{display:flex;align-items:center;gap:3px;user-select:none;overflow:hidden;position:relative}
+.resize-handle{position:absolute;right:-4px;top:0;height:100%;width:8px;cursor:col-resize;z-index:2}
+.resize-handle:hover::after,.resize-handle.active::after{content:'';position:absolute;left:3px;top:20%;height:60%;width:2px;background:var(--blue);border-radius:2px}
+.at-row{display:grid;padding:8px 14px;border-bottom:1px solid var(--line-soft);font-size:11px;align-items:center;min-width:600px}
+.at-row:last-child{border-bottom:none}
+.at-row:hover{background:#f8f9fb}
+.at-name{font-weight:700;color:var(--t1);display:flex;align-items:center;gap:5px;overflow:hidden}
+.chip{display:inline-flex;font-size:9px;padding:1px 7px;border-radius:10px;font-weight:700;flex-shrink:0}
+.chip-bw{background:var(--red-bg);color:var(--red)}
+.chip-av{background:var(--green-bg);color:var(--green)}
+.days-red{font-weight:700;color:var(--red)}
+.ri{color:#d0d4db;font-size:11px;flex-shrink:0;cursor:col-resize}
 
-/* Date picker */
-#dp{display:none;position:fixed;z-index:600;background:var(--bg1);border:1px solid var(--bd2);border-radius:10px;box-shadow:var(--sh);padding:11px;min-width:234px}
-#dp.on{display:block}
-.dph{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
-.dph button{background:none;border:none;cursor:pointer;font-size:13px;color:var(--t2);padding:3px 5px;border-radius:5px}.dph button:hover{background:var(--bg2)}
-.dpm{font-weight:700;font-size:12px}
-.dpg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
-.dpl{font-size:9px;color:var(--t3);padding:3px 0;font-weight:700}
-.dpd{font-size:11px;padding:4px 0;border-radius:5px;cursor:pointer;transition:background .1s}
-.dpd:hover{background:var(--bg2)}.dpd.sel{background:var(--ac);color:#fff;font-weight:700}.dpd.emp{cursor:default;color:transparent}
-
-/* Analytics */
-.as{margin-top:36px;padding-top:26px;border-top:1px solid var(--bd)}
-.ash{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.ast{font-size:16px;font-weight:900}.ast span{color:var(--ac)}
-.pills{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:9px;padding:8px 14px;border-radius:8px;border:1px solid var(--bd2);background:var(--bg1)}
-.pn{font-size:18px;font-weight:900;line-height:1}.ps{font-size:10px;font-weight:600;margin-top:1px;text-transform:uppercase;letter-spacing:.05em}
-.pill.po{border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.07)}.pill.po .pn,.pill.po .ps{color:var(--red)}
-.pill.pi{border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.07)}.pill.pi .pn,.pill.pi .ps{color:var(--grn)}
-.sg{display:flex;gap:5px}
-.sb3{padding:4px 12px;border-radius:5px;border:1px solid var(--bd2);background:var(--bg2);font-size:11px;font-family:inherit;cursor:pointer;transition:.12s;color:var(--t2);font-weight:500}
-.sb3.on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.at{background:var(--bg1);border:1px solid var(--bd2);border-radius:9px;overflow:hidden;margin-bottom:20px}
-.ath{display:grid;grid-template-columns:2fr 1.5fr 1.2fr .7fr 1.3fr;background:var(--bg3);color:var(--t2);padding:9px 14px;font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;border-bottom:1px solid var(--bd2)}
-.atr{display:grid;grid-template-columns:2fr 1.5fr 1.2fr .7fr 1.3fr;padding:9px 14px;border-bottom:1px solid var(--bd);font-size:11px;align-items:center;transition:background .1s}
-.atr:last-child{border-bottom:none}.atr:hover{background:var(--bg2)}
-.an{font-weight:700;display:flex;align-items:center;gap:5px}
-.ab2{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:600}
-.ab2.bp{background:rgba(37,99,235,.2);color:var(--ac)}.ab2.bi{background:rgba(210,153,34,.2);color:var(--ylw)}
-.ab2.bo{background:rgba(248,81,73,.2);color:var(--red)}.ab2.bg{background:rgba(63,185,80,.2);color:var(--grn)}
-.bw2{background:var(--bd);border-radius:4px;height:4px;overflow:hidden}
-.bf{height:100%;border-radius:4px;transition:width .4s}.bf.fb{background:var(--ac)}
-
-/* Quote iframe — full viewport, breaks out of .sp container */
-#cp-quote{position:fixed;inset:0;z-index:50;background:var(--bg0)}
-#cp-quote.on{display:block}
-#quote-frame{width:100%;height:100%;border:none;display:block}
-
-/* Modals */
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center}
+/* ── modals ── */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;padding:16px}
 .mo.on{display:flex}
-.mb{background:var(--bg1);border:1px solid var(--bd2);border-radius:12px;padding:22px;min-width:330px;max-width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.mt3{font-size:15px;font-weight:900;margin-bottom:14px}
-.mb label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:700;display:block;margin-bottom:3px;margin-top:10px}
+.mb{background:var(--surf);border-radius:12px;padding:22px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.mb h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.mb label{display:block;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;margin-top:12px}
 .mb label:first-of-type{margin-top:0}
-.mb input,.mb textarea{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--bd2);font-size:13px;font-family:inherit;background:var(--bg2);color:var(--t1);outline:none}
-.mb input:focus,.mb textarea:focus{border-color:var(--ac)}
+.mb input,.mb textarea,.mb select{width:100%;padding:8px 10px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;background:var(--bg);color:var(--t1);outline:none;transition:.12s}
+.mb input:focus,.mb textarea:focus,.mb select:focus{border-color:var(--blue)}
 .mb textarea{min-height:60px;resize:vertical}
-.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
-.ble{max-height:160px;overflow-y:auto;margin-bottom:10px}
-.bi2{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:6px;font-size:12px;background:var(--bg2);margin-bottom:4px}
-.rb2{cursor:pointer;color:var(--red);font-size:13px}
+.mb-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.btn-cancel{height:34px;padding:0 16px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;background:var(--surf);color:var(--t2);cursor:pointer;font-weight:600}
+.btn-save{height:34px;padding:0 16px;border:none;border-radius:6px;font-size:13px;background:var(--blue);color:#fff;cursor:pointer;font-weight:600}
+.btn-save:hover{background:var(--teal)}
+.btn-del{height:34px;padding:0 14px;border:none;border-radius:6px;font-size:13px;background:var(--red-bg);color:var(--red);cursor:pointer;font-weight:600;margin-right:auto}
+.prev-img{width:100%;max-height:150px;object-fit:cover;border-radius:6px;margin-top:8px;display:none}
+.upload-area{border:2px dashed var(--line);border-radius:6px;padding:14px;text-align:center;cursor:pointer;margin-top:6px;font-size:12px;color:var(--t3)}
+.upload-area:hover{border-color:var(--blue);color:var(--blue)}
 
-/* Toast */
-#toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:7px;z-index:1000}
-.toast{padding:9px 16px;border-radius:8px;font-size:12px;background:var(--bg3);border:1px solid var(--bd2);animation:tin .2s ease}
-.toast.ok{background:#0d2a14;border-color:var(--grn);color:var(--grn)}.toast.err{background:#2d0000;border-color:var(--red);color:var(--red)}
+/* ── lightbox ── */
+.lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;align-items:center;justify-content:center}
+.lb.on{display:flex}
+.lb img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:8px}
+.lb-close{position:absolute;top:14px;right:18px;color:#fff;font-size:26px;cursor:pointer;line-height:1}
+
+/* ── toast ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:900}
+.toast{padding:9px 16px;border-radius:8px;font-size:12px;font-weight:600;animation:tin .2s ease;max-width:300px}
+.toast.ok{background:#e6f1ea;border:1.5px solid #9acfb4;color:var(--green)}
+.toast.err{background:var(--red-bg);border:1.5px solid #f5b0b0;color:var(--red)}
+.toast.inf{background:var(--blue-bg);border:1.5px solid var(--blue-bd);color:var(--blue)}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.ep{padding:48px 0;text-align:center;color:var(--t3);font-size:13px}
-@media(max-width:640px){.sp{padding:0 12px 60px}.ath,.atr{grid-template-columns:2fr 1fr 1fr}.ath>*:nth-child(n+4),.atr>*:nth-child(n+4){display:none}}
+
+/* ── dashboard ── */
+.dash-panel{padding:0 20px 28px}
+.period-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 0 12px;flex-wrap:wrap;gap:8px}
+.period-title{font-size:13px;font-weight:700;color:var(--t1)}
+.period-group{display:flex;border:1.5px solid var(--line);border-radius:6px;overflow:hidden}
+.pbtn{padding:5px 16px;font-size:12px;font-weight:600;border:none;border-right:1px solid var(--line);background:var(--surf);color:var(--t3);cursor:pointer;transition:.12s}
+.pbtn:last-child{border-right:none}
+.pbtn.on{background:var(--blue);color:#fff}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:640px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surf);border:1.5px solid var(--line);border-radius:8px;padding:13px 15px}
+.kpi-num{font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-lbl{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.kpi-trend{font-size:10px;margin-top:4px;font-weight:600;color:var(--t4)}
+.kpi.blue .kpi-num{color:var(--blue)}
+.kpi.green .kpi-num{color:var(--green)}
+.kpi.red .kpi-num{color:var(--red)}
+.kpi.teal .kpi-num{color:var(--teal)}
+.trend-up{color:var(--green)}
+.trend-dn{color:var(--red)}
+.chart-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:640px){.chart-2col{grid-template-columns:1fr}}
+.chart-card{background:var(--surf);border:1.5px solid var(--line);border-radius:8px;padding:14px 16px}
+.chart-title{font-size:12px;font-weight:700;color:var(--t1);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--line-soft)}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-lbl{font-size:11px;color:var(--t2);font-weight:600;min-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-bg{flex:1;height:7px;background:var(--line-soft);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.bar-val{font-size:11px;color:var(--t3);min-width:28px;text-align:right;font-weight:600}
+.bar-chart-wrap{display:flex;align-items:flex-end;gap:6px;height:100px;padding:4px 0 0}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0}
+.bar-col-fill{width:80%;border-radius:3px 3px 0 0;transition:height .4s;min-height:2px}
+.bar-col-lbl{font-size:9px;color:var(--t4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bar-col-val{font-size:9px;font-weight:700;color:var(--t2)}
+.warn-hd{padding:9px 14px;background:#fff8f0;border-bottom:1.5px solid #f5d5b0;font-size:12px;font-weight:700;color:#8b4513;display:flex;align-items:center;gap:6px}
+.th5{grid-template-columns:2fr 1fr 1fr 1fr 1fr}
+
+/* ── borrow edit section ── */
+#borrow-edit-section{border-radius:8px;background:var(--teal-bg);border:1.5px solid #9acfcf;padding:12px 14px;margin-top:14px}
+#borrow-edit-section .adm-lbl-edit{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:block}
+#borrow-edit-section label{color:var(--teal) !important}
+#borrow-edit-section select,#borrow-edit-section input{background:var(--surf) !important;border-color:rgba(12,122,153,.25) !important}
+#borrow-edit-section select:focus,#borrow-edit-section input:focus{border-color:var(--teal) !important}
+
+/* edit btn in table row */
+.tbl-edit-btn{padding:2px 9px;border-radius:4px;border:1.5px solid var(--line);background:var(--surf);color:var(--t3);font-size:10px;cursor:pointer;font-family:inherit;transition:.12s;white-space:nowrap}
+.tbl-edit-btn:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-bg)}
+@media(max-width:480px){
+  .pg-hdr{padding:10px 14px}
+  .ctabs{padding:0 14px}
+  .toolbar{padding:8px 14px}
+  .stat-row,.tbl-wrap,.cg{padding-left:14px;padding-right:14px}
+  .dash-panel{padding-left:14px;padding-right:14px}
+}
 </style>
 </head>
 <body>
 <div id="toasts"></div>
 
-<!-- ── Topbar ── -->
-<div id="topbar">
-  <div class="logo">
-    <div class="logo-box">🖨</div>實威國際
-    <div class="logo-sep"></div>
-    <span class="logo-sub">3D Print Studio</span>
+<!-- lightbox -->
+<div class="lb" id="lb" onclick="closeLB()">
+  <span class="lb-close" onclick="closeLB()">×</span>
+  <img id="lb-img" src="" alt="">
+</div>
+
+<!-- page header -->
+<div class="pg-hdr">
+  <div>
+    <div class="pg-title">🖨 3D 列印樣品管理</div>
+    <div class="pg-sub">實威國際 · 統一管理借用紀錄，同步至 GitHub</div>
   </div>
-  <div class="tr">
-    <button class="tbtn" onclick="toggleTheme()" id="themeBtn">🌙 暗色</button>
-    <span class="vbg">v1.0</span>
+  <div class="sync-pill spin" id="sync-pill">
+    <span class="dot" id="sync-dot"></span>
+    <span id="sync-txt">連線中…</span>
   </div>
 </div>
 
-<div id="navtab">
-  <div class="ntab" onclick="location.href='tab-home.html'">🏠 首頁</div>
-  <div class="ntab on" onclick="location.href='tab-sample.html'">📦 3D列印</div>
-  <div class="ntab" onclick="location.href='tab-home.html#kb-section'">🧠 實威國際知識庫</div>
-  <div class="ntab" onclick="location.href='tab-daily.html'">📰 每日焦點</div>
-</div>
-
-<!-- ── Title (scrollable, centered) ── -->
-<div class="stitle">
-  <h2>實威國際<em>3D列印</em></h2>
-  <p>統一管理所有 3D 列印樣品借用紀錄，資料同步至 GitHub</p>
-  <div class="stitle-meta">
-    <div class="chip">📁 分類 3</div>
-    <div class="chip">🔗 樣品 <b id="cnum">—</b></div>
-    <div class="chip"><span class="dot"></span> 線上</div>
-    <div class="sbar2"><span class="sd spin" id="sd"></span><span id="st2">連線中…</span></div>
+<!-- category tabs -->
+<div class="ctabs">
+  <div class="ctab on" id="tab-samples" onclick="switchTab('samples')">
+    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="10" rx="1.2" stroke="currentColor" stroke-width="1.3"/><line x1="1.5" y1="5.5" x2="12.5" y2="5.5" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="2" x2="5" y2="12" stroke="currentColor" stroke-width="1.3"/></svg>
+    📦 3D列印樣品
+  </div>
+  <div class="ctab" id="tab-dashboard" onclick="switchTab('dashboard')">
+    <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 11.5V8.5M5 11.5V5M8 11.5V7M11 11.5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="12.5" x2="13" y2="12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+    📊 Dashboard 分析
   </div>
 </div>
 
-<div class="sp">
-  <!-- ── Category tabs (centered) ── -->
-  <div class="ctabs">
-    <button class="ctab on" onclick="swCP('samples',this)">📦 3D列印樣品</button>
-    <button class="ctab" onclick="swCP('quote',this)">💰 3D列印估價</button>
-    <button class="ctab" onclick="swCP('test',this)">🧪 TEST</button>
+<!-- ════════ SAMPLES PANEL ════════ -->
+<div id="panel-samples">
+
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="t-search">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input id="search-input" placeholder="搜尋樣品名稱…" oninput="renderCards()">
+    </div>
+    <select class="t-sel" id="status-filter" onchange="renderCards()">
+      <option value="">所有狀態</option>
+      <option value="available">在庫</option>
+      <option value="borrowed">借出中</option>
+    </select>
+    <div class="sp"></div>
+    <button class="tbtn green" onclick="exportExcel()">📊 匯出 Excel</button>
+    <button class="tbtn blue" onclick="openAdd()">＋ 新增樣品</button>
+    <div class="size-group">
+      <button class="sbtn" onclick="setSize('lg',this)">大</button>
+      <button class="sbtn on" onclick="setSize('md',this)">中</button>
+      <button class="sbtn" onclick="setSize('sm',this)">小</button>
+    </div>
   </div>
 
-  <!-- Panel: samples -->
-  <div class="cpanel on" id="cp-samples">
-    <div class="acts">
-      <button class="btn adm" id="abt" onclick="toggleAdmin()">🔐 管理員</button>
-      <button class="btn p" id="acb" onclick="openAdd()" style="display:none">＋ 新增樣品</button>
-    </div>
-    <div class="srow">
-      <div class="sc out"><div class="si">📤</div><div><div class="sn" id="sb">0</div><div class="sl">借出中</div></div></div>
-      <div class="sc in"><div class="si">📥</div><div><div class="sn" id="sa">0</div><div class="sl">在庫</div></div></div>
-      <div class="sc tot"><div class="si">📦</div><div><div class="sn" id="st">0</div><div class="sl">總計</div></div></div>
-    </div>
-    <div class="atb">
-      <span class="atbl">🔓 管理員模式</span>
-      <button class="btn sm w" onclick="openAdd()">＋ 新增樣品卡片</button>
-      <button class="btn sm" onclick="openBM()">👤 管理借用人</button>
-      <button class="btn sm" onclick="$('tkOv').classList.add('on')">🔑 Token</button>
-    </div>
-    <div class="cg" id="cg"></div>
+  <!-- stats -->
+  <div class="stat-row">
+    <div class="sc bw"><span class="sc-icon">📤</span><div><div class="sc-num" id="stat-bw">0</div><div class="sc-lbl">借出中</div></div></div>
+    <div class="sc av"><span class="sc-icon">📥</span><div><div class="sc-num" id="stat-av">0</div><div class="sc-lbl">在庫</div></div></div>
+    <div class="sc tot"><span class="sc-icon">📦</span><div><div class="sc-num" id="stat-tot">0</div><div class="sc-lbl">總計</div></div></div>
+  </div>
 
-    <!-- Analytics 1 -->
-    <div class="as">
-      <div class="ash"><div class="ast">借用<span> 統計分析</span></div><div class="sg"><button class="sb3 on" onclick="sortA('person',this)">依人員</button><button class="sb3" onclick="sortA('item',this)">依樣品</button></div></div>
-      <div class="pills">
-        <div class="pill po"><span style="font-size:19px">📤</span><div><div class="pn" id="anb">0</div><div class="ps">借出中</div></div></div>
-        <div class="pill pi"><span style="font-size:19px">📥</span><div><div class="pn" id="ana">0</div><div class="ps">在庫</div></div></div>
+  <!-- card grid -->
+  <div class="cg sz-md" id="cg"></div>
+
+  <!-- borrow status table -->
+  <div class="tbl-wrap">
+    <div class="sec-hd">
+      <span class="sec-title">目前<span> 借出狀態</span></span>
+      <span class="drag-hint">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M4 1v10M8 1v10" stroke="#c0c8d4" stroke-width="1.3" stroke-linecap="round"/></svg>
+        欄位可拖曳調整寬度
+      </span>
+    </div>
+    <div class="at">
+      <div class="at-head" id="borrow-head" style="grid-template-columns:2fr 1.4fr 1.2fr .8fr 1fr"></div>
+      <div id="borrow-body"></div>
+    </div>
+
+    <div class="sec-hd" style="margin-top:4px">
+      <span class="sec-title">歸還<span> 歷史紀錄</span></span>
+      <button class="tbtn green" style="height:26px;font-size:11px" onclick="exportExcel()">📊 匯出 Excel</button>
+    </div>
+    <div class="at">
+      <div class="at-head th5" style="min-width:500px">
+        <div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>歸還日期</div><div>天數</div>
       </div>
-      <div class="at"><div class="ath"><div>名稱</div><div>相關樣品／人員</div><div>最近借用</div><div>次數</div><div>使用頻率</div></div><div id="ab"></div></div>
-    </div>
-
-    <!-- Analytics 2 -->
-    <div class="as">
-      <div class="ash"><div class="ast">目前<span> 借出狀態</span></div></div>
-      <div class="at"><div class="ath" style="grid-template-columns:2fr 1.5fr 1.5fr 1fr 1.2fr"><div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>狀態</div><div>天數</div></div><div id="bsb"></div></div>
-    </div>
-
-    <!-- Analytics 3 + Excel export -->
-    <div class="as">
-      <div class="ash">
-        <div class="ast">歸還<span> 歷史紀錄</span></div>
-        <button class="btn g sm" onclick="exportExcel()">📊 匯出 Excel</button>
-      </div>
-      <div class="at"><div class="ath" style="grid-template-columns:2fr 1.5fr 1.5fr 1.5fr 1fr"><div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>歸還日期</div><div>天數</div></div><div id="rsb"></div></div>
+      <div id="return-body"></div>
     </div>
   </div>
-
-  <!-- Panel: quote — iframe of tab-3dprint.html (full viewport) -->
-  <div class="cpanel" id="cp-quote">
-    <div style="position:absolute;top:12px;left:16px;z-index:60">
-      <button class="btn sm" style="background:rgba(13,17,23,.85);border-color:rgba(255,255,255,.2);color:#e6edf3" onclick="swCP('samples',document.querySelector('.ctab'))">← 返回樣品</button>
-    </div>
-    <iframe id="quote-frame" src="tab-3dprint.html" title="3D列印估價" loading="lazy" allowfullscreen></iframe>
-  </div>
-
-  <!-- Panel: test -->
-  <div class="cpanel" id="cp-test"><div class="ep">🧪 TEST 測試區</div></div>
 </div>
 
-<!-- Modals -->
-<div class="mo" id="bm"><div class="mb">
-  <div class="mt3">👤 管理借用人名單</div>
-  <div class="ble" id="bl"></div>
-  <label>新增借用人</label><input type="text" id="nbi" placeholder="輸入姓名…">
-  <div class="ma"><button class="btn" onclick="closeBM()">關閉</button><button class="btn p" onclick="addB()">＋ 新增</button></div>
-</div></div>
+<!-- ════════ DASHBOARD PANEL ════════ -->
+<div id="panel-dashboard" style="display:none">
+  <div class="dash-panel">
+    <div class="period-bar">
+      <span class="period-title">借用統計分析</span>
+      <div class="period-group">
+        <button class="pbtn on" id="pb-month" onclick="setPeriod('month')">月份</button>
+        <button class="pbtn" id="pb-quarter" onclick="setPeriod('quarter')">季度</button>
+        <button class="pbtn" id="pb-year" onclick="setPeriod('year')">年份</button>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi blue"><div class="kpi-num" id="kpi-total">0</div><div class="kpi-lbl" id="kpi-total-lbl">本月借出次數</div><div class="kpi-trend" id="kpi-total-trend"></div></div>
+      <div class="kpi green"><div class="kpi-num" id="kpi-ret">0</div><div class="kpi-lbl" id="kpi-ret-lbl">本月已歸還</div><div class="kpi-trend" id="kpi-ret-trend"></div></div>
+      <div class="kpi red"><div class="kpi-num" id="kpi-out">0</div><div class="kpi-lbl" id="kpi-out-lbl">累計未歸還</div><div class="kpi-trend" id="kpi-out-trend"></div></div>
+      <div class="kpi teal"><div class="kpi-num" id="kpi-avg">0</div><div class="kpi-lbl" id="kpi-avg-lbl">平均借用天數</div><div class="kpi-trend" id="kpi-avg-trend"></div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title" id="trend-title">📅 每月借出次數趨勢</div>
+      <div class="bar-chart-wrap" id="trend-chart"></div>
+    </div>
+    <div class="chart-2col">
+      <div class="chart-card">
+        <div class="chart-title">借用人排行</div>
+        <div id="person-chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">樣品借用次數排行</div>
+        <div id="item-chart"></div>
+      </div>
+    </div>
+    <div class="at" id="warn-table">
+      <div class="warn-hd">⚠️ 長期借用警示（超過 30 天）</div>
+      <div class="at-head th5" style="min-width:400px"><div>樣品名稱</div><div>借用人</div><div>借出日期</div><div>已借天數</div><div>狀態</div></div>
+      <div id="warn-body"></div>
+    </div>
+  </div>
+</div>
 
-<div class="mo" id="am"><div class="mb">
-  <div class="mt3">➕ 新增樣品卡片</div>
-  <label>樣品名稱 *</label><input type="text" id="ncn" placeholder="例：FDM 齒輪組">
-  <label>摘要描述</label><textarea id="ncd" placeholder="簡短說明此樣品特性…"></textarea>
-  <label>備註</label><input type="text" id="ncno" placeholder="選填備註…">
-  <label>圖片（上傳或貼網址）</label>
-  <div style="display:flex;gap:6px;margin-bottom:6px"><input type="url" id="nciu" placeholder="https://…" oninput="prevImg(this.value)"><button class="btn sm" onclick="$('ncif').click()">📁</button><input type="file" id="ncif" accept="image/*" style="display:none" onchange="handleImg(this)"></div>
-  <img id="ncpv" style="display:none;width:100%;max-height:130px;object-fit:cover;border-radius:5px;margin-bottom:6px">
-  <div class="ma"><button class="btn" onclick="closeAdd()">取消</button><button class="btn p" onclick="confAdd()">確認新增</button></div>
-</div></div>
+<!-- ── Add/Edit modal ── -->
+<div class="mo" id="mo-add">
+  <div class="mb" style="max-width:480px">
+    <h3 id="modal-title">➕ 新增樣品</h3>
+    <input type="hidden" id="edit-id">
 
-<div class="mo" id="tkOv"><div class="mb" style="max-width:400px">
-  <div class="mt3">🔑 GitHub Token</div>
-  <p style="font-size:11px;color:var(--t2);margin-bottom:10px">Personal Access Token（需 repo 寫入）<br>GitHub → Settings → Developer settings → Personal access tokens → 勾選 repo</p>
-  <label>Token</label><input type="password" id="tkInp" placeholder="ghp_…">
-  <div class="ma"><button class="btn" onclick="$('tkOv').classList.remove('on')">取消</button><button class="btn p" onclick="saveToken()">確認</button></div>
-</div></div>
+    <!-- 基本資料 -->
+    <label>樣品名稱 *</label>
+    <input type="text" id="f-name" placeholder="例：FDM 齒輪組">
+    <label>摘要描述</label>
+    <textarea id="f-desc" placeholder="簡短說明此樣品特性…" rows="2"></textarea>
+    <label>備註</label>
+    <input type="text" id="f-note" placeholder="選填備註…">
+    <label>照片（上傳或貼網址）</label>
+    <input type="url" id="f-imgurl" placeholder="https://…" oninput="previewImg(this.value)">
+    <div class="upload-area" onclick="document.getElementById('f-imgfile').click()">
+      📷 點擊上傳照片（jpg / png / webp）
+      <input type="file" id="f-imgfile" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
+    </div>
+    <img id="f-imgprev" class="prev-img" alt="">
 
-<div id="dp">
-  <div class="dph"><button onclick="dpP()">◀</button><span class="dpm" id="dpm"></span><button onclick="dpN()">▶</button></div>
-  <div class="dpg" id="dpg"></div>
+    <!-- 借用狀態區塊（僅編輯時顯示） -->
+    <div id="borrow-edit-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1.5px dashed var(--line)">
+      <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">📋 借用狀態編輯</div>
+
+      <label>借用狀態</label>
+      <select id="f-status" onchange="onStatusChange()">
+        <option value="available">✅ 在庫</option>
+        <option value="borrowed">📤 借出中</option>
+      </select>
+
+      <div id="f-borrow-fields" style="display:none">
+        <label>借用人</label>
+        <select id="f-bw">
+          <option value="">選擇借用人</option>
+        </select>
+        <label style="margin-top:8px">亦可直接輸入借用人姓名</label>
+        <input type="text" id="f-bw-manual" placeholder="直接輸入姓名（會覆蓋上方選單）">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+          <div>
+            <label>借出日期</label>
+            <input type="date" id="f-bd">
+          </div>
+          <div>
+            <label>預計/實際歸還日期</label>
+            <input type="date" id="f-rd">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-foot">
+      <button class="btn-del" id="btn-del" style="display:none" onclick="deleteCard()">🗑 刪除</button>
+      <button class="btn-cancel" onclick="closeAdd()">取消</button>
+      <button class="btn-save" onclick="saveCard()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Borrow modal ── -->
+<div class="mo" id="mo-borrow">
+  <div class="mb">
+    <h3>📤 確認借出</h3>
+    <input type="hidden" id="borrow-sample-id">
+    <label>借用人</label>
+    <select id="borrow-person"></select>
+    <label>借出日期 *</label>
+    <input type="date" id="borrow-date">
+    <div class="mb-foot">
+      <button class="btn-cancel" onclick="closeBorrow()">取消</button>
+      <button class="btn-save" onclick="confirmBorrow()">確認借出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Return modal ── -->
+<div class="mo" id="mo-return">
+  <div class="mb">
+    <h3>📥 確認歸還</h3>
+    <input type="hidden" id="return-sample-id">
+    <label>歸還日期 *</label>
+    <input type="date" id="return-date">
+    <div class="mb-foot">
+      <button class="btn-cancel" onclick="closeReturn()">取消</button>
+      <button class="btn-save" onclick="confirmReturn()">確認歸還</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Token modal ── -->
+<div class="mo" id="mo-token">
+  <div class="mb">
+    <h3>🔑 GitHub Token 設定</h3>
+    <p style="font-size:11px;color:var(--t3);line-height:1.7;margin-bottom:10px">
+      需要 GitHub Personal Access Token（勾選 repo 權限）才能儲存資料與上傳照片。<br>
+      GitHub → Settings → Developer settings → Personal access tokens
+    </p>
+    <label>Token</label>
+    <input type="password" id="token-inp" placeholder="ghp_…">
+    <div class="mb-foot">
+      <button class="btn-cancel" onclick="document.getElementById('mo-token').classList.remove('on')">取消</button>
+      <button class="btn-save" onclick="saveToken()">儲存</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const GH_USER='Coffee-Who',GH_REPO='3dprinter',GH_PATH='image/samples.json';
-const GH_RAW=`https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${GH_PATH}`;
-const LS_KEY='sw_samples_v1',LS_TOK='sw_gh_token_v9';
-let GH_TOK=localStorage.getItem(LS_TOK)||'';
-const $=id=>document.getElementById(id);
-const days=(d1,d2)=>Math.max(0,Math.round((new Date(d2||new Date().toISOString().slice(0,10))-new Date(d1))/864e5));
+// ── GitHub config ──
+const GH_USER = 'Coffee-Who';
+const GH_REPO = '3dprinter';
+const GH_PATH_DATA = 'image/samples.json';
+const GH_PATH_IMG  = 'image/';
+const GH_RAW = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${GH_PATH_DATA}`;
+const LS_DATA  = 'sw_samples_v3';
+const LS_TOKEN = 'sw_gh_token_v3';
+const LS_BORROW = 'sw_borrowers_v3';
 
-const DS=[
-  {id:1,name:'FDM 齒輪組',desc:'PLA材料，標準齒輪示範樣品，適合機構說明展示。',st:'available',bw:'',bd:'',rd:'',note:'請輕拿輕放',img:''},
-  {id:2,name:'SLA 透明殼體',desc:'光固化樹脂，展示透明度與精度，含組裝示範。',st:'borrowed',bw:'王小明',bd:'2025-04-10',rd:'',note:'需歸還盒裝',img:''},
-  {id:3,name:'SLS 結構件',desc:'尼龍粉末燒結，強度測試樣品，展示承重能力。',st:'available',bw:'',bd:'',rd:'',note:'',img:''},
-  {id:4,name:'MJF 彩色件',desc:'多噴嘴熔融，多色一體成型，適合產品外觀展示。',st:'borrowed',bw:'李美華',bd:'2025-04-15',rd:'',note:'勿受潮',img:''},
-  {id:5,name:'金屬 DMLS 支架',desc:'直接金屬雷射燒結鈦合金，用於結構強度說明。',st:'available',bw:'',bd:'',rd:'',note:'',img:''},
-  {id:6,name:'碳纖維複合材',desc:'連續碳纖維強化，用於輕量化解決方案展示。',st:'borrowed',bw:'張大偉',bd:'2025-04-18',rd:'',note:'避免高溫環境',img:''},
-];
-let samples=[...DS],borrowers=['王小明','李美華','張大偉','陳怡君','林志豪'],returnHistory=[],nid=7,sort='person',isAdm=false,dpT=null,dpY=new Date().getFullYear(),dpM=new Date().getMonth(),aData={};
+let GH_TOKEN = localStorage.getItem(LS_TOKEN) || '';
+let samples = [];
+let returnHistory = [];
+let borrowers = JSON.parse(localStorage.getItem(LS_BORROW) || '[]') || ['王小明','李美華','張大偉','陳怡君','林志豪'];
+let nid = 1;
+let currentPeriod = 'month';
+let colWidths = [2,1.4,1.2,0.8,1];  // fr units for borrow table
 
-/* GitHub sync */
-function setSS(s,m){$('sd').className='sd '+s;$('st2').textContent=m;}
-async function loadFromGH(){
-  setSS('spin','連線中…');
-  try{const r=await fetch(GH_RAW+'?t='+Date.now(),{cache:'no-store'});if(r.ok){const d=await r.json();samples=d.samples||DS;borrowers=d.borrowers||borrowers;returnHistory=d.returnHistory||[];nid=Math.max(...samples.map(s=>s.id),6)+1;localStorage.setItem(LS_KEY,JSON.stringify(d));setSS('ok','已同步 GitHub');renderAll();return;}}catch(e){}
-  const c=localStorage.getItem(LS_KEY);
-  if(c){try{const d=JSON.parse(c);samples=d.samples||DS;borrowers=d.borrowers||borrowers;returnHistory=d.returnHistory||[];nid=Math.max(...samples.map(s=>s.id),6)+1;setSS('err','使用本機快取');renderAll();return;}catch(e){}}
-  setSS('err','使用預設資料');renderAll();
-}
-async function saveToGH(){
-  const payload={samples,borrowers,returnHistory,updatedAt:new Date().toISOString()};
-  localStorage.setItem(LS_KEY,JSON.stringify(payload));
-  if(!GH_TOK){setSS('err','未設定 Token，已存本機');return;}
-  setSS('spin','儲存中…');
-  const json=JSON.stringify(payload,null,2);let sha='';
-  try{const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,{headers:{Authorization:`token ${GH_TOK}`,Accept:'application/vnd.github.v3+json'}});if(r.ok){const d=await r.json();sha=d.sha;}}catch(e){}
-  try{const r=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH}`,{method:'PUT',headers:{Authorization:`token ${GH_TOK}`,'Content-Type':'application/json',Accept:'application/vnd.github.v3+json'},body:JSON.stringify({message:`Samples ${new Date().toISOString().slice(0,19)}`,content:btoa(unescape(encodeURIComponent(json))),...(sha?{sha}:{})})});if(r.ok){setSS('ok','已同步 GitHub ✓');return;}}catch(e){}
-  setSS('err','GitHub 失敗，已存本機');
-}
-function saveToken(){const t=$('tkInp').value.trim();if(!t)return;GH_TOK=t;localStorage.setItem(LS_TOK,t);$('tkOv').classList.remove('on');toast('✅ Token 已儲存','ok');}
+const today = () => new Date().toISOString().slice(0,10);
+const daysBetween = (d1,d2) => {
+  if(!d1) return 0;
+  const end = d2 ? new Date(d2) : new Date();
+  return Math.max(0, Math.round((end - new Date(d1)) / 86400000));
+};
 
-/* Render */
-function stats(){
-  const b=samples.filter(s=>s.st==='borrowed').length,a=samples.filter(s=>s.st==='available').length;
-  ['sb','anb'].forEach(id=>$(id).textContent=b);['sa','ana'].forEach(id=>$(id).textContent=a);
-  $('st').textContent=samples.length;$('cnum').textContent=samples.length;
+// ── Sync indicator ──
+function setSyncState(state, txt) {
+  const pill = document.getElementById('sync-pill');
+  pill.className = 'sync-pill ' + state;
+  document.getElementById('sync-txt').textContent = txt;
 }
-function renderCards(){
-  const g=$('cg');g.innerHTML='';
-  samples.slice(0,10).forEach(s=>{
-    const isBw=s.st==='borrowed',lbl=isBw?'借出中':'在庫',sc=isBw?'bw':'av';
-    const c=document.createElement('div');c.className='card';c.id='c'+s.id;
-    c.innerHTML=`<div class="ci">${s.img?`<img src="${s.img}">`:'<div class="cph">🖨️</div>'}<div class="stbg ${sc}">${lbl}</div><label class="upbtn">📷 上傳<input type="file" accept="image/*" style="display:none" onchange="upImg(event,${s.id})"></label></div>
-<div class="cb"><div class="ct" id="ct${s.id}">${s.name}</div><div class="cd" id="cd${s.id}">${s.desc}</div>
-<div class="cm"><div class="mr"><span class="ml">借出人</span><span class="mv">${s.bw||'—'}</span></div><div class="mr"><span class="ml">借出日</span><span class="mv">${s.bd||'—'}</span></div><div class="mr"><span class="ml">歸還日</span><span class="mv">${s.rd||'—'}</span></div></div>
-${s.note?`<div class="cn2">📝 ${s.note}</div>`:''}
-<div class="ap"><label>樣品名稱</label><input type="text" value="${s.name}" onchange="upF(${s.id},'name',this.value)"><label>描述</label><textarea onchange="upF(${s.id},'desc',this.value)">${s.desc}</textarea><label>備註</label><input type="text" value="${s.note||''}" onchange="upF(${s.id},'note',this.value)" placeholder="備註…"><button class="btn sm d" style="margin-top:4px" onclick="delCard(${s.id})">🗑 刪除</button></div></div>
-<div class="cf" id="f${s.id}">${foot(s)}</div>`;
-    g.appendChild(c);
+
+// ── Load from GitHub ──
+async function loadData() {
+  setSyncState('spin','連線中…');
+  try {
+    const r = await fetch(GH_RAW + '?t=' + Date.now(), {cache:'no-store'});
+    if (r.ok) {
+      const d = await r.json();
+      applyData(d);
+      localStorage.setItem(LS_DATA, JSON.stringify(d));
+      setSyncState('ok','已同步 GitHub');
+      return;
+    }
+  } catch(e) {}
+  const cache = localStorage.getItem(LS_DATA);
+  if (cache) {
+    try { applyData(JSON.parse(cache)); setSyncState('err','使用本機快取'); return; } catch(e) {}
+  }
+  setSyncState('err','無法載入');
+}
+
+function applyData(d) {
+  samples = d.samples || [];
+  returnHistory = d.returnHistory || [];
+  borrowers = d.borrowers || borrowers;
+  nid = samples.length ? Math.max(...samples.map(s=>s.id||0)) + 1 : 1;
+  localStorage.setItem(LS_BORROW, JSON.stringify(borrowers));
+  renderAll();
+}
+
+// ── Save to GitHub ──
+async function saveToGH() {
+  const payload = { samples, returnHistory, borrowers, updatedAt: new Date().toISOString() };
+  localStorage.setItem(LS_DATA, JSON.stringify(payload));
+  if (!GH_TOKEN) { setSyncState('err','未設定 Token，已存本機'); return; }
+  setSyncState('spin','儲存中…');
+  const json = JSON.stringify(payload, null, 2);
+  let sha = '';
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH_DATA}`,
+      { headers: { Authorization:`token ${GH_TOKEN}`, Accept:'application/vnd.github.v3+json' }});
+    if (r.ok) { sha = (await r.json()).sha; }
+  } catch(e) {}
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_PATH_DATA}`, {
+      method:'PUT',
+      headers:{ Authorization:`token ${GH_TOKEN}`, 'Content-Type':'application/json', Accept:'application/vnd.github.v3+json' },
+      body: JSON.stringify({ message:`Samples update ${new Date().toISOString().slice(0,19)}`, content: btoa(unescape(encodeURIComponent(json))), ...(sha?{sha}:{}) })
+    });
+    if (r.ok) { setSyncState('ok','已同步 GitHub ✓'); return; }
+  } catch(e) {}
+  setSyncState('err','GitHub 失敗，已存本機');
+}
+
+// ── Upload image to GitHub ──
+async function uploadImageToGH(filename, base64data) {
+  if (!GH_TOKEN) { toast('請先設定 GitHub Token','err'); return null; }
+  const mediaType = base64data.split(';')[0].split(':')[1];
+  const b64 = base64data.split(',')[1];
+  const path = GH_PATH_IMG + filename;
+  let sha = '';
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`,
+      { headers:{ Authorization:`token ${GH_TOKEN}`, Accept:'application/vnd.github.v3+json' }});
+    if (r.ok) sha = (await r.json()).sha;
+  } catch(e) {}
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`, {
+      method:'PUT',
+      headers:{ Authorization:`token ${GH_TOKEN}`, 'Content-Type':'application/json', Accept:'application/vnd.github.v3+json' },
+      body: JSON.stringify({ message:`Upload ${filename}`, content: b64, ...(sha?{sha}:{}) })
+    });
+    if (r.ok) {
+      return `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/main/${path}`;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ── Render all ──
+function renderAll() {
+  renderCards();
+  renderBorrowTable();
+  renderReturnTable();
+  renderDashboard();
+  updateStats();
+  updateSubtitle();
+}
+
+function updateStats() {
+  const bw = samples.filter(s=>s.st==='borrowed').length;
+  const av = samples.filter(s=>s.st==='available').length;
+  document.getElementById('stat-bw').textContent = bw;
+  document.getElementById('stat-av').textContent = av;
+  document.getElementById('stat-tot').textContent = samples.length;
+}
+
+function updateSubtitle() {
+  document.querySelector('.pg-sub').textContent =
+    `實威國際 · 統一管理借用紀錄，同步至 GitHub · ${samples.length} 樣品`;
+}
+
+// ── Render cards ──
+function renderCards() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const sf = document.getElementById('status-filter').value;
+  const cg = document.getElementById('cg');
+  const filtered = samples.filter(s => {
+    if (q && !s.name.toLowerCase().includes(q)) return false;
+    if (sf && s.st !== sf) return false;
+    return true;
   });
-  stats();
-}
-function foot(s){
-  if(s.st==='available'){const opts=borrowers.map(b=>`<option>${b}</option>`).join('');return `<div class="af"><select class="bs" id="sel${s.id}"><option value="">選擇借用人</option>${opts}</select><div class="diw"><input type="text" id="bd${s.id}" placeholder="借出日期" readonly onclick="openDP(${s.id},'bd')"></div><button class="btn p sm" onclick="doBorrow(${s.id})">確定</button></div>`;}
-  return `<div class="rf"><span style="font-size:11px;color:var(--t2)">歸還：<b>${s.bw}</b></span><div class="diw"><input type="text" id="rd${s.id}" placeholder="歸還日期" readonly onclick="openDP(${s.id},'rd')"></div><button class="btn sm" onclick="doReturn(${s.id})">歸還確認</button></div>`;
-}
-async function doBorrow(id){const s=samples.find(x=>x.id===id),bw=$('sel'+id)?.value,bd=$('bd'+id)?.value;if(!bw){toast('⚠️ 請選擇借用人');return;}if(!bd){toast('⚠️ 請選擇借出日期');return;}s.bw=bw;s.bd=bd;s.st='borrowed';s.rd='';if(!aData[bw])aData[bw]=[];aData[bw].push({item:s.name,date:bd});renderAll();await saveToGH();toast(`✅ ${s.name} 已借出給 ${bw}`,'ok');}
-async function doReturn(id){const s=samples.find(x=>x.id===id),rd=$('rd'+id)?.value;if(!rd){toast('⚠️ 請選擇歸還日期');return;}const prev=s.bw;returnHistory.push({id:s.id,name:s.name,bw:prev,bd:s.bd,rd});s.rd=rd;s.st='available';s.bw='';s.bd='';renderAll();await saveToGH();toast(`✅ ${s.name} 已由 ${prev} 歸還`,'ok');}
-async function upF(id,field,val){const s=samples.find(x=>x.id===id);s[field]=val;if(field==='name'&&$('ct'+id))$('ct'+id).textContent=val;if(field==='desc'&&$('cd'+id))$('cd'+id).textContent=val;await saveToGH();}
-async function delCard(id){if(!confirm('確定刪除？'))return;samples=samples.filter(x=>x.id!==id);renderAll();await saveToGH();toast('🗑 已刪除');}
-async function upImg(e,id){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{samples.find(x=>x.id===id).img=ev.target.result;renderCards();await saveToGH();toast('✅ 圖片已更新','ok');};r.readAsDataURL(f);}
-
-/* Add card */
-function openAdd(){$('am').classList.add('on');}
-function closeAdd(){$('am').classList.remove('on');['ncn','ncd','ncno','nciu'].forEach(i=>$(i).value='');$('ncif').value='';$('ncpv').style.display='none';$('ncif')._b64=null;}
-function prevImg(url){const p=$('ncpv');p.src=url;p.style.display=url?'block':'none';}
-function handleImg(inp){if(!inp.files[0])return;const r=new FileReader();r.onload=e=>{inp._b64=e.target.result;$('ncpv').src=e.target.result;$('ncpv').style.display='block';$('nciu').value='';};r.readAsDataURL(inp.files[0]);}
-async function confAdd(){const name=$('ncn').value.trim();if(!name){toast('⚠️ 請填寫名稱');return;}const desc=$('ncd').value.trim(),note=$('ncno').value.trim(),img=$('ncif')._b64||$('nciu').value.trim()||'';samples.push({id:nid++,name,desc,st:'available',bw:'',bd:'',rd:'',note,img});closeAdd();renderAll();await saveToGH();toast(`✅ 已新增：${name}`,'ok');}
-
-/* Analytics */
-function renderAnalytics(){
-  const body=$('ab');body.innerHTML='';let rows=[];
-  if(sort==='person'){const all=new Set([...borrowers,...samples.filter(s=>s.st==='borrowed').map(s=>s.bw)]);all.forEach(b=>{const h=aData[b]||[],cur=samples.filter(s=>s.st==='borrowed'&&s.bw===b);const items=[...new Set([...h.map(r=>r.item),...cur.map(s=>s.name)])];if(!items.length)return;rows.push({name:b,sub:items.join('、'),last:h.length?h[h.length-1].date:(cur[0]?.bd||'—'),count:h.length+cur.length,bc:'bp',bl:'人員'});});}
-  else{samples.forEach(s=>{const h=Object.entries(aData).flatMap(([b,rs])=>rs.filter(r=>r.item===s.name).map(r=>({bw:b,...r})));if(s.st==='borrowed')h.push({bw:s.bw,date:s.bd});if(!h.length)return;rows.push({name:s.name,sub:[...new Set(h.map(r=>r.bw))].join('、'),last:h[h.length-1]?.date||'—',count:h.length,bc:'bi',bl:'樣品'});});}
-  if(!rows.length){body.innerHTML='<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">尚無借用紀錄</div>';return;}
-  const mx=Math.max(...rows.map(r=>r.count),1);
-  rows.sort((a,b)=>b.count-a.count).forEach(r=>{const el=document.createElement('div');el.className='atr';el.innerHTML=`<div class="an">${r.name}<span class="ab2 ${r.bc}">${r.bl}</span></div><div style="font-size:10px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.sub}</div><div style="font-size:10px;color:var(--t2)">${r.last}</div><div style="font-weight:700;font-size:13px;color:var(--ac)">${r.count}</div><div><div class="bw2"><div class="bf fb" style="width:${Math.round(r.count/mx*100)}%"></div></div></div>`;body.appendChild(el);});
-}
-function sortA(t,btn){sort=t;document.querySelectorAll('.sb3').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderAnalytics();}
-function renderBorrow(){const b=$('bsb'),bwd=samples.filter(s=>s.st==='borrowed');b.innerHTML='';if(!bwd.length){b.innerHTML='<div style="padding:18px;text-align:center;color:var(--t3);font-size:11px">目前無借出中樣品</div>';return;}bwd.forEach(s=>{const el=document.createElement('div');el.className='atr';el.style.gridTemplateColumns='2fr 1.5fr 1.5fr 1fr 1.2fr';el.innerHTML=`<div class="an">${s.name}<span class="ab2 bo">借出中</span></div><div style="font-weight:600">${s.bw}</div><div style="font-size:10px;color:var(--t2)">${s.bd}</div><div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:rgba(248,81,73,.2);color:var(--red)">借出中</span></div><div style="font-weight:700;color:var(--red)">${days(s.bd,'')} 天</div>`;b.appendChild(el);});}
-function renderReturn(){const b=$('rsb'),recs=[...returnHistory,...samples.filter(s=>s.rd).map(s=>({name:s.name,bw:s.bw||'—',bd:s.bd,rd:s.rd}))];b.innerHTML='';if(!recs.length){b.innerHTML='<div style="padding:18px;text-align:center;color:var(--t3);font-size:11px">尚無歸還紀錄</div>';return;}[...recs].reverse().forEach(r=>{const el=document.createElement('div');el.className='atr';el.style.gridTemplateColumns='2fr 1.5fr 1.5fr 1.5fr 1fr';el.innerHTML=`<div class="an">${r.name}<span class="ab2 bg">已歸還</span></div><div style="font-weight:600">${r.bw}</div><div style="font-size:10px;color:var(--t2)">${r.bd}</div><div style="font-size:10px;color:var(--grn);font-weight:600">${r.rd}</div><div style="font-weight:700;color:var(--t2)">${days(r.bd,r.rd)} 天</div>`;b.appendChild(el);});}
-function renderAll(){renderCards();renderAnalytics();renderBorrow();renderReturn();}
-
-/* Excel export */
-function exportExcel(){
-  const recs=[...returnHistory,...samples.filter(s=>s.rd).map(s=>({name:s.name,bw:s.bw||'—',bd:s.bd,rd:s.rd}))];
-  const rows=[['樣品名稱','借用人','借出日期','歸還日期','借用天數'],...recs.map(r=>[r.name,r.bw,r.bd,r.rd,days(r.bd,r.rd)])];
-  const ws=rows.map(r=>r.join('\t')).join('\n');
-  const blob=new Blob(['\ufeff'+ws],{type:'text/tab-separated-values;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`歸還紀錄_${new Date().toISOString().slice(0,10)}.xls`;
-  a.click();toast('📊 Excel 已下載','ok');
+  if (!filtered.length) {
+    cg.innerHTML = '<div style="padding:32px 0;text-align:center;color:var(--t4);font-size:13px">沒有符合條件的樣品</div>';
+    return;
+  }
+  cg.innerHTML = filtered.map(s => cardHTML(s)).join('');
 }
 
-/* Category tab switch */
-function swCP(name,btn){
-  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('.cpanel').forEach(p=>p.classList.remove('on'));
+function cardHTML(s) {
+  const isBw = s.st === 'borrowed';
+  const img = s.img
+    ? `<img src="${s.img}" alt="${s.name}" onclick="openLB('${s.img}')" loading="lazy">`
+    : `<span class="ph">🖨️</span>`;
+  const foot = isBw
+    ? `<div class="footrow">
+        <span style="font-size:10px;font-weight:700;color:var(--t1)">👤 ${s.bw||''}</span>
+        <button class="cfbtn" style="background:var(--teal-bg);border-color:var(--teal);color:var(--teal)" onclick="openEdit(${s.id})">✏️ 編輯</button>
+        <button class="cfbtn ret" onclick="openReturn(${s.id})">📥 歸還</button>
+       </div>`
+    : `<div class="footrow">
+        <select class="fsel" id="sel-${s.id}"><option value="">選擇借用人</option>${borrowers.map(b=>`<option>${b}</option>`).join('')}</select>
+        <input type="date" class="fdate" id="bd-${s.id}" value="${today()}">
+        <button class="cfbtn" onclick="openBorrow(${s.id})">借出</button>
+        <button class="cfbtn" style="background:var(--line-soft);border-color:var(--line);color:var(--t3);padding:4px 7px" onclick="openEdit(${s.id})" title="編輯樣品資料">✏️</button>
+       </div>`;
+  return `<div class="card" id="card-${s.id}">
+    <div class="card-img">
+      ${img}
+      <div class="sp-pill ${isBw?'sp-bw':'sp-av'}">${isBw?'借出中':'在庫'}</div>
+      <label class="upload-btn" title="上傳照片">📷<input type="file" accept="image/*" onchange="uploadCardImg(event,${s.id})"></label>
+    </div>
+    <div class="card-body">
+      <div class="card-name" onclick="openEdit(${s.id})" style="cursor:pointer" title="點擊編輯">${s.name}</div>
+      <div class="card-desc">${s.desc||''}</div>
+      ${isBw?`<div class="mrow"><span class="ml">借出人</span><span class="mv rd">${s.bw}</span></div>
+              <div class="mrow"><span class="ml">借出日</span><span class="mv">${s.bd||''}</span></div>
+              ${s.rd?`<div class="mrow"><span class="ml">歸還日</span><span class="mv" style="color:var(--green)">${s.rd}</span></div>`:''}
+             `
+             :`<div class="mrow"><span class="ml">借出人</span><span class="mv">—</span></div>`}
+      ${s.note?`<div class="note-box">📝 ${s.note}</div>`:''}
+    </div>
+    <div class="card-foot">${foot}</div>
+  </div>`;
+}
+
+// ── Borrow table ──
+function renderBorrowTable() {
+  const borrowed = samples.filter(s => s.st === 'borrowed');
+  const fw = colWidths.map(w=>w+'fr').join(' ') + ' 80px';
+  document.getElementById('borrow-head').style.gridTemplateColumns = fw;
+  document.getElementById('borrow-head').innerHTML =
+    ['樣品名稱','借用人','借出日期','天數','操作'].map((h,i) =>
+      i < 4
+        ? `<div>${h}<span class="ri">⠿</span><div class="resize-handle" data-col="${i}" onmousedown="startResize(event,${i})"></div></div>`
+        : `<div>${h}</div>`
+    ).join('');
+  const body = document.getElementById('borrow-body');
+  if (!borrowed.length) {
+    body.innerHTML = '<div style="padding:18px;text-align:center;color:var(--t4);font-size:12px">目前無借出中樣品</div>';
+    return;
+  }
+  body.innerHTML = borrowed.map(s => {
+    const d = daysBetween(s.bd, '');
+    return `<div class="at-row" style="grid-template-columns:${fw}">
+      <div class="at-name">${s.name} <span class="chip chip-bw">借出中</span></div>
+      <div style="font-weight:700">${s.bw||'—'}</div>
+      <div style="color:var(--t3)">${s.bd||'—'}</div>
+      <div class="${d>30?'days-red':''}">${d} 天</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="tbl-edit-btn" onclick="openEdit(${s.id})">✏️ 編輯</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Return history table ──
+function renderReturnTable() {
+  const body = document.getElementById('return-body');
+  if (!returnHistory.length) {
+    body.innerHTML = '<div style="padding:18px;text-align:center;color:var(--t4);font-size:12px">尚無歸還紀錄</div>';
+    return;
+  }
+  body.innerHTML = [...returnHistory].reverse().map(r => `
+    <div class="at-row th5" style="min-width:500px">
+      <div style="font-weight:700">${r.name}</div>
+      <div>${r.bw}</div>
+      <div style="color:var(--t3)">${r.bd}</div>
+      <div style="color:var(--green);font-weight:600">${r.rd}</div>
+      <div style="color:var(--t3)">${daysBetween(r.bd,r.rd)} 天</div>
+    </div>`).join('');
+}
+
+// ── Column resize ──
+let resizeState = null;
+function startResize(e, colIdx) {
+  e.preventDefault();
+  resizeState = { colIdx, startX: e.clientX, startWidths: [...colWidths] };
+  document.addEventListener('mousemove', doResize);
+  document.addEventListener('mouseup', endResize);
+  e.currentTarget.classList.add('active');
+}
+function doResize(e) {
+  if (!resizeState) return;
+  const dx = e.clientX - resizeState.startX;
+  const totalW = document.querySelector('.at-head').offsetWidth;
+  const frUnit = totalW / resizeState.startWidths.reduce((a,b)=>a+b,0);
+  const delta = dx / frUnit;
+  const newWidths = [...resizeState.startWidths];
+  newWidths[resizeState.colIdx] = Math.max(0.4, newWidths[resizeState.colIdx] + delta);
+  if (resizeState.colIdx + 1 < newWidths.length) {
+    newWidths[resizeState.colIdx+1] = Math.max(0.4, resizeState.startWidths[resizeState.colIdx+1] - delta);
+  }
+  colWidths = newWidths;
+  const fw = colWidths.map(w=>w+'fr').join(' ');
+  document.getElementById('borrow-head').style.gridTemplateColumns = fw;
+  document.querySelectorAll('#borrow-body .at-row').forEach(r => r.style.gridTemplateColumns = fw);
+}
+function endResize() {
+  resizeState = null;
+  document.removeEventListener('mousemove', doResize);
+  document.removeEventListener('mouseup', endResize);
+  document.querySelectorAll('.resize-handle').forEach(h => h.classList.remove('active'));
+}
+
+// ── Tab switch ──
+function switchTab(name) {
+  document.getElementById('tab-samples').classList.toggle('on', name==='samples');
+  document.getElementById('tab-dashboard').classList.toggle('on', name==='dashboard');
+  document.getElementById('panel-samples').style.display = name==='samples' ? '' : 'none';
+  document.getElementById('panel-dashboard').style.display = name==='dashboard' ? '' : 'none';
+  if (name === 'dashboard') renderDashboard();
+}
+
+// ── Card size ──
+function setSize(sz, btn) {
+  document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
-  $('cp-'+name).classList.add('on');
+  document.getElementById('cg').className = 'cg sz-' + sz;
 }
 
-/* Date picker */
-function openDP(id,type){const el=$(type==='bd'?`bd${id}`:`rd${id}`);if(!el)return;dpT=el;dpY=new Date().getFullYear();dpM=new Date().getMonth();drawCal();const dp=$('dp'),r=el.getBoundingClientRect();dp.style.top=(r.bottom+4)+'px';dp.style.left=Math.min(r.left,window.innerWidth-240)+'px';dp.classList.add('on');}
-document.addEventListener('click',e=>{const dp=$('dp');if(!dp.contains(e.target)&&!e.target.closest('.diw'))dp.classList.remove('on');});
-function drawCal(){$('dpm').textContent=`${dpY} 年 ${dpM+1} 月`;const g=$('dpg');g.innerHTML='';['日','一','二','三','四','五','六'].forEach(d=>{const el=document.createElement('div');el.className='dpl';el.textContent=d;g.appendChild(el);});const fd=new Date(dpY,dpM,1).getDay(),dim=new Date(dpY,dpM+1,0).getDate();for(let i=0;i<fd;i++){const el=document.createElement('div');el.className='dpd emp';el.textContent=' ';g.appendChild(el);}for(let d=1;d<=dim;d++){const el=document.createElement('div');el.className='dpd';el.textContent=d;const ds=`${dpY}-${String(dpM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;el.onclick=()=>{if(dpT)dpT.value=ds;$('dp').classList.remove('on');};g.appendChild(el);}}
-function dpP(){dpM--;if(dpM<0){dpM=11;dpY--;}drawCal();}function dpN(){dpM++;if(dpM>11){dpM=0;dpY++;}drawCal();}
+// ── Add / Edit modal ──
+function openAdd() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('modal-title').textContent = '➕ 新增樣品';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('f-note').value = '';
+  document.getElementById('f-imgurl').value = '';
+  document.getElementById('f-imgprev').style.display = 'none';
+  document.getElementById('btn-del').style.display = 'none';
+  document.getElementById('borrow-edit-section').style.display = 'none';
+  const fi = document.getElementById('f-imgfile');
+  if (fi) fi._b64 = null;
+  document.getElementById('mo-add').classList.add('on');
+}
 
-/* Borrower */
-function openBM(){drawBL();$('bm').classList.add('on');}
-async function closeBM(){$('bm').classList.remove('on');renderCards();await saveToGH();}
-function drawBL(){$('bl').innerHTML=borrowers.map((b,i)=>`<div class="bi2"><span>${b}</span><span class="rb2" onclick="rmB(${i})">✕</span></div>`).join('');}
-function addB(){const inp=$('nbi'),n=inp.value.trim();if(!n)return;if(borrowers.includes(n)){toast('⚠️ 已存在');return;}borrowers.push(n);inp.value='';drawBL();toast(`✅ 已新增：${n}`,'ok');}
-function rmB(i){borrowers.splice(i,1);drawBL();}
+function openEdit(id) {
+  const s = samples.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('modal-title').textContent = '✏️ 編輯樣品';
+  document.getElementById('f-name').value = s.name;
+  document.getElementById('f-desc').value = s.desc || '';
+  document.getElementById('f-note').value = s.note || '';
+  document.getElementById('f-imgurl').value = s.img || '';
+  const prev = document.getElementById('f-imgprev');
+  if (s.img) { prev.src = s.img; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+  document.getElementById('btn-del').style.display = 'block';
+  const fi = document.getElementById('f-imgfile');
+  if (fi) fi._b64 = null;
 
-/* Admin */
-function toggleAdmin(){isAdm=!isAdm;document.body.classList.toggle('adm',isAdm);$('abt').textContent=isAdm?'🔓 管理員（開啟中）':'🔐 管理員';$('abt').classList.toggle('on',isAdm);$('acb').style.display=isAdm?'inline-flex':'none';toast(isAdm?'🔓 管理員模式已啟用':'🔒 管理員模式已關閉',isAdm?'ok':'');}
+  // ── 借用狀態欄位 ──
+  document.getElementById('borrow-edit-section').style.display = 'block';
+  document.getElementById('f-status').value = s.st || 'available';
 
-/* Theme */
-function toggleTheme(){document.body.classList.toggle('lm');const d=!document.body.classList.contains('lm');document.getElementById('themeBtn').textContent=d?'🌙 暗色':'☀️ 亮色';localStorage.setItem('sw_theme_v9',d?'dark':'light');}
-(()=>{if(localStorage.getItem('sw_theme_v9')==='light'){document.body.classList.add('lm');const b=document.getElementById('themeBtn');if(b)b.textContent='☀️ 亮色';}})();
+  // 填充借用人選單
+  const bwSel = document.getElementById('f-bw');
+  bwSel.innerHTML = '<option value="">選擇借用人</option>' +
+    borrowers.map(b => `<option value="${b}"${s.bw===b?' selected':''}>${b}</option>`).join('');
+  document.getElementById('f-bw-manual').value = '';
+  document.getElementById('f-bd').value = s.bd || '';
+  document.getElementById('f-rd').value = s.rd || '';
 
-/* Toast */
-function toast(msg,type=''){const t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;$('toasts').appendChild(t);setTimeout(()=>t.remove(),3000);}
+  // 顯示/隱藏借用欄位
+  document.getElementById('f-borrow-fields').style.display =
+    (s.st === 'borrowed') ? 'block' : 'none';
 
-loadFromGH();
+  document.getElementById('mo-add').classList.add('on');
+}
+
+function onStatusChange() {
+  const st = document.getElementById('f-status').value;
+  document.getElementById('f-borrow-fields').style.display =
+    st === 'borrowed' ? 'block' : 'none';
+}
+
+function closeAdd() {
+  document.getElementById('mo-add').classList.remove('on');
+}
+
+function previewImg(url) {
+  const p = document.getElementById('f-imgprev');
+  if (url) { p.src = url; p.style.display = 'block'; } else { p.style.display = 'none'; }
+}
+
+function handleImgUpload(inp) {
+  if (!inp.files[0]) return;
+  const r = new FileReader();
+  r.onload = e => {
+    inp._b64 = e.target.result;
+    previewImg(e.target.result);
+    document.getElementById('f-imgurl').value = '';
+  };
+  r.readAsDataURL(inp.files[0]);
+}
+
+async function saveCard() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('請填寫樣品名稱','err'); return; }
+  const desc  = document.getElementById('f-desc').value.trim();
+  const note  = document.getElementById('f-note').value.trim();
+  let   img   = document.getElementById('f-imgurl').value.trim();
+  const fileInp = document.getElementById('f-imgfile');
+
+  // 上傳照片
+  if (fileInp._b64 && !img) {
+    toast('上傳照片中…','inf');
+    const ext  = fileInp._b64.split(';')[0].split('/')[1];
+    const fname = `sample_${Date.now()}.${ext}`;
+    const url   = await uploadImageToGH(fname, fileInp._b64);
+    img = url || fileInp._b64;
+    fileInp._b64 = null;
+    if (url) toast('照片已上傳','ok');
+  }
+
+  const editId = document.getElementById('edit-id').value;
+
+  if (editId) {
+    // ── 編輯既有樣品 ──
+    const s = samples.find(x => x.id === +editId);
+    if (!s) return;
+
+    const newSt = document.getElementById('f-status').value;
+    const manualBw = document.getElementById('f-bw-manual').value.trim();
+    const selBw    = document.getElementById('f-bw').value;
+    const newBw    = manualBw || selBw;
+    const newBd    = document.getElementById('f-bd').value;
+    const newRd    = document.getElementById('f-rd').value;
+
+    // 若狀態從借出 → 在庫，且填了歸還日期，自動寫入歷史
+    if (s.st === 'borrowed' && newSt === 'available' && s.bw) {
+      const rd = newRd || today();
+      const already = returnHistory.some(r => r.name===s.name && r.bd===s.bd && r.bw===s.bw);
+      if (!already) {
+        returnHistory.push({ name:s.name, bw:s.bw, bd:s.bd, rd });
+      }
+    }
+
+    // 更新樣品資料
+    s.name = name; s.desc = desc; s.note = note; s.img = img;
+    s.st   = newSt;
+
+    if (newSt === 'borrowed') {
+      if (!newBw) { toast('請選擇或輸入借用人','err'); return; }
+      s.bw = newBw;
+      s.bd = newBd || today();
+      s.rd = newRd || '';
+    } else {
+      // 在庫：清空借用欄（歸還日期保留記錄）
+      s.bw = ''; s.bd = ''; s.rd = newRd || '';
+    }
+
+  } else {
+    // ── 新增樣品 ──
+    samples.push({ id:nid++, name, desc, note, img, st:'available', bw:'', bd:'', rd:'' });
+  }
+
+  closeAdd();
+  renderAll();
+  await saveToGH();
+  toast(editId ? '已更新 ✓' : '已新增 ✓', 'ok');
+}
+
+async function deleteCard() {
+  const id = +document.getElementById('edit-id').value;
+  if (!confirm('確定刪除此樣品？')) return;
+  samples = samples.filter(s => s.id !== id);
+  closeAdd();
+  renderAll();
+  await saveToGH();
+  toast('已刪除','ok');
+}
+
+// ── Upload image from card hover button ──
+async function uploadCardImg(e, id) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = async ev => {
+    const b64 = ev.target.result;
+    toast('上傳照片中…','inf');
+    const ext = b64.split(';')[0].split('/')[1];
+    const fname = `sample_${id}_${Date.now()}.${ext}`;
+    let url = await uploadImageToGH(fname, b64);
+    if (!url) url = b64;
+    const s = samples.find(x => x.id === id);
+    if (s) { s.img = url; }
+    renderCards();
+    await saveToGH();
+    toast('照片已更新 ✓','ok');
+  };
+  r.readAsDataURL(file);
+}
+
+// ── Borrow modal ──
+function openBorrow(id) {
+  document.getElementById('borrow-sample-id').value = id;
+  const sel = document.getElementById('borrow-person');
+  sel.innerHTML = '<option value="">選擇借用人</option>' + borrowers.map(b=>`<option>${b}</option>`).join('');
+  const card = document.getElementById(`bd-${id}`);
+  document.getElementById('borrow-date').value = card ? card.value : today();
+  document.getElementById('mo-borrow').classList.add('on');
+}
+function closeBorrow() { document.getElementById('mo-borrow').classList.remove('on'); }
+async function confirmBorrow() {
+  const id = +document.getElementById('borrow-sample-id').value;
+  const bw = document.getElementById('borrow-person').value;
+  const bd = document.getElementById('borrow-date').value;
+  if (!bw) { toast('請選擇借用人','err'); return; }
+  if (!bd) { toast('請選擇借出日期','err'); return; }
+  const s = samples.find(x => x.id === id);
+  if (s) { s.st = 'borrowed'; s.bw = bw; s.bd = bd; s.rd = ''; }
+  closeBorrow();
+  renderAll();
+  await saveToGH();
+  toast(`✅ ${s?.name} 已借出給 ${bw}`,'ok');
+}
+
+// ── Return modal ──
+function openReturn(id) {
+  document.getElementById('return-sample-id').value = id;
+  document.getElementById('return-date').value = today();
+  document.getElementById('mo-return').classList.add('on');
+}
+function closeReturn() { document.getElementById('mo-return').classList.remove('on'); }
+async function confirmReturn() {
+  const id = +document.getElementById('return-sample-id').value;
+  const rd = document.getElementById('return-date').value;
+  if (!rd) { toast('請選擇歸還日期','err'); return; }
+  const s = samples.find(x => x.id === id);
+  if (s) {
+    returnHistory.push({ name:s.name, bw:s.bw, bd:s.bd, rd });
+    s.st = 'available'; s.rd = rd; s.bw = ''; s.bd = '';
+  }
+  closeReturn();
+  renderAll();
+  await saveToGH();
+  toast(`✅ ${s?.name} 已歸還`,'ok');
+}
+
+// ── Lightbox ──
+function openLB(src) { document.getElementById('lb-img').src = src; document.getElementById('lb').classList.add('on'); }
+function closeLB() { document.getElementById('lb').classList.remove('on'); }
+
+// ── Token ──
+function saveToken() {
+  const t = document.getElementById('token-inp').value.trim();
+  if (!t) return;
+  GH_TOKEN = t;
+  localStorage.setItem(LS_TOKEN, t);
+  document.getElementById('mo-token').classList.remove('on');
+  toast('Token 已儲存','ok');
+  loadData();
+}
+
+// ── Toast ──
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ── Export Excel ──
+function exportExcel() {
+  const rows = [['樣品名稱','借用人','借出日期','歸還日期','借用天數']];
+  returnHistory.forEach(r => rows.push([r.name, r.bw, r.bd, r.rd, daysBetween(r.bd,r.rd)]));
+  samples.filter(s=>s.st==='borrowed').forEach(s => rows.push([s.name, s.bw, s.bd, '（借出中）', daysBetween(s.bd,'')]));
+  const ws = rows.map(r => r.join('\t')).join('\n');
+  const blob = new Blob(['\ufeff' + ws], {type:'text/tab-separated-values;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `借用紀錄_${today()}.xls`;
+  a.click();
+  toast('Excel 已下載','ok');
+}
+
+// ── Dashboard ──
+function setPeriod(p) {
+  currentPeriod = p;
+  ['month','quarter','year'].forEach(k => {
+    document.getElementById('pb-'+k).classList.toggle('on', k===p);
+  });
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const now = new Date();
+  const allEvents = [
+    ...returnHistory.map(r => ({date:r.bd, type:'borrow', days:daysBetween(r.bd,r.rd)})),
+    ...samples.filter(s=>s.st==='borrowed').map(s => ({date:s.bd, type:'borrow', days:daysBetween(s.bd,'')}))
+  ];
+
+  // KPIs
+  const outstanding = samples.filter(s=>s.st==='borrowed').length;
+  const totalBorrow = allEvents.length;
+  const totalReturn = returnHistory.length;
+  const avgDays = returnHistory.length
+    ? Math.round(returnHistory.reduce((a,r)=>a+daysBetween(r.bd,r.rd),0)/returnHistory.length)
+    : 0;
+
+  let trendLabels=[], trendValues=[], kpiLabel='', trendColor='var(--blue)';
+
+  if (currentPeriod === 'month') {
+    kpiLabel = '本月';
+    trendColor = 'var(--blue)';
+    const months = [];
+    for (let i=5; i>=0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      months.push({ label: `${d.getMonth()+1}月`, year:d.getFullYear(), month:d.getMonth() });
+    }
+    trendLabels = months.map(m=>m.label);
+    trendValues = months.map(m => allEvents.filter(e=>{
+      if(!e.date) return false;
+      const d = new Date(e.date);
+      return d.getFullYear()===m.year && d.getMonth()===m.month;
+    }).length);
+    document.getElementById('kpi-total-lbl').textContent = '本月借出次數';
+    document.getElementById('kpi-ret-lbl').textContent = '本月已歸還';
+    document.getElementById('kpi-out-lbl').textContent = '累計未歸還';
+    document.getElementById('kpi-avg-lbl').textContent = '平均借用天數';
+    document.getElementById('trend-title').textContent = '📅 每月借出次數趨勢';
+    const thisMon = trendValues[trendValues.length-1];
+    const prevMon = trendValues[trendValues.length-2] || 0;
+    document.getElementById('kpi-total').textContent = thisMon;
+    setTrend('kpi-total-trend', thisMon - prevMon, '較上月');
+    const thisRetMon = returnHistory.filter(r=>{const d=new Date(r.rd);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).length;
+    document.getElementById('kpi-ret').textContent = thisRetMon;
+    document.getElementById('kpi-ret-trend').textContent = '';
+  } else if (currentPeriod === 'quarter') {
+    trendColor = 'var(--teal)';
+    const quarters = [];
+    for (let i=3; i>=0; i--) {
+      const qNum = Math.floor(now.getMonth()/3) - i;
+      const y = now.getFullYear() + Math.floor(qNum/4);
+      const q = ((qNum % 4) + 4) % 4;
+      quarters.push({ label:`Q${q+1}`, year:y, q });
+    }
+    trendLabels = quarters.map(q=>q.label);
+    trendValues = quarters.map(q => allEvents.filter(e=>{
+      if(!e.date) return false;
+      const d = new Date(e.date);
+      return d.getFullYear()===q.year && Math.floor(d.getMonth()/3)===q.q;
+    }).length);
+    document.getElementById('kpi-total-lbl').textContent = '本季借出次數';
+    document.getElementById('kpi-ret-lbl').textContent = '本季已歸還';
+    document.getElementById('kpi-out-lbl').textContent = '季末未歸還';
+    document.getElementById('kpi-avg-lbl').textContent = '平均借用天數';
+    document.getElementById('trend-title').textContent = '📅 季度借出次數趨勢';
+    const thisQ = trendValues[trendValues.length-1];
+    const prevQ = trendValues[trendValues.length-2] || 0;
+    document.getElementById('kpi-total').textContent = thisQ;
+    setTrend('kpi-total-trend', thisQ - prevQ, '較上季');
+    const curQ = Math.floor(now.getMonth()/3);
+    const qRet = returnHistory.filter(r=>{const d=new Date(r.rd);return d.getFullYear()===now.getFullYear()&&Math.floor(d.getMonth()/3)===curQ;}).length;
+    document.getElementById('kpi-ret').textContent = qRet;
+    document.getElementById('kpi-ret-trend').textContent = '';
+  } else {
+    trendColor = 'var(--amber)';
+    const years = [now.getFullYear()-3, now.getFullYear()-2, now.getFullYear()-1, now.getFullYear()];
+    trendLabels = years.map(y=>String(y));
+    trendValues = years.map(y => allEvents.filter(e=>{if(!e.date)return false;return new Date(e.date).getFullYear()===y;}).length);
+    document.getElementById('kpi-total-lbl').textContent = '今年借出次數';
+    document.getElementById('kpi-ret-lbl').textContent = '今年已歸還';
+    document.getElementById('kpi-out-lbl').textContent = '年末未歸還';
+    document.getElementById('kpi-avg-lbl').textContent = '平均借用天數';
+    document.getElementById('trend-title').textContent = '📅 年度借出次數趨勢';
+    const thisY = trendValues[trendValues.length-1];
+    const prevY = trendValues[trendValues.length-2] || 0;
+    document.getElementById('kpi-total').textContent = thisY;
+    setTrend('kpi-total-trend', thisY - prevY, '較去年');
+    const yRet = returnHistory.filter(r=>{const d=new Date(r.rd);return d.getFullYear()===now.getFullYear();}).length;
+    document.getElementById('kpi-ret').textContent = yRet;
+    document.getElementById('kpi-ret-trend').textContent = '';
+  }
+
+  document.getElementById('kpi-out').textContent = outstanding;
+  document.getElementById('kpi-out-trend').textContent = outstanding > 3 ? '⚠️ 偏多' : '正常';
+  document.getElementById('kpi-out-trend').className = 'kpi-trend ' + (outstanding > 3 ? 'trend-dn' : 'trend-up');
+  document.getElementById('kpi-avg').textContent = avgDays;
+  document.getElementById('kpi-avg-trend').textContent = avgDays > 30 ? '⚠️ 偏長' : avgDays ? '正常' : '—';
+
+  // Trend chart
+  const maxV = Math.max(...trendValues, 1);
+  document.getElementById('trend-chart').innerHTML = trendLabels.map((lbl,i) => {
+    const h = Math.round((trendValues[i]/maxV)*84);
+    return `<div class="bar-col">
+      <div class="bar-col-val">${trendValues[i]}</div>
+      <div class="bar-col-fill" style="height:${h}px;background:${trendColor}"></div>
+      <div class="bar-col-lbl">${lbl}</div>
+    </div>`;
+  }).join('');
+
+  // Person chart
+  const personCount = {};
+  allEvents.forEach(e => {
+    const bw = samples.find(s=>s.bd===e.date)?.bw || returnHistory.find(r=>r.bd===e.date)?.bw || '';
+    if (bw) personCount[bw] = (personCount[bw]||0) + 1;
+  });
+  // direct count from data
+  const pCount = {};
+  returnHistory.forEach(r => { pCount[r.bw] = (pCount[r.bw]||0)+1; });
+  samples.filter(s=>s.st==='borrowed').forEach(s => { pCount[s.bw] = (pCount[s.bw]||0)+1; });
+  const pMax = Math.max(...Object.values(pCount),1);
+  const COLORS = ['#c0392b','#e67e22','var(--blue)','var(--teal)','var(--green)'];
+  document.getElementById('person-chart').innerHTML = Object.entries(pCount)
+    .sort((a,b)=>b[1]-a[1]).slice(0,6)
+    .map(([name,cnt],i) => `<div class="bar-row">
+      <span class="bar-lbl">${name}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(cnt/pMax*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <span class="bar-val">${cnt} 次</span>
+    </div>`).join('') || '<div style="padding:12px;color:var(--t4);font-size:12px">尚無資料</div>';
+
+  // Item chart
+  const iCount = {};
+  returnHistory.forEach(r => { iCount[r.name] = (iCount[r.name]||0)+1; });
+  samples.filter(s=>s.st==='borrowed').forEach(s => { iCount[s.name] = (iCount[s.name]||0)+1; });
+  const iMax = Math.max(...Object.values(iCount),1);
+  document.getElementById('item-chart').innerHTML = Object.entries(iCount)
+    .sort((a,b)=>b[1]-a[1]).slice(0,6)
+    .map(([name,cnt]) => `<div class="bar-row">
+      <span class="bar-lbl">${name}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${Math.round(cnt/iMax*100)}%;background:var(--teal)"></div></div>
+      <span class="bar-val">${cnt} 次</span>
+    </div>`).join('') || '<div style="padding:12px;color:var(--t4);font-size:12px">尚無資料</div>';
+
+  // Warning table
+  const warnItems = samples.filter(s=>s.st==='borrowed' && daysBetween(s.bd,'')>30);
+  document.getElementById('warn-body').innerHTML = warnItems.length
+    ? warnItems.map(s => `<div class="at-row th5" style="min-width:400px">
+        <div style="font-weight:700">${s.name}</div>
+        <div>${s.bw}</div>
+        <div style="color:var(--t3)">${s.bd}</div>
+        <div class="days-red">${daysBetween(s.bd,'')} 天</div>
+        <div><span class="chip chip-bw">借出中</span></div>
+      </div>`).join('')
+    : '<div style="padding:16px;text-align:center;color:var(--t4);font-size:12px">目前無長期借用樣品 ✓</div>';
+}
+
+function setTrend(elId, diff, label) {
+  const el = document.getElementById(elId);
+  if (diff > 0) { el.textContent = `↑ ${label} +${diff}`; el.className = 'kpi-trend trend-up'; }
+  else if (diff < 0) { el.textContent = `↓ ${label} ${diff}`; el.className = 'kpi-trend trend-dn'; }
+  else { el.textContent = `→ 與${label.replace('較','')}持平`; el.className = 'kpi-trend'; }
+}
+
+// ── Close modal on overlay click ──
+document.querySelectorAll('.mo').forEach(mo => {
+  mo.addEventListener('click', e => { if(e.target===mo) mo.classList.remove('on'); });
+});
+
+// ── Token button (double-click title to open) ──
+document.querySelector('.pg-title').addEventListener('dblclick', () => {
+  document.getElementById('token-inp').value = GH_TOKEN;
+  document.getElementById('mo-token').classList.add('on');
+});
+document.querySelector('.pg-sub').addEventListener('dblclick', () => {
+  document.getElementById('token-inp').value = GH_TOKEN;
+  document.getElementById('mo-token').classList.add('on');
+});
+
+// ── Auto-reload every 60s ──
+setInterval(loadData, 60000);
+
+// ── Init ──
+loadData();
 </script>
 </body>
 </html>

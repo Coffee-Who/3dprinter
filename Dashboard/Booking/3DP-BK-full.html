@@ -283,26 +283,6 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 </div>
 
 <!-- ══ 登入畫面 ═══════════════════════════════════ -->
-<div id="login-screen" class="modal-overlay">
-  <div class="modal-box" style="max-width:380px">
-    <div class="modal-title">
-      <i data-lucide="printer" style="width:18px;height:18px;color:var(--accent)"></i>3D列印機預約系統
-    </div>
-    <form id="login-form">
-      <div class="field" style="margin-bottom:12px">
-        <label>電子郵件</label>
-        <input type="email" id="login-email" required autocomplete="email" placeholder="your@email.com">
-      </div>
-      <div class="field" style="margin-bottom:4px">
-        <label>密碼</label>
-        <input type="password" id="login-password" required autocomplete="current-password">
-      </div>
-      <div id="login-error" class="hidden" style="font-size:12px;color:var(--danger);background:var(--danger-soft);border-radius:6px;padding:8px 10px;margin:10px 0"></div>
-      <button id="login-btn" type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:8px">登入</button>
-    </form>
-  </div>
-</div>
-
 <!-- ══ 主介面 ═══════════════════════════════════ -->
 <div id="main-app" class="hidden">
 <div class="shell">
@@ -316,8 +296,11 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
       </div>
     </div>
     <nav class="sidebar-nav">
-      <a class="sidebar-item active" href="#"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
-      <a class="sidebar-item" href="inventory.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">工作看板</span><span class="sidebar-item-sub">WORK BOARD</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="circle-alert" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">異常與資源</span><span class="sidebar-item-sub">ISSUES</span></div></a>
+      <a class="sidebar-item active" href="3DP-BK-full.html"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="box" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印樣品</span><span class="sidebar-item-sub">SAMPLES</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="settings" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
     </nav>
     <div class="sidebar-foot">
       <span class="sidebar-foot-name" id="sidebar-user">—</span>
@@ -489,7 +472,7 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {
-    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+    getAuth, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
@@ -534,7 +517,7 @@ const PAGE_SIZE = 10;
 let currentPage = 1;
 
 // ══════════════════════════════════════════════
-// ══ 1. Auth：帳號密碼登入 ══════════════════════
+// ══ 1. Auth：共用主控台登入狀態 ════════════════
 // ══════════════════════════════════════════════
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -544,7 +527,6 @@ onAuthStateChanged(auth, async (user) => {
             displayName: (user.email || '使用者').split('@')[0],
             role: 'editor'
         };
-        document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('sidebar-user').textContent = currentUser.displayName;
         applyRoleUI();
@@ -553,36 +535,8 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         currentUser = null;
         if (unsubscribeBookings) { unsubscribeBookings(); unsubscribeBookings = null; }
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
-        safeIcons();
-    }
-});
-
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const btn = document.getElementById('login-btn');
-    const errEl = document.getElementById('login-error');
-    errEl.classList.add('hidden');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> 登入中...';
-    try {
-        await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-        const msg = {
-            'auth/invalid-credential': '電子郵件或密碼錯誤',
-            'auth/invalid-email': '電子郵件格式錯誤',
-            'auth/user-disabled': '此帳號已停用',
-            'auth/too-many-requests': '嘗試次數過多，請稍後再試',
-            'auth/network-request-failed': '網路連線失敗',
-        }[err.code] || ('登入失敗：' + err.message);
-        errEl.textContent = msg;
-        errEl.classList.remove('hidden');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '登入';
+        // 尚未登入：導向主控台登入頁，登入後再回到本頁
+        window.location.href = '../index.html';
     }
 });
 

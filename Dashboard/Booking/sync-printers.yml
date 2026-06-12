@@ -107,13 +107,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # process_printers.py 寫到 repo 根目錄，搬到 Dashboard/Booking/ 給前端讀取
-          mkdir -p Dashboard/Booking
-          if [ -f printer-status.json ]; then
-            mv -f printer-status.json Dashboard/Booking/printer-status.json
-          fi
-
           git add Dashboard/Booking/printer-status.json
           if git diff --cached --quiet; then
             echo "No printer status changes"

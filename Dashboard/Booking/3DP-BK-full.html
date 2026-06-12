@@ -254,6 +254,14 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
       </div>
       <div class="field"><label>申請業務</label><select id="edit-sales"></select></div>
       <div class="field"><label>選擇設備</label><select id="edit-printer"></select></div>
+      <div class="field"><label>預約天數</label>
+        <select id="edit-duration">
+          <option value="0.5D">0.5D</option>
+          <option value="1D">1D</option>
+          <option value="1.5D">1.5D</option>
+          <option value="2D">2D</option>
+        </select>
+      </div>
       <div class="field"><label>指派工程師</label><select id="edit-engineer"></select></div>
       <div class="field full">
         <div class="toggle-row">
@@ -274,6 +282,27 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
   </div>
 </div>
 
+<!-- ══ 登入畫面 ═══════════════════════════════════ -->
+<div id="login-screen" class="modal-overlay">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-title">
+      <i data-lucide="printer" style="width:18px;height:18px;color:var(--accent)"></i>3D列印機預約系統
+    </div>
+    <form id="login-form">
+      <div class="field" style="margin-bottom:12px">
+        <label>電子郵件</label>
+        <input type="email" id="login-email" required autocomplete="email" placeholder="your@email.com">
+      </div>
+      <div class="field" style="margin-bottom:4px">
+        <label>密碼</label>
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </div>
+      <div id="login-error" class="hidden" style="font-size:12px;color:var(--danger);background:var(--danger-soft);border-radius:6px;padding:8px 10px;margin:10px 0"></div>
+      <button id="login-btn" type="submit" class="btn-primary" style="width:100%;justify-content:center;margin-top:8px">登入</button>
+    </form>
+  </div>
+</div>
+
 <!-- ══ 主介面 ═══════════════════════════════════ -->
 <div id="main-app" class="hidden">
 <div class="shell">
@@ -291,8 +320,9 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
       <a class="sidebar-item" href="inventory.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
     </nav>
     <div class="sidebar-foot">
-      <span class="sidebar-foot-name">訪客</span>
+      <span class="sidebar-foot-name" id="sidebar-user">—</span>
       <span id="dateNow">—</span>
+      <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit">登出</button>
     </div>
   </aside>
 
@@ -347,6 +377,14 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
             </div>
             <div class="field"><label>申請業務</label><select id="sales-select"></select></div>
             <div class="field"><label>選擇設備</label><select id="printer-select"></select></div>
+            <div class="field"><label>預約天數</label>
+              <select id="duration-input">
+                <option value="0.5D">0.5D</option>
+                <option value="1D" selected>1D</option>
+                <option value="1.5D">1.5D</option>
+                <option value="2D">2D</option>
+              </select>
+            </div>
             <div class="field wide">
               <div class="toggle-row">
                 <span class="lbl" id="purpose-label">備註說明</span>
@@ -406,6 +444,7 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
                     <th class="sortable" onclick="sortBy('sales')">業務<span id="sort-sales" class="sort"></span></th>
                     <th class="sortable" onclick="sortBy('printer')">設備<span id="sort-printer" class="sort"></span></th>
                     <th>單號 / 備註</th>
+                    <th>天數</th>
                     <th class="sortable" onclick="sortBy('engineer')">工程師<span id="sort-engineer" class="sort"></span></th>
                     <th class="sortable" onclick="sortBy('status')">狀態<span id="sort-status" class="sort"></span></th>
                     <th>最後變更</th>
@@ -450,7 +489,7 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {
-    getAuth, signInAnonymously, onAuthStateChanged
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
@@ -495,26 +534,63 @@ const PAGE_SIZE = 10;
 let currentPage = 1;
 
 // ══════════════════════════════════════════════
-// ══ 1. Auth：自動匿名登入（無需帳號密碼）═══════
+// ══ 1. Auth：帳號密碼登入 ══════════════════════
 // ══════════════════════════════════════════════
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        currentUser = { uid: user.uid, email: '訪客', displayName: '訪客', role: 'editor' };
+        currentUser = {
+            uid: user.uid,
+            email: user.email || '',
+            displayName: (user.email || '使用者').split('@')[0],
+            role: 'editor'
+        };
+        document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('sidebar-user').textContent = currentUser.displayName;
         applyRoleUI();
         subscribeBookings();
         safeIcons();
     } else {
         currentUser = null;
         if (unsubscribeBookings) { unsubscribeBookings(); unsubscribeBookings = null; }
-        try {
-            await signInAnonymously(auth);
-        } catch (err) {
-            console.error('匿名登入失敗', err);
-            showToast('連線失敗：' + err.message, 'error');
-        }
+        document.getElementById('main-app').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+        safeIcons();
     }
 });
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 登入中...';
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+        const msg = {
+            'auth/invalid-credential': '電子郵件或密碼錯誤',
+            'auth/invalid-email': '電子郵件格式錯誤',
+            'auth/user-disabled': '此帳號已停用',
+            'auth/too-many-requests': '嘗試次數過多，請稍後再試',
+            'auth/network-request-failed': '網路連線失敗',
+        }[err.code] || ('登入失敗：' + err.message);
+        errEl.textContent = msg;
+        errEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '登入';
+    }
+});
+
+window.doSignOut = async function(){
+    if(!confirm('確定要登出嗎？')) return;
+    await signOut(auth);
+};
+
 
 function applyRoleUI() {
     const u = currentUser;
@@ -647,7 +723,7 @@ window.renderTable = function() {
 
     if(!bookings.length){
         document.getElementById('total-count').textContent = '共 0 筆';
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">目前沒有任何預約紀錄</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="10">目前沒有任何預約紀錄</td></tr>';
         document.getElementById('pagination').classList.add('hidden');
         if(listView==='gantt') renderGantt();
         return;
@@ -676,7 +752,7 @@ window.renderTable = function() {
         filtered.length === bookings.length ? `共 ${bookings.length} 筆` : `已篩選 ${filtered.length} / ${bookings.length} 筆`;
 
     if(!filtered.length){
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">沒有符合篩選條件的資料</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="10">沒有符合篩選條件的資料</td></tr>';
         document.getElementById('pagination').classList.add('hidden');
         if(listView==='gantt') renderGantt();
         return;
@@ -739,6 +815,7 @@ window.renderTable = function() {
             <td><span class="tag col-violet" style="background:var(--purple-soft);color:var(--purple)">${b.sales}</span></td>
             <td>${printerCell}</td>
             <td>${purposeCell}</td>
+            <td class="mono">${b.duration||'—'}</td>
             <td><span class="tag col-indigo">${b.engineer}</span></td>
             <td>
                 <select ${canEdit?'':'disabled'} onchange="updateStatus('${b.id}',this.value)"
@@ -952,6 +1029,7 @@ document.getElementById('booking-form').addEventListener('submit', async (e)=>{
             hasOrder,
             purpose,
             engineer: document.getElementById('engineer-select').value,
+            duration: document.getElementById('duration-input').value,
             status:  '待確認',
             createdBy:       currentUser.uid,
             createdByEmail:  currentUser.email,
@@ -963,6 +1041,7 @@ document.getElementById('booking-form').addEventListener('submit', async (e)=>{
         });
         showToast('✓ 預約已新增','success');
         document.getElementById('date-input').value = fmtDateLocal(new Date());
+        document.getElementById('duration-input').value = '1D';
         document.getElementById('purpose-input').value = '';
         document.getElementById('purpose-input').disabled = true;
         document.getElementById('purpose-input').placeholder = '請先選擇是否有單號';
@@ -1012,6 +1091,7 @@ window.openEditModal = function(id){
     document.getElementById('edit-sales').value = b.sales;
     document.getElementById('edit-printer').value = b.printer;
     document.getElementById('edit-engineer').value = b.engineer;
+    document.getElementById('edit-duration').value = b.duration || '1D';
     const btnY=document.getElementById('edit-btn-yes');
     const btnN=document.getElementById('edit-btn-no');
     const lbl =document.getElementById('edit-purpose-label');
@@ -1041,6 +1121,7 @@ window.saveEdit = async function(){
             sales:    document.getElementById('edit-sales').value,
             printer:  document.getElementById('edit-printer').value,
             engineer: document.getElementById('edit-engineer').value,
+            duration: document.getElementById('edit-duration').value,
             hasOrder: editHasOrder,
             purpose,
             updatedBy:      currentUser.uid,
@@ -1065,13 +1146,14 @@ window.exportExcel = function(){
         '設備':     b.printer||'',
         '類型':     b.hasOrder?'單號':'備註',
         '內容':     b.purpose||'',
+        '預約天數': b.duration||'',
         '負責工程師':b.engineer||'',
         '任務狀態': b.status||'',
         '建立者':   b.createdByEmail||'',
         '最後修改': b.updatedAt ? fmtRelTime(b.updatedAt) : '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [{wch:14},{wch:8},{wch:10},{wch:10},{wch:8},{wch:30},{wch:12},{wch:10},{wch:25},{wch:18}];
+    ws['!cols'] = [{wch:14},{wch:8},{wch:10},{wch:10},{wch:8},{wch:30},{wch:8},{wch:12},{wch:10},{wch:25},{wch:18}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '預約清單');
     const now = new Date();

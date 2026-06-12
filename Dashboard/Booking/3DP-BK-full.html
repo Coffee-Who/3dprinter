@@ -79,8 +79,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .menu-btn{display:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;width:34px;height:34px;align-items:center;justify-content:center;font-size:18px;color:var(--ink-3);cursor:pointer;flex-shrink:0}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:90}
 
-.tab-panel{display:none}
-.tab-panel.active{display:block}
+.tab-panel{display:block}
 
 .sec-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .sec-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--ink)}
@@ -300,18 +299,14 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
   <main class="shell-main">
     <div class="shell-top">
       <button class="menu-btn" onclick="toggleSidebar(true)"><i data-lucide="menu" style="width:18px;height:18px"></i></button>
-      <nav class="shell-tabs">
-        <button class="shell-tab active" onclick="switchTab('status')" id="tab-status">機台狀態</button>
-        <button class="shell-tab" onclick="switchTab('booking')" id="tab-booking">新增預約</button>
-        <button class="shell-tab" onclick="switchTab('list')" id="tab-list">預約清單</button>
-      </nav>
+      <div class="sec-title" style="font-size:14px">3D列印機預約系統</div>
       <div class="shell-spacer"></div>
       <div class="shell-aux" id="timeNow"></div>
     </div>
 
     <div class="shell-body">
 
-      <!-- ══ Tab: 機台狀態 ══ -->
+      <!-- ══ 列印機即時狀態 ══ -->
       <div class="tab-panel active" id="panel-tab-status">
         <div class="sec-head">
           <div class="sec-title"><i data-lucide="activity" style="width:15px;height:15px;color:var(--accent)"></i>列印機即時狀態</div>
@@ -336,7 +331,9 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
       </div>
 
       <!-- ══ Tab: 新增預約 ══ -->
-      <div class="tab-panel" id="panel-tab-booking">
+      <!-- ══ 新增預約單 ══ -->
+      <div class="tab-panel active" id="panel-tab-booking" style="margin-top:24px">
+
         <div class="sec-head"><div class="sec-title">新增預約單</div></div>
         <div class="card">
           <form id="booking-form" class="form-grid">
@@ -369,8 +366,8 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
         </div>
       </div>
 
-      <!-- ══ Tab: 預約清單 ══ -->
-      <div class="tab-panel" id="panel-tab-list">
+      <!-- ══ 預約清單 ══ -->
+      <div class="tab-panel active" id="panel-tab-list" style="margin-top:24px">
         <div class="sec-head">
           <div class="sec-title">預約清單</div>
           <div class="sec-actions">
@@ -474,6 +471,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+function safeIcons(){
+    try { if (window.lucide) lucide.createIcons(); } catch(e) { console.warn('lucide icons skipped', e); }
+}
+
 // 應用程式常數
 const SALES     = ['Amber','Charlie','Chrissy','Benny','Celine','Mino','Yoga','Jungle','其他'];
 const ENGINEERS = ['Barry','Bill','Jaylen','Jimmy'];
@@ -499,8 +500,10 @@ let currentPage = 1;
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = { uid: user.uid, email: '訪客', displayName: '訪客', role: 'editor' };
-        showApp();
+        document.getElementById('main-app').classList.remove('hidden');
+        applyRoleUI();
         subscribeBookings();
+        safeIcons();
     } else {
         currentUser = null;
         if (unsubscribeBookings) { unsubscribeBookings(); unsubscribeBookings = null; }
@@ -513,34 +516,19 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-function showApp() {
-    document.getElementById('main-app').classList.remove('hidden');
-    applyRoleUI();
-    lucide.createIcons();
-}
-
 function applyRoleUI() {
     const u = currentUser;
     const canEdit = u.role === 'admin' || u.role === 'editor';
     document.getElementById('panel-tab-booking').style.display = canEdit ? '' : 'none';
-    document.getElementById('tab-booking').style.display = canEdit ? '' : 'none';
     document.getElementById('ops-col').classList.toggle('hidden', !canEdit);
-    lucide.createIcons();
 }
 
 // ══════════════════════════════════════════════
-// ══ 2. 介面切換（側邊欄 / 分頁）═══════════════
+// ══ 2. 介面切換（側邊欄）══════════════════════
 // ══════════════════════════════════════════════
 window.toggleSidebar = function(open){
     document.getElementById('sidebar').classList.toggle('open', open);
     document.getElementById('overlay').classList.toggle('show', open);
-};
-window.switchTab = function(tab){
-    ['status','booking','list'].forEach(t=>{
-        document.getElementById('panel-tab-'+t).classList.toggle('active', t===tab);
-        document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    });
-    if(tab==='list'){ renderTable(); }
 };
 function updateClock(){
     const d = new Date();
@@ -772,7 +760,7 @@ window.renderTable = function() {
     });
 
     renderPagination(sorted.length);
-    lucide.createIcons();
+    safeIcons();
     if(listView==='gantt') renderGantt();
 };
 
@@ -817,7 +805,7 @@ window.switchListView = function(v) {
     document.getElementById('list-gantt-view').classList.toggle('hidden', v!=='gantt');
     document.getElementById('view-table-btn').classList.toggle('active', v==='table');
     document.getElementById('view-gantt-btn').classList.toggle('active', v==='gantt');
-    lucide.createIcons();
+    safeIcons();
     if(v==='gantt') renderGantt();
 };
 function startOfWeek(d) {
@@ -920,7 +908,7 @@ function renderGantt() {
     });
     html += '</tbody></table>';
     container.innerHTML = html;
-    lucide.createIcons();
+    safeIcons();
 }
 
 // ══════════════════════════════════════════════
@@ -987,7 +975,7 @@ document.getElementById('booking-form').addEventListener('submit', async (e)=>{
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="plus" style="width:14px;height:14px"></i> 送出預約';
-        lucide.createIcons();
+        safeIcons();
     }
 });
 
@@ -1031,7 +1019,7 @@ window.openEditModal = function(id){
     else if(editHasOrder===false){ btnY.className='toggle-btn'; btnN.className='toggle-btn active-no'; lbl.textContent='備註'; }
     else{ btnY.className='toggle-btn'; btnN.className='toggle-btn'; lbl.textContent='備註說明'; }
     document.getElementById('edit-modal').classList.remove('hidden');
-    lucide.createIcons();
+    safeIcons();
 };
 window.closeEditModal = function(){ editingId=null; editHasOrder=null; document.getElementById('edit-modal').classList.add('hidden'); };
 window.setEditHasOrder = function(val){
@@ -1296,6 +1284,6 @@ function populateSelect(id, options){
     .forEach(([id,opts])=>populateSelect(id,opts));
 document.getElementById('date-input').value = fmtDateLocal(new Date());
 ganttWeekStart = startOfWeek(new Date());
-lucide.createIcons();
+safeIcons();
 </script>
 </body></html>

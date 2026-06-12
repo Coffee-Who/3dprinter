@@ -86,7 +86,7 @@ jobs:
           fi
 
       - name: Fetch print history
-        run: python3 fetch_prints.py "${{ steps.auth.outputs.token }}"
+        run: python3 Dashboard/Booking/fetch_prints.py "${{ steps.auth.outputs.token }}"
 
       - name: Process printer data + sync inventory to Firestore
         id: process
@@ -94,7 +94,7 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           BACKFILL_MODE: ${{ inputs.backfill }}
-        run: python3 process_printers.py
+        run: python3 Dashboard/Booking/process_printers.py
 
       - name: Check process result
         run: |

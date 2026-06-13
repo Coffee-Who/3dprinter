@@ -6,152 +6,327 @@
     <title>材料庫存管理</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        :root{
-          --bg:#ffffff; --bg-soft:#fafbfc; --bg-panel:#f5f7f9;
-          --line:#e6e8ec; --line-soft:#eef0f3;
-          --ink:#0a0e14; --ink-2:#3b4250; --ink-3:#5a6270; --ink-4:#8a93a3;
-          --accent:#0c7a99; --accent-soft:#e6f1f6;
-          --font-ui:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;
-          --font-mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
-          --sidebar-w:224px;
-        }
-        html,body{font-family:var(--font-ui)}
-        .shell{height:100vh;background:var(--bg);display:flex;position:relative;overflow:hidden}
-        .shell-sidebar{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .2s}
-        .sidebar-brand{display:flex;align-items:center;gap:10px;padding:18px 16px 16px;border-bottom:1px solid var(--line)}
-        .shell-brand-mark{width:28px;height:28px;background:#0a0e14;border-radius:7px;position:relative;flex-shrink:0}
-        .shell-brand-mark::before{content:'';position:absolute;top:6px;left:6px;width:6px;height:6px;background:var(--accent);border-radius:1px}
-        .shell-brand-mark::after{content:'';position:absolute;bottom:6px;right:6px;width:10px;height:2px;background:var(--accent);border-radius:1px}
-        .shell-brand-title{font-size:14px;font-weight:700;letter-spacing:-0.01em;line-height:1.1;color:var(--ink)}
-        .shell-brand-sub{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.1em;margin-top:3px}
-        .sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow-y:auto}
-        .sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;background:transparent;border-radius:6px;cursor:pointer;text-align:left;font:inherit;color:var(--ink-3);transition:background .12s,color .12s;width:100%;text-decoration:none}
-        .sidebar-item:hover{background:var(--bg);color:var(--ink)}
-        .sidebar-item.active{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
-        .sidebar-item.active .sidebar-item-icon{color:var(--accent)}
-        .sidebar-item-icon{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-4);flex-shrink:0}
-        .sidebar-item-text{display:flex;flex-direction:column;gap:2px;min-width:0}
-        .sidebar-item-label{font-size:13px;font-weight:700;letter-spacing:-0.005em;line-height:1.1;white-space:nowrap}
-        .sidebar-item-sub{font-size:9.5px;font-family:var(--font-mono);color:var(--ink-4);letter-spacing:0.08em;white-space:nowrap}
-        .sidebar-foot{padding:14px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:var(--ink-4);display:flex;flex-direction:column;gap:3px}
-        .sidebar-foot-name{color:var(--ink-2);font-weight:700}
-        .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:90}
-        .menu-btn{display:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;width:34px;height:34px;align-items:center;justify-content:center;font-size:18px;color:var(--ink-3);cursor:pointer;flex-shrink:0}
-        .shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
-        .shell-body{flex:1;min-height:0;overflow:auto}
-        @media(max-width:960px){
-          .shell-sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%);width:224px}
-          .shell-sidebar.open{transform:translateX(0)}
-          .menu-btn{display:flex}
-          .sidebar-overlay.show{display:block}
-        }
-        .spinner { width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle; }
-        @keyframes spin { to{transform:rotate(360deg);} }
-        .toast { position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn 0.3s ease; }
-        @keyframes slideIn { from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1} }
-        .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center; }
-        .progress-bar { height:8px;border-radius:4px;background:#e5e7eb;overflow:hidden; }
-        .progress-fill { height:100%;border-radius:4px;transition:width 0.4s ease; }
-        .tab-btn { padding:8px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s;color:#6b7280;background:transparent;border:none; }
-        .tab-btn.active { background:white;color:#1d4ed8;box-shadow:0 1px 4px rgba(0,0,0,0.1); }
-        input[type=number]::-webkit-inner-spin-button { opacity:1; }
-        .role-badge { display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px; }
-        details[open] .detail-chevron { transform: rotate(90deg); }
-        details summary::-webkit-details-marker { display: none; }
-        details summary::marker { content: ''; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+.hidden{display:none !important}
+:root{
+  --bg:#ffffff;
+  --bg-soft:#fafbfc;
+  --bg-panel:#f5f7f9;
+  --line:#e6e8ec;
+  --line-soft:#eef0f3;
+  --ink:#0a0e14;
+  --ink-2:#3b4250;
+  --ink-3:#5a6270;
+  --ink-4:#8a93a3;
+  --accent:#0c7a99;
+  --accent-soft:#e6f1f6;
+  --ok:#1d6f43;
+  --ok-soft:#e6f1ea;
+  --warn:#c79b2a;
+  --warn-soft:#fbf3dc;
+  --danger:#c0392b;
+  --danger-soft:#fbe7e3;
+  --purple:#6b5fc9;
+  --purple-soft:#ece9fb;
+  --indigo:#4f46c7;
+  --indigo-soft:#e8e6fb;
+  --sky:#0c7a99;
+  --sky-soft:#e6f1f6;
+  --violet:#7c3aed;
+  --violet-soft:#f1e9fd;
+  --radius:10px;
+  --radius-sm:6px;
+  --font-ui:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
+  --sidebar-w:224px;
+}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+
+.shell{height:100vh;background:var(--bg);display:flex;position:relative;overflow:hidden}
+
+.shell-sidebar{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .2s}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:18px 16px 16px;border-bottom:1px solid var(--line)}
+.shell-brand-mark{width:28px;height:28px;background:#0a0e14;border-radius:7px;position:relative;flex-shrink:0}
+.shell-brand-mark::before{content:'';position:absolute;top:6px;left:6px;width:6px;height:6px;background:var(--accent);border-radius:1px}
+.shell-brand-mark::after{content:'';position:absolute;bottom:6px;right:6px;width:10px;height:2px;background:var(--accent);border-radius:1px}
+.shell-brand-title{font-size:14px;font-weight:700;letter-spacing:-0.01em;line-height:1.1;color:var(--ink)}
+.shell-brand-sub{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.1em;margin-top:3px}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow-y:auto}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;background:transparent;border-radius:6px;cursor:pointer;text-align:left;font:inherit;color:var(--ink-3);transition:background .12s,color .12s;width:100%;text-decoration:none}
+.sidebar-item:hover{background:var(--bg);color:var(--ink)}
+.sidebar-item.active{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.sidebar-item.active .sidebar-item-icon{color:var(--accent)}
+.sidebar-item-icon{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-4);flex-shrink:0}
+.sidebar-item-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sidebar-item-label{font-size:13px;font-weight:700;letter-spacing:-0.005em;line-height:1.1;white-space:nowrap}
+.sidebar-item-sub{font-size:9.5px;font-family:var(--font-mono);color:var(--ink-4);letter-spacing:0.08em;white-space:nowrap}
+.sidebar-foot{padding:14px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:var(--ink-4);display:flex;flex-direction:column;gap:3px}
+.sidebar-foot-name{color:var(--ink-2);font-weight:700}
+
+.shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.shell-top{display:flex;align-items:center;gap:18px;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;min-height:48px;flex-wrap:wrap}
+.shell-tabs{display:flex;gap:2px;overflow-x:auto}
+.shell-tab{position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:var(--ink-3);padding:14px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;transition:color .15s}
+.shell-tab:hover{color:var(--ink)}
+.shell-tab.active{color:var(--ink);font-weight:700}
+.shell-tab.active::after{content:'';position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
+.shell-spacer{flex:1}
+.shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.08em;white-space:nowrap}
+.shell-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;background:var(--bg);padding:20px 24px}
+.menu-btn{display:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;width:34px;height:34px;align-items:center;justify-content:center;font-size:18px;color:var(--ink-3);cursor:pointer;flex-shrink:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:90}
+
+.tab-panel{display:block}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.sec-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--ink)}
+.sec-sub{font-size:11.5px;color:var(--ink-4);margin-top:2px}
+.sec-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:flex;background:var(--bg-panel);border-radius:8px;padding:2px;gap:2px}
+.seg button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:6px;border:none;background:transparent;color:var(--ink-3);cursor:pointer;font-family:inherit}
+.seg button.active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(10,14,20,.06)}
+.btn-ghost{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink-3);cursor:pointer;font-family:inherit}
+.btn-ghost:hover{background:var(--bg-soft)}
+.btn-ghost:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost.warn{border-color:#f0dca8;background:var(--warn-soft);color:#8b6b13}
+.btn-ghost.warn:hover{background:#f7e9c2}
+.muted{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono)}
+
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:8px}
+.status-card{background:var(--bg-panel);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px}
+.status-card .row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.status-card .name{font-size:13px;font-weight:700;color:var(--ink)}
+.status-card .sub{font-size:11px;color:var(--ink-3);margin-top:4px}
+.status-card .mat{font-size:10px;font-family:var(--font-mono);color:var(--ink-4);margin-top:6px}
+.status-card.is-low{border-color:#f4c2bd;background:var(--danger-soft)}
+.s-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:1px 7px;border-radius:999px;font-weight:600;white-space:nowrap}
+.s-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.col-green{background:var(--ok-soft);color:var(--ok)}.dot-green{background:#1d6f43}
+.col-blue{background:var(--accent-soft);color:var(--accent)}.dot-blue{background:#0c7a99}
+.col-yellow{background:var(--warn-soft);color:#8b6b13}.dot-yellow{background:#c79b2a}
+.col-red{background:var(--danger-soft);color:var(--danger)}.dot-red{background:#c0392b}
+.col-indigo{background:var(--indigo-soft);color:var(--indigo)}.dot-indigo{background:#4f46c7}
+.col-orange{background:#fde6d2;color:#a35a17}.dot-orange{background:#e08a39}
+.col-gray{background:var(--line-soft);color:var(--ink-4)}.dot-gray{background:#b4b7bd}
+.prog-bar{background:var(--line-soft);border-radius:99px;height:6px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent)}
+.prog-fill-yellow{background:#c79b2a}
+.prog-fill-red{background:#c0392b}
+.empty-msg{grid-column:1/-1;text-align:center;color:var(--ink-4);font-size:12.5px;padding:24px 0}
+.error-msg{grid-column:1/-1;text-align:center;color:var(--danger);font-size:12.5px;padding:24px 0}
+
+.card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:8px}
+.form-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;align-items:end}
+.form-grid .wide{grid-column:span 2}
+.field label{font-size:11px;color:var(--ink-3);display:block;margin-bottom:4px;font-weight:600}
+.field input,.field select{width:100%;height:34px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)}
+.field input:disabled{background:var(--bg-soft);color:var(--ink-4)}
+.field input:focus,.field select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.toggle-row .lbl{font-size:11px;color:var(--ink-3);font-weight:600}
+.toggle-row .opt{display:flex;gap:4px;align-items:center}
+.toggle-row .hint{font-size:10px;color:var(--ink-4);margin-right:2px}
+.toggle-btn{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--line);cursor:pointer;background:var(--bg);color:var(--ink-3);font-family:inherit}
+.toggle-btn.active-yes{background:var(--ok-soft);color:var(--ok);border-color:#bfe3cf}
+.toggle-btn.active-no{background:var(--danger-soft);color:var(--danger);border-color:#f4c2bd}
+.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:4px}
+.btn-primary{height:36px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;padding:0 18px;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#0a6a86}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary.amber{background:var(--warn);color:#fff}
+.btn-primary.amber:hover{background:#b08322}
+
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.filters .lbl{font-size:11.5px;font-weight:600;color:var(--ink-3);margin-right:2px}
+.filters select,.filters input{font-size:11.5px;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--ink-2);font-family:inherit;height:30px}
+.filters .clear{font-size:11.5px;color:var(--ink-4);text-decoration:underline;cursor:pointer;margin-left:2px;background:none;border:none;font-family:inherit}
+
+.outer-card{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px}
+thead tr{background:var(--bg-soft)}
+th{text-align:left;font-weight:700;font-size:10.5px;font-family:var(--font-mono);color:var(--ink-3);letter-spacing:0.06em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th .sort{margin-left:4px;color:var(--ink-4);font-size:9px}
+th.sorted{color:var(--accent)}
+th.sorted .sort{color:var(--accent)}
+td{padding:10px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink-2);vertical-align:middle}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:var(--bg-soft)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.is-low{background:#fdf3ea}
+tbody tr.is-low:hover{background:#fbe9d9}
+.date-cell{font-weight:700;color:var(--ink-2);white-space:nowrap}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;font-size:11px;border-radius:999px;font-weight:600;white-space:nowrap}
+.mono{font-family:var(--font-mono);color:var(--ink-2)}
+.note-text{font-size:11.5px;color:var(--ink-4)}
+.lastmod{font-size:11px;color:var(--ink-4);line-height:1.3}
+.lastmod b{color:var(--ink-3);font-weight:600}
+.actions{display:flex;gap:4px;justify-content:center}
+.actbtn{width:28px;height:28px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center}
+.actbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.actbtn.danger:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.empty-row td{text-align:center;color:var(--ink-4);padding:40px 0}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg-soft);font-size:12px;color:var(--ink-3);font-family:var(--font-mono);flex-wrap:wrap;gap:10px}
+.page-btn{padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink-2);cursor:pointer;font-family:inherit}
+.page-btn:hover{background:var(--bg-soft)}
+.page-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.page-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.icon-btn{width:30px;height:30px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center}
+.icon-btn:hover{background:var(--bg-soft)}
+
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(10,14,20,.15);animation:slideIn .3s ease;color:#fff}
+.toast.success{background:var(--ok)}
+.toast.error{background:var(--danger)}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.spinner{width:14px;height:14px;border:2px solid rgba(10,14,20,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+.spinner.on-dark{border:2px solid rgba(255,255,255,.4);border-top-color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,14,20,.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-box{background:var(--bg);border-radius:12px;box-shadow:0 16px 40px rgba(10,14,20,.2);padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal-box.wide{max-width:680px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.modal-title-left{display:flex;align-items:center;gap:8px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-grid .full{grid-column:1/-1}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.btn-cancel{flex:1;height:38px;border:1px solid var(--line);background:var(--bg);border-radius:6px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;font-family:inherit}
+.btn-cancel:hover{background:var(--bg-soft)}
+.btn-save{flex:1;height:38px;border:none;background:var(--accent);color:#fff;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-save:hover{background:#0a6a86}
+.btn-save.amber{background:var(--warn)}
+.btn-save.amber:hover{background:#b08322}
+.modal-close{border:none;background:none;color:var(--ink-4);cursor:pointer;display:flex}
+.modal-close:hover{color:var(--ink-2)}
+
+.role-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 9px;border-radius:999px}
+
+.alert-banner{background:var(--danger-soft);border:1px solid #f4c2bd;border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+.alert-banner .icon{color:var(--danger);flex-shrink:0;margin-top:1px}
+.alert-banner .title{font-weight:700;color:var(--danger);font-size:12.5px;margin-bottom:4px}
+.alert-item{font-size:11.5px;color:#8a3a2f}
+
+details.collapse{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+details.collapse summary{cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px;color:var(--ink);user-select:none;list-style:none}
+details.collapse summary::-webkit-details-marker{display:none}
+details.collapse summary::marker{content:''}
+details.collapse summary .chev{transition:transform .15s;color:var(--ink-4)}
+details.collapse[open] summary .chev{transform:rotate(90deg)}
+details.collapse summary .hint{font-size:11px;color:var(--ink-4);font-weight:400;margin-left:4px}
+details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
+
+.cartridge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.chart-card{border:1px solid var(--line);border-radius:8px;padding:14px}
+.chart-card h3{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.legend-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:4px 0}
+.legend-sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+.info-box{background:var(--accent-soft);border:1px solid #cfe6ee;border-radius:8px;padding:10px 12px;font-size:11.5px;color:#0a5a73;margin-bottom:12px}
+.info-box ul{margin:6px 0 0 18px;padding:0}
+.info-box li{margin:2px 0}
+
+@media(max-width:960px){
+  .shell-sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%);width:224px}
+  .shell-sidebar.open{transform:translateX(0)}
+  .menu-btn{display:flex}
+  .sidebar-overlay.show{display:block}
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid .wide{grid-column:span 2}
+}
+@media(max-width:600px){
+  .shell-top{padding:0 14px;gap:10px}
+  .shell-tab{padding:12px 10px;font-size:12px}
+  .shell-aux{display:none}
+  .shell-body{padding:14px}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid .wide{grid-column:1/-1}
+  .filters{gap:6px}
+  .filters select{flex:1 1 45%}
+  .modal-grid{grid-template-columns:1fr}
+}
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen">
+<body>
 <div id="toast" class="toast hidden"></div>
 
+<!-- ══ 編輯樹脂罐 Modal ══ -->
 <div id="cartridge-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="bg-teal-100 p-2.5 rounded-lg"><i data-lucide="flask-conical" class="w-5 h-5 text-teal-600"></i></div>
-                <h2 class="text-xl font-bold" id="cartridge-modal-title">編輯樹脂罐</h2>
-            </div>
-            <button onclick="closeCartridgeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="modal-box">
+        <div class="modal-title">
+            <div class="modal-title-left"><i data-lucide="flask-conical" style="width:18px;height:18px;color:var(--accent)"></i><span id="cartridge-modal-title">編輯樹脂罐</span></div>
+            <button class="modal-close" onclick="closeCartridgeModal()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
         </div>
-        <div class="space-y-4" id="cartridge-modal-body"></div>
-        <div class="flex gap-3 mt-6">
-            <button onclick="closeCartridgeModal()" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">取消</button>
-            <button onclick="saveCartridgeEdit()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium">儲存</button>
+        <div class="modal-grid" id="cartridge-modal-body" style="grid-template-columns:1fr"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeCartridgeModal()">取消</button>
+            <button class="btn-save" onclick="saveCartridgeEdit()">儲存</button>
         </div>
     </div>
 </div>
 
 <!-- ══ 新增備料 Modal ══ -->
 <div id="stock-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="bg-blue-100 p-2.5 rounded-lg"><i data-lucide="package-plus" class="w-5 h-5 text-blue-600"></i></div>
-            <h2 class="text-xl font-bold">新增備料入庫</h2>
+    <div class="modal-box">
+        <div class="modal-title">
+            <div class="modal-title-left"><i data-lucide="package-plus" style="width:18px;height:18px;color:var(--accent)"></i><span>新增備料入庫</span></div>
+            <button class="modal-close" onclick="closeStockModal()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
         </div>
-        <div class="space-y-4">
-            <div class="space-y-1.5">
-                <label class="text-sm font-medium text-gray-700">材料種類</label>
-                <input list="material-options" id="stock-material" autocomplete="off" placeholder="選擇或直接輸入新材料名稱"
-                    class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+        <div class="modal-grid" style="grid-template-columns:1fr">
+            <div class="field">
+                <label>材料種類</label>
+                <input list="material-options" id="stock-material" autocomplete="off" placeholder="選擇或直接輸入新材料名稱">
                 <datalist id="material-options"></datalist>
             </div>
-            <div class="space-y-1.5">
-                <label class="text-sm font-medium text-gray-700">數量 (L)</label>
-                <input type="number" id="stock-qty" min="0" step="1" value="1" placeholder="例：1.5 = 1500 ml"
-                    class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <p class="text-xs text-gray-400">可輸入小數（如 1.5 L = 1500 ml）</p>
+            <div class="field">
+                <label>數量 (L)</label>
+                <input type="number" id="stock-qty" min="0" step="1" value="1" placeholder="例：1.5 = 1500 ml">
+                <p class="muted" style="margin-top:4px;text-transform:none;letter-spacing:0">可輸入小數（如 1.5 L = 1500 ml）</p>
             </div>
-            <div class="space-y-1.5">
-                <label class="text-sm font-medium text-gray-700">備註</label>
-                <input type="text" id="stock-note" placeholder="例：補貨入庫"
-                    class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+            <div class="field">
+                <label>備註</label>
+                <input type="text" id="stock-note" placeholder="例：補貨入庫">
             </div>
         </div>
-        <div class="flex gap-3 mt-6">
-            <button onclick="closeStockModal()" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">取消</button>
-            <button onclick="saveStockIn()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium">確認入庫</button>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeStockModal()">取消</button>
+            <button class="btn-save" onclick="saveStockIn()">確認入庫</button>
         </div>
     </div>
 </div>
-
 
 <!-- ══ 安全庫存設定 Modal ══ -->
 <div id="safety-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="bg-amber-100 p-2.5 rounded-lg"><i data-lucide="shield-alert" class="w-5 h-5 text-amber-600"></i></div>
-                <h2 class="text-xl font-bold">安全庫存設定</h2>
-            </div>
-            <button onclick="closeSafetyModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="modal-box">
+        <div class="modal-title">
+            <div class="modal-title-left"><i data-lucide="shield-alert" style="width:18px;height:18px;color:var(--warn)"></i><span>安全庫存設定</span></div>
+            <button class="modal-close" onclick="closeSafetyModal()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
         </div>
-        <p class="text-sm text-gray-500 mb-4">設定每種材料的安全庫存量（L），低於此量時會顯示叫料提醒。</p>
-        <div class="space-y-3" id="safety-modal-body"></div>
-        <div class="flex gap-3 mt-6">
-            <button onclick="closeSafetyModal()" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">取消</button>
-            <button onclick="saveSafetyStock()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium">儲存設定</button>
+        <p class="muted" style="margin-bottom:12px;text-transform:none;letter-spacing:0;font-size:12px">設定每種材料的安全庫存量（L），低於此量時會顯示叫料提醒。</p>
+        <div class="modal-grid" id="safety-modal-body" style="grid-template-columns:1fr;gap:8px"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeSafetyModal()">取消</button>
+            <button class="btn-save amber" onclick="saveSafetyStock()">儲存設定</button>
         </div>
     </div>
 </div>
 
-<!-- ══ 已停用材料 Modal ══════════════════════════ -->
+<!-- ══ 已停用材料 Modal ══ -->
 <div id="disabled-materials-modal" class="modal-overlay hidden">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xl mx-4 max-h-screen overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="bg-amber-100 p-2.5 rounded-lg"><i data-lucide="eye-off" class="w-5 h-5 text-amber-600"></i></div>
-                <h2 class="text-xl font-bold">已停用材料</h2>
-            </div>
-            <button onclick="closeDisabledMaterialsModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="modal-box wide">
+        <div class="modal-title">
+            <div class="modal-title-left"><i data-lucide="eye-off" style="width:18px;height:18px;color:var(--warn)"></i><span>已停用材料</span></div>
+            <button class="modal-close" onclick="closeDisabledMaterialsModal()"><i data-lucide="x" style="width:18px;height:18px"></i></button>
         </div>
-        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-            <p class="font-semibold mb-1">💡 停用機制說明</p>
-            <ul class="list-disc list-inside ml-1 space-y-0.5">
+        <div class="info-box">
+            <strong>停用機制說明</strong>
+            <ul>
                 <li>停用的材料不會在「庫存總覽」、「備料庫存」、「月度分析」中顯示</li>
                 <li>使用者刪除材料後會自動加入此清單</li>
                 <li>系統預設停用部分舊版本材料（如 V1.1 等）</li>
@@ -159,11 +334,9 @@
                 <li>點下方「恢復顯示」可重新讓某個材料出現在統計中</li>
             </ul>
         </div>
-        <div class="space-y-2" id="disabled-modal-body">
-            <!-- 動態填充 -->
-        </div>
-        <div class="mt-6">
-            <button onclick="closeDisabledMaterialsModal()" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">關閉</button>
+        <div class="modal-grid" id="disabled-modal-body" style="grid-template-columns:1fr;gap:6px"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" style="flex:none;padding:0 24px" onclick="closeDisabledMaterialsModal()">關閉</button>
         </div>
     </div>
 </div>
@@ -183,8 +356,8 @@
     <nav class="sidebar-nav">
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">工作看板</span><span class="sidebar-item-sub">WORK BOARD</span></div></a>
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="circle-alert" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">異常與資源</span><span class="sidebar-item-sub">ISSUES</span></div></a>
-      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="box" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印樣品</span><span class="sidebar-item-sub">SAMPLES</span></div></a>
       <a class="sidebar-item" href="3DP-BK-full.html"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="box" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印樣品</span><span class="sidebar-item-sub">SAMPLES</span></div></a>
       <a class="sidebar-item active" href="inventory-full.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">材料庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="settings" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
     </nav>
@@ -196,256 +369,236 @@
   </aside>
 
   <main class="shell-main">
-    <div class="shell-body p-4 md:p-8">
-<div class="max-w-7xl mx-auto space-y-6">
-
-    <!-- Header -->
-    <div class="bg-white rounded-xl shadow-sm p-5 flex items-center justify-between border-l-4 border-teal-600 flex-wrap gap-3">
-        <div class="flex items-center gap-4">
-            <button class="menu-btn" onclick="toggleSidebar(true)"><i data-lucide="menu" style="width:18px;height:18px"></i></button>
-            <div class="bg-teal-100 p-3 rounded-lg text-teal-600"><i data-lucide="package" class="w-7 h-7"></i></div>
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-800">材料庫存管理</h1>
-                    <span class="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">Form 4 / Form 4L</span>
-                    <span id="role-badge" class="role-badge"></span>
-                </div>
-                <p class="text-sm text-gray-500">追蹤機台樹脂罐 + 備料庫存，自動計算列印消耗。</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            <button data-admin-only onclick="triggerSyncWorkflow()" title="觸發 GitHub workflow 重新同步消耗資料（會開新分頁）" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-700 transition-colors">
-                <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i> 觸發同步
-            </button>
-            <button onclick="reloadData()" title="從 Firestore 重新拉取最新資料" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="reload-icon"></i> 重新載入
-            </button>
-            <div class="flex items-center gap-1 text-xs text-gray-400">
-                <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
-                <span id="sync-status">同步中</span>
-            </div>
-        </div>
+    <div class="shell-top">
+      <button class="menu-btn" onclick="toggleSidebar(true)"><i data-lucide="menu" style="width:18px;height:18px"></i></button>
+      <div class="shell-tabs">
+        <button class="shell-tab active" id="tab-overview" onclick="switchTab('overview')">庫存總覽</button>
+        <button class="shell-tab" id="tab-stock" onclick="switchTab('stock')">材料庫存</button>
+        <button class="shell-tab" id="tab-history" onclick="switchTab('history')">消耗記錄</button>
+        <button class="shell-tab" id="tab-monthly" onclick="switchTab('monthly')">月度分析</button>
+      </div>
+      <span class="role-badge" id="role-badge"></span>
+      <div class="shell-spacer"></div>
+      <span class="shell-aux" id="sync-status-wrap"><i data-lucide="wifi" style="width:12px;height:12px;vertical-align:-2px"></i> <span id="sync-status">同步中</span></span>
+      <button data-admin-only class="btn-ghost warn" onclick="triggerSyncWorkflow()" title="觸發 GitHub workflow 重新同步消耗資料（會開新分頁）">
+        <i data-lucide="cloud-download" style="width:13px;height:13px"></i> 觸發同步
+      </button>
+      <button class="btn-ghost" onclick="reloadData()" title="從 Firestore 重新拉取最新資料">
+        <i data-lucide="refresh-cw" style="width:13px;height:13px" id="reload-icon"></i> 重新載入
+      </button>
     </div>
 
+    <div class="shell-body">
+      <!-- 叫料提醒橫幅 -->
+      <div id="alert-banner" class="alert-banner hidden">
+          <i data-lucide="bell-ring" style="width:18px;height:18px" class="icon"></i>
+          <div>
+              <p class="title">以下材料庫存不足，請安排叫料</p>
+              <div id="alert-items"></div>
+          </div>
+      </div>
 
-    <!-- 叫料提醒橫幅 -->
-    <div id="alert-banner" class="hidden bg-red-50 border border-red-200 rounded-xl p-4">
-        <div class="flex items-start gap-3">
-            <i data-lucide="bell-ring" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-                <p class="font-semibold text-red-700 mb-1">⚠️ 以下材料庫存不足，請安排叫料</p>
-                <div id="alert-items" class="space-y-1"></div>
-            </div>
+      <!-- ══ 庫存總覽 ══ -->
+      <div class="tab-panel" id="panel-overview">
+        <div class="sec-head">
+          <div class="sec-title"><i data-lucide="layout-grid" style="width:15px;height:15px;color:var(--accent)"></i>庫存總覽</div>
+          <div class="sec-actions">
+            <span class="tag" style="background:var(--accent-soft);color:var(--accent)">Form 4 / Form 4L</span>
+            <button data-admin-only class="btn-ghost warn" onclick="showSafetyModal()">
+                <i data-lucide="shield-alert" style="width:13px;height:13px"></i> 安全庫存設定
+            </button>
+            <button class="btn-ghost" onclick="exportInventoryExcel()">
+                <i data-lucide="file-spreadsheet" style="width:13px;height:13px"></i> 匯出
+            </button>
+          </div>
         </div>
-    </div>
-
-    <!-- Tab 導航 -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="bg-gray-50 px-4 py-2 flex items-center gap-1 border-b border-gray-100">
-            <div class="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
-                <button class="tab-btn active" id="tab-overview" onclick="switchTab('overview')">庫存總覽</button>
-                <button class="tab-btn" id="tab-stock" onclick="switchTab('stock')">材料庫存</button>
-                <button class="tab-btn" id="tab-history" onclick="switchTab('history')">消耗記錄</button>
-                <button class="tab-btn" id="tab-monthly" onclick="switchTab('monthly')">月度分析</button>
-            </div>
-            <div class="ml-auto flex gap-2">
-                <button data-admin-only onclick="showSafetyModal()" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
-                    <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> 安全庫存設定
-                </button>
-                <button onclick="exportInventoryExcel()" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-green-50 hover:border-green-400 hover:text-green-700 transition-colors">
-                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> 匯出
-                </button>
-            </div>
+        <div id="overview-grid" class="status-grid">
+            <div class="empty-msg">載入中...</div>
         </div>
+      </div>
 
-        <!-- 庫存總覽 -->
-        <div id="panel-overview" class="p-6">
-            <div id="overview-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="col-span-full text-center text-gray-400 py-8">載入中...</div>
-            </div>
-        </div>
-
-        <!-- 材料庫存（樹脂罐 + 備料）-->
-        <div id="panel-stock" class="p-6 hidden">
+      <!-- ══ 材料庫存（樹脂罐 + 備料）══ -->
+      <div class="tab-panel hidden" id="panel-stock">
             <!-- 機台樹脂罐區塊（可摺疊，預設隱藏）-->
-            <details class="mb-6 border border-gray-200 rounded-xl overflow-hidden">
-                <summary class="cursor-pointer p-4 hover:bg-gray-50 flex items-center gap-2 select-none">
-                    <i data-lucide="chevron-right" class="w-4 h-4 detail-chevron transition-transform"></i>
-                    <span class="font-semibold text-gray-800">機台樹脂罐</span>
-                    <span class="text-xs text-gray-400 ml-2">自動從 Formlabs API 抓取；點此展開查看 / 編輯</span>
+            <details class="collapse">
+                <summary>
+                    <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
+                    機台樹脂罐
+                    <span class="hint">自動從 Formlabs API 抓取；點此展開查看 / 編輯</span>
                 </summary>
-                <div class="p-4 border-t border-gray-100">
-                    <div class="flex items-center justify-end mb-3">
-                        <button data-editor-only onclick="openCartridgeModal()" class="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white transition-colors">
-                            <i data-lucide="pencil" class="w-4 h-4"></i> 手動更新樹脂罐
+                <div class="collapse-body">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+                        <button data-editor-only class="btn-primary" onclick="openCartridgeModal()">
+                            <i data-lucide="pencil" style="width:14px;height:14px"></i> 手動更新樹脂罐
                         </button>
                     </div>
-                    <div id="cartridges-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <div id="cartridges-grid" class="cartridge-grid"></div>
                 </div>
             </details>
 
             <!-- 備料庫存區塊 -->
-            <div class="flex items-center justify-between mb-4">
+            <div class="sec-head">
                 <div>
-                    <h3 class="text-base font-semibold text-gray-800">備料庫存</h3>
-                    <p class="text-xs text-gray-500">尚未放入機器的備用料罐庫存。</p>
+                    <div class="sec-title">備料庫存</div>
+                    <p class="sec-sub">尚未放入機器的備用料罐庫存。</p>
                 </div>
-                <button data-editor-only onclick="showStockModal()" class="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
-                    <i data-lucide="package-plus" class="w-4 h-4"></i> 新增入庫
+                <button data-editor-only class="btn-primary" onclick="showStockModal()">
+                    <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
                 </button>
             </div>
             <!-- 篩選工具列 -->
-            <div class="mb-3 flex flex-wrap items-center gap-2">
-                <span class="text-xs font-medium text-gray-500 mr-1">篩選：</span>
-                <select id="stock-filter-status" onchange="renderStockTable()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
+            <div class="outer-card" style="margin-bottom:0">
+            <div class="filters">
+                <span class="lbl">篩選：</span>
+                <select id="stock-filter-status" onchange="renderStockTable()">
                     <option value="">全部狀態</option>
                     <option value="low">僅需叫料</option>
                     <option value="ok">僅充足</option>
                 </select>
-                <input type="text" id="stock-filter-name" oninput="renderStockTable()" placeholder="搜尋材料名稱..." class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white w-40">
-                <button onclick="resetStockFilters()" class="text-xs text-gray-500 hover:text-blue-600 underline ml-1">清除</button>
-                <button data-editor-only onclick="showDisabledMaterialsModal()" class="ml-auto text-xs text-gray-500 hover:text-amber-600 flex items-center gap-1 px-2 py-1 rounded border border-gray-200 hover:border-amber-400">
-                    <i data-lucide="eye-off" class="w-3.5 h-3.5"></i> 已停用材料 (<span id="disabled-count">0</span>)
+                <input type="text" id="stock-filter-name" oninput="renderStockTable()" placeholder="搜尋材料名稱..." style="width:160px">
+                <button class="clear" onclick="resetStockFilters()">清除</button>
+                <div style="flex:1"></div>
+                <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
+                    <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
                 </button>
             </div>
-            <div id="stock-table-wrap" class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
+            <div id="stock-table-wrap" class="table-wrap">
+                <table>
                     <thead>
-                        <tr class="bg-gray-100 text-gray-600">
-                            <th class="p-3 border-b font-medium cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('material')">材料名稱<span id="stock-sort-material" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium text-right cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('bottles')">數量 (L)<span id="stock-sort-bottles" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium text-right cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('total_ml')">備料 (L)<span id="stock-sort-total_ml" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium text-right cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('on_machine')">機台上 (L)<span id="stock-sort-on_machine" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium text-right w-32 cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('safety')">安全庫存 (L)<span id="stock-sort-safety" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium cursor-pointer select-none hover:bg-gray-200" onclick="stockSortBy('status')">狀態<span id="stock-sort-status" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium w-40">備註</th>
-                            <th class="p-3 border-b font-medium">最後更新</th>
-                            <th class="p-3 border-b font-medium text-center">操作</th>
+                        <tr>
+                            <th class="sortable" onclick="stockSortBy('material')">材料名稱<span id="stock-sort-material" class="sort"></span></th>
+                            <th class="sortable" style="text-align:right" onclick="stockSortBy('bottles')">數量 (L)<span id="stock-sort-bottles" class="sort"></span></th>
+                            <th class="sortable" style="text-align:right" onclick="stockSortBy('total_ml')">備料 (L)<span id="stock-sort-total_ml" class="sort"></span></th>
+                            <th class="sortable" style="text-align:right" onclick="stockSortBy('on_machine')">機台上 (L)<span id="stock-sort-on_machine" class="sort"></span></th>
+                            <th class="sortable" style="text-align:right" onclick="stockSortBy('safety')">安全庫存 (L)<span id="stock-sort-safety" class="sort"></span></th>
+                            <th class="sortable" onclick="stockSortBy('status')">狀態<span id="stock-sort-status" class="sort"></span></th>
+                            <th>備註</th>
+                            <th>最後更新</th>
+                            <th style="text-align:center">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="stock-table-body" class="divide-y divide-gray-100"></tbody>
+                    <tbody id="stock-table-body"></tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- 消耗記錄 -->
-        <div id="panel-history" class="p-6 hidden">
-            <div class="mb-4">
-                <p class="text-sm text-gray-500 mb-3">列印完成後自動記錄的材料消耗，以及手動入庫紀錄。</p>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-medium text-gray-500 mr-1">篩選：</span>
-                    <select id="history-filter" onchange="renderHistory()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                        <option value="">全部材料</option>
-                    </select>
-                    <select id="history-filter-printer" onchange="renderHistory()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                        <option value="">全部機台</option>
-                        <option value="AluminumBowfin">Form4</option>
-                        <option value="AdroitSauropod">Form4L</option>
-                        <option value="備料庫存">備料庫存</option>
-                    </select>
-                    <select id="history-filter-type" onchange="renderHistory()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                        <option value="">全部類型</option>
-                        <option value="consume">列印消耗</option>
-                        <option value="aborted">列印中止</option>
-                        <option value="stockin">備料入庫</option>
-                        <option value="manual">手動調整</option>
-                    </select>
-                    <input type="date" id="history-filter-from" onchange="renderHistory()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white" title="起始日期">
-                    <span class="text-xs text-gray-400">～</span>
-                    <input type="date" id="history-filter-to" onchange="renderHistory()" class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none bg-white" title="結束日期">
-                    <button onclick="resetHistoryFilters()" class="text-xs text-gray-500 hover:text-blue-600 underline ml-1">清除</button>
-                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
+      </div>
+
+      <!-- ══ 消耗記錄 ══ -->
+      <div class="tab-panel hidden" id="panel-history">
+            <div class="sec-head">
+              <div>
+                <div class="sec-title">消耗記錄</div>
+                <p class="sec-sub">列印完成後自動記錄的材料消耗，以及手動入庫紀錄。</p>
+              </div>
+            </div>
+            <div class="outer-card" style="margin-bottom:0">
+            <div class="filters">
+                <span class="lbl">篩選：</span>
+                <select id="history-filter" onchange="renderHistory()">
+                    <option value="">全部材料</option>
+                </select>
+                <select id="history-filter-printer" onchange="renderHistory()">
+                    <option value="">全部機台</option>
+                    <option value="AluminumBowfin">Form4</option>
+                    <option value="AdroitSauropod">Form4L</option>
+                    <option value="備料庫存">備料庫存</option>
+                </select>
+                <select id="history-filter-type" onchange="renderHistory()">
+                    <option value="">全部類型</option>
+                    <option value="consume">列印消耗</option>
+                    <option value="aborted">列印中止</option>
+                    <option value="stockin">備料入庫</option>
+                    <option value="manual">手動調整</option>
+                </select>
+                <input type="date" id="history-filter-from" onchange="renderHistory()" title="起始日期">
+                <span class="muted" style="text-transform:none">～</span>
+                <input type="date" id="history-filter-to" onchange="renderHistory()" title="結束日期">
+                <button class="clear" onclick="resetHistoryFilters()">清除</button>
+            </div>
+            <div class="table-wrap">
+                <table>
                     <thead>
-                        <tr class="bg-gray-100 text-gray-600">
-                            <th class="p-3 border-b font-medium w-36 cursor-pointer select-none hover:bg-gray-200" onclick="historySortBy('ts')">時間<span id="hist-sort-ts" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium cursor-pointer select-none hover:bg-gray-200" onclick="historySortBy('material')">材料<span id="hist-sort-material" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium cursor-pointer select-none hover:bg-gray-200" onclick="historySortBy('printer')">機台<span id="hist-sort-printer" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium">類型</th>
-                            <th class="p-3 border-b font-medium text-right w-28 cursor-pointer select-none hover:bg-gray-200" onclick="historySortBy('ml')">數量 (L)<span id="hist-sort-ml" class="ml-1 text-gray-300"></span></th>
-                            <th class="p-3 border-b font-medium">備註</th>
+                        <tr>
+                            <th class="sortable" onclick="historySortBy('ts')">時間<span id="hist-sort-ts" class="sort"></span></th>
+                            <th class="sortable" onclick="historySortBy('material')">材料<span id="hist-sort-material" class="sort"></span></th>
+                            <th class="sortable" onclick="historySortBy('printer')">機台<span id="hist-sort-printer" class="sort"></span></th>
+                            <th>類型</th>
+                            <th class="sortable" style="text-align:right" onclick="historySortBy('ml')">數量 (L)<span id="hist-sort-ml" class="sort"></span></th>
+                            <th>備註</th>
                         </tr>
                     </thead>
-                    <tbody id="history-body" class="divide-y divide-gray-100"></tbody>
+                    <tbody id="history-body"></tbody>
                 </table>
             </div>
-            <div id="history-pagination" class="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between hidden">
-                <span id="history-page-info" class="text-sm text-gray-500"></span>
-                <div class="flex gap-1" id="history-page-btns"></div>
+            <div id="history-pagination" class="pagination hidden">
+                <span id="history-page-info"></span>
+                <div style="display:flex;gap:4px" id="history-page-btns"></div>
             </div>
-        </div>
+            </div>
+      </div>
 
-        <!-- 月度分析 -->
-        <div id="panel-monthly" class="p-6 hidden">
-            <div class="flex items-center justify-between mb-4">
-                <p class="text-sm text-gray-500">各材料每月消耗量統計。</p>
-                <div class="flex items-center gap-2">
-                    <select id="monthly-printer" onchange="renderMonthly()" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none">
+      <!-- ══ 月度分析 ══ -->
+      <div class="tab-panel hidden" id="panel-monthly">
+            <div class="sec-head">
+                <div class="sec-title">月度分析</div>
+                <div class="sec-actions">
+                    <select id="monthly-printer" onchange="renderMonthly()">
                         <option value="">全部機台</option>
                         <option value="AluminumBowfin">Form4 (AluminumBowfin)</option>
                         <option value="AdroitSauropod">Form4L (AdroitSauropod)</option>
                     </select>
-                    <select id="monthly-year" onchange="renderMonthly()" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"></select>
-                    <select id="monthly-month" onchange="renderMonthlyPie()" class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"></select>
+                    <select id="monthly-year" onchange="renderMonthly()"></select>
+                    <select id="monthly-month" onchange="renderMonthlyPie()"></select>
                 </div>
             </div>
             <!-- 圓餅圖 -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div class="border border-gray-100 rounded-xl p-4">
-                    <h3 id="pie-title" class="text-sm font-semibold text-gray-700 mb-3">當月各材料消耗佔比</h3>
-                    <div style="position:relative; height:280px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" id="pie-grid">
+                <div class="chart-card">
+                    <h3 id="pie-title">當月各材料消耗佔比</h3>
+                    <div style="position:relative;height:260px">
                         <canvas id="monthly-pie"></canvas>
                     </div>
-                    <p id="pie-empty" class="text-center text-gray-400 text-sm py-8 hidden">當月尚無消耗紀錄</p>
+                    <p id="pie-empty" class="empty-msg hidden">當月尚無消耗紀錄</p>
                 </div>
-                <div class="border border-gray-100 rounded-xl p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">當月消耗明細</h3>
-                    <div id="pie-legend" class="space-y-2"></div>
+                <div class="chart-card">
+                    <h3>當月消耗明細</h3>
+                    <div id="pie-legend"></div>
                 </div>
             </div>
 
             <!-- 月度趨勢圖 -->
-            <div class="border border-gray-100 rounded-xl p-4 mb-6">
-                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                    <h3 id="trend-title" class="text-sm font-semibold text-gray-700">月度消耗趨勢</h3>
-                    <div class="flex items-center gap-1">
-                        <button onclick="trendPrevYear()" title="前一年" class="p-1.5 border border-gray-300 hover:bg-gray-50 rounded-md text-gray-500">
-                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="trendNextYear()" title="後一年" class="p-1.5 border border-gray-300 hover:bg-gray-50 rounded-md text-gray-500">
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                        <div class="ml-2 inline-flex rounded-md border border-gray-300 overflow-hidden text-xs">
-                            <button onclick="setTrendType('line')" id="trend-line-btn" class="px-3 py-1.5 bg-blue-600 text-white transition-colors">折線圖</button>
-                            <button onclick="setTrendType('bar')" id="trend-bar-btn" class="px-3 py-1.5 bg-white text-gray-600 hover:bg-gray-50 transition-colors">長條圖</button>
+            <div class="chart-card" style="margin-bottom:16px">
+                <div class="sec-head" style="margin-bottom:10px">
+                    <h3 id="trend-title" style="margin:0">月度消耗趨勢</h3>
+                    <div class="sec-actions">
+                        <button class="icon-btn" onclick="trendPrevYear()" title="前一年"><i data-lucide="chevron-left" style="width:15px;height:15px"></i></button>
+                        <button class="icon-btn" onclick="trendNextYear()" title="後一年"><i data-lucide="chevron-right" style="width:15px;height:15px"></i></button>
+                        <div class="seg">
+                            <button onclick="setTrendType('line')" id="trend-line-btn" class="active">折線圖</button>
+                            <button onclick="setTrendType('bar')" id="trend-bar-btn">長條圖</button>
                         </div>
                     </div>
                 </div>
-                <div style="position:relative; height:300px;">
+                <div style="position:relative;height:280px">
                     <canvas id="monthly-trend"></canvas>
                 </div>
-                <p id="trend-empty" class="text-center text-gray-400 text-sm py-8 hidden">本年度尚無消耗紀錄</p>
+                <p id="trend-empty" class="empty-msg hidden">本年度尚無消耗紀錄</p>
             </div>
 
             <!-- 詳細統計（可折疊）-->
-            <details class="border border-gray-200 rounded-xl overflow-hidden">
-                <summary class="cursor-pointer p-4 font-medium text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 select-none">
-                    <i data-lucide="chevron-right" class="w-4 h-4 detail-chevron transition-transform"></i>
+            <details class="collapse">
+                <summary>
+                    <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
                     <span id="detail-title">詳細統計（當年每月各材料）</span>
                 </summary>
-                <div id="monthly-content" class="p-4 border-t border-gray-100"></div>
+                <div id="monthly-content" class="collapse-body"></div>
             </details>
-        </div>
-    </div>
+      </div>
 
-</div>
     </div>
   </main>
 </div>
 </div>
-
 <script type="module">
 // ══ 設定 ══
 const TRACKED_PRINTERS = ['AluminumBowfin','AdroitSauropod'];
@@ -578,13 +731,13 @@ setInterval(updateClock, 60000);
 function applyRoleUI() {
     const badge = document.getElementById('role-badge');
     const map = {
-        admin:  { label:'管理員', cls:'bg-red-100 text-red-700',     icon:'shield-alert' },
-        editor: { label:'編輯者', cls:'bg-green-100 text-green-700', icon:'pencil' },
-        viewer: { label:'查看者', cls:'bg-blue-100 text-blue-700',   icon:'eye' },
+        admin:  { label:'管理員', cls:'col-red',     icon:'shield-alert' },
+        editor: { label:'編輯者', cls:'col-green', icon:'pencil' },
+        viewer: { label:'查看者', cls:'col-blue',   icon:'eye' },
     };
     const r = map[currentUser.role] || map.viewer;
     badge.className = 'role-badge ' + r.cls;
-    badge.innerHTML = `<i data-lucide="${r.icon}" class="w-3 h-3"></i> ${r.label}`;
+    badge.innerHTML = `<i data-lucide="${r.icon}" style="width:11px;height:11px"></i> ${r.label}`;
     document.querySelectorAll('[data-editor-only]').forEach(el=>{
         el.style.display = isEditor ? '' : 'none';
     });
@@ -864,7 +1017,7 @@ function setSyncStatus(s) {
 function showToast(msg,type) {
     const t=document.getElementById('toast');
     t.textContent=msg;
-    t.className=`toast ${type==='error'?'bg-red-600 text-white':'bg-green-600 text-white'}`;
+    t.className=`toast ${type==='error'?'error':'success'}`;
     t.classList.remove('hidden');
     clearTimeout(t._t);
     t._t=setTimeout(()=>t.classList.add('hidden'),3500);
@@ -944,7 +1097,7 @@ function renderAlerts() {
     items.innerHTML=mats.map(m=>{
         const total=getTotalInventory(m);
         const safety=getSafetyStock(m);
-        return `<div class="text-sm text-red-600">• <strong>${matName(m)}</strong>：總庫存 ${(total/1000).toFixed(1)} L，低於安全庫存 ${(safety/1000).toFixed(1)} L</div>`;
+        return `<div class="alert-item">• <strong>${matName(m)}</strong>：總庫存 ${(total/1000).toFixed(1)} L，低於安全庫存 ${(safety/1000).toFixed(1)} L</div>`;
     }).join('');
 }
 
@@ -952,7 +1105,7 @@ function renderAlerts() {
 function renderOverview() {
     const grid=document.getElementById('overview-grid');
     let mats=getAllMaterials();
-    if(!mats.length){ grid.innerHTML='<div class="col-span-full text-center text-gray-400 py-8">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>'; return; }
+    if(!mats.length){ grid.innerHTML='<div class="empty-msg">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>'; return; }
     // 排序：需叫料優先（依嚴重程度：總庫存缺口大者在前），其次依備料庫存高到低
     mats = mats.slice().sort((a,b)=>{
         const aLow = isLowStock(a), bLow = isLowStock(b);
@@ -974,33 +1127,33 @@ function renderOverview() {
         const stockTotal=getStockTotal(m);
         const low=isLowStock(m);
         const pct=safety>0?Math.min(Math.round(total/safety*100),200):100;
-        const barColor=low?'bg-red-400':pct>150?'bg-green-500':'bg-blue-500';
+        const barColor=low?'prog-fill-red':pct>150?'':'prog-fill';
         const card=document.createElement('div');
-        card.className=`border ${low?'border-red-300 bg-red-50':'border-gray-200 bg-white'} rounded-xl p-4 space-y-3`;
+        card.className=`status-card${low?' is-low':''}`;
         card.innerHTML=`
-            <div class="flex items-start justify-between">
+            <div class="row">
                 <div>
-                    <p class="font-semibold text-gray-800 text-sm">${matName(m)}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">總庫存</p>
+                    <p class="name">${matName(m)}</p>
+                    <p class="sub">總庫存</p>
                 </div>
-                ${low?'<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3 h-3"></i> 需叫料</span>':'<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">庫存充足</span>'}
+                ${low?'<span class="s-pill col-red"><i data-lucide="alert-triangle" style="width:10px;height:10px"></i> 需叫料</span>':'<span class="s-pill col-green">庫存充足</span>'}
             </div>
-            <div class="text-2xl font-bold text-gray-800">${(total/1000).toFixed(1)} <span class="text-sm font-normal text-gray-400">L</span></div>
-            <div class="space-y-1">
-                <div class="flex justify-between text-xs text-gray-500">
+            <div style="font-size:22px;font-weight:700;color:var(--ink);margin:8px 0">${(total/1000).toFixed(1)} <span style="font-size:12px;font-weight:400;color:var(--ink-4)">L</span></div>
+            <div style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-4);margin-bottom:4px">
                     <span>安全庫存：${(safety/1000).toFixed(1)} L</span>
-                    <span class="${low?'text-red-500 font-medium':''}">${pct}%</span>
+                    <span style="${low?'color:var(--danger);font-weight:700':''}">${pct}%</span>
                 </div>
-                <div class="progress-bar"><div class="progress-fill ${barColor}" style="width:${Math.min(pct,100)}%"></div></div>
+                <div class="prog-bar"><div class="prog-fill ${barColor}" style="width:${Math.min(pct,100)}%"></div></div>
             </div>
-            <div class="grid grid-cols-2 gap-2 pt-1">
-                <div class="bg-gray-50 rounded-lg p-2 text-center">
-                    <p class="text-xs text-gray-400">機台樹脂罐</p>
-                    <p class="text-sm font-semibold text-gray-700">${(cartTotal/1000).toFixed(1)} L</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <div style="background:var(--bg);border:1px solid var(--line-soft);border-radius:6px;padding:6px;text-align:center">
+                    <p class="sub" style="margin:0">機台樹脂罐</p>
+                    <p style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${(cartTotal/1000).toFixed(1)} L</p>
                 </div>
-                <div class="bg-gray-50 rounded-lg p-2 text-center">
-                    <p class="text-xs text-gray-400">備料庫存</p>
-                    <p class="text-sm font-semibold text-gray-700">${(stockTotal/1000).toFixed(1)} L</p>
+                <div style="background:var(--bg);border:1px solid var(--line-soft);border-radius:6px;padding:6px;text-align:center">
+                    <p class="sub" style="margin:0">備料庫存</p>
+                    <p style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${(stockTotal/1000).toFixed(1)} L</p>
                 </div>
             </div>
         `;
@@ -1016,39 +1169,39 @@ function renderCartridges() {
     TRACKED_PRINTERS.forEach(printer=>{
         const slots=inv.cartridges[printer]||[];
         const card=document.createElement('div');
-        card.className='border border-gray-200 rounded-xl overflow-hidden';
+        card.className='outer-card';
         const slotsHTML=slots.length?slots.map(s=>{
             const noCapacity = s.remaining_ml == null;
             const pct=(!noCapacity && s.initial_ml>0)?Math.round(s.remaining_ml/s.initial_ml*100):null;
             const low=!noCapacity && s.remaining_ml<200;
             return `
-            <div class="p-4 border-t border-gray-100">
-                <div class="flex justify-between items-center mb-2">
+            <div style="padding:12px 14px;border-top:1px solid var(--line-soft)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                     <div>
-                        <span class="text-xs font-medium text-gray-500">${s.slot==='FRONT'?'前匣':s.slot==='BACK'?'後匣':s.slot==='SINGLE'?'單匣':s.slot}</span>
-                        <p class="font-semibold text-gray-800 text-sm">${matName(s.material)||'—'}</p>
+                        <span class="muted" style="text-transform:none;letter-spacing:0">${s.slot==='FRONT'?'前匣':s.slot==='BACK'?'後匣':s.slot==='SINGLE'?'單匣':s.slot}</span>
+                        <p style="font-weight:700;color:var(--ink);font-size:13px">${matName(s.material)||'—'}</p>
                     </div>
-                    <div class="text-right">
+                    <div style="text-align:right">
                         ${noCapacity
-                            ? '<p class="text-xs text-amber-600 font-medium">容量待補登</p>'
-                            : `<p class="text-sm font-bold ${low?'text-red-500':'text-gray-700'}">${((s.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="text-xs text-gray-400">${pct}%</p>`:''}`}
+                            ? '<p style="font-size:11px;color:var(--warn);font-weight:600">容量待補登</p>'
+                            : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((s.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0">${pct}%</p>`:''}`}
                     </div>
                 </div>
-                ${pct!=null?`<div class="progress-bar h-2"><div class="progress-fill ${pct<20?'bg-red-400':pct<40?'bg-yellow-400':'bg-teal-500'}" style="width:${pct}%"></div></div>`:''}
-                <p class="text-xs text-gray-400 mt-2">
-                    ${s.updated_by==='auto'?'🤖 自動同步':'✏️ 手動更新'}
+                ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${pct}%"></div></div>`:''}
+                <p class="sub" style="margin-top:6px;text-transform:none;letter-spacing:0">
+                    ${s.updated_by==='auto'?'自動同步':'手動更新'}
                     · ${s.updated_at?new Date(s.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
                 </p>
             </div>`;
-        }).join('') : '<div class="p-4 border-t border-gray-100 text-center text-gray-400 text-sm">尚無樹脂罐資料<br><span class="text-xs">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>';
+        }).join('') : '<div style="padding:14px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>';
         card.innerHTML=`
-            <div class="bg-gray-50 px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="printer" class="w-4 h-4 text-teal-600"></i>
-                    <span class="font-semibold text-gray-800">${printerDisplay(printer)}</span>
-                    <span class="text-xs text-gray-400">(${printer})</span>
+            <div style="background:var(--bg-soft);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:6px">
+                    <i data-lucide="printer" style="width:14px;height:14px;color:var(--accent)"></i>
+                    <span style="font-weight:700;color:var(--ink);font-size:13px">${printerDisplay(printer)}</span>
+                    <span class="muted" style="text-transform:none;letter-spacing:0">(${printer})</span>
                 </div>
-                <span class="text-xs text-gray-400">${slots.length} 個樹脂罐</span>
+                <span class="muted" style="text-transform:none;letter-spacing:0">${slots.length} 個樹脂罐</span>
             </div>
             ${slotsHTML}
         `;
@@ -1067,34 +1220,34 @@ function openCartridgeModal() {
     TRACKED_PRINTERS.forEach(printer=>{
         const slots=inv.cartridges[printer]||[{slot:'FRONT',material:'',remaining_ml:0,initial_ml:DEFAULT_CARTRIDGE_ML},{slot:'BACK',material:'',remaining_ml:0,initial_ml:DEFAULT_CARTRIDGE_ML}];
         const sec=document.createElement('div');
-        sec.className='space-y-3';
-        sec.innerHTML=`<h3 class="font-semibold text-gray-700 flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4 text-teal-600"></i>${printerDisplay(printer)} <span class="text-xs text-gray-400 font-normal">(${printer})</span></h3>`;
+        sec.style.marginBottom='14px';
+        sec.innerHTML=`<h3 style="font-weight:700;color:var(--ink-2);font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:8px"><i data-lucide="printer" style="width:14px;height:14px;color:var(--accent)"></i>${printerDisplay(printer)} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(${printer})</span></h3>`;
         slots.forEach((s,i)=>{
             const slotLabel=s.slot==='FRONT'?'前匣':s.slot==='BACK'?'後匣':s.slot||`樹脂罐${i+1}`;
             const row=document.createElement('div');
-            row.className='bg-gray-50 rounded-lg p-3 space-y-2';
+            row.style.cssText='background:var(--bg-panel);border-radius:8px;padding:10px;margin-bottom:8px';
             row.innerHTML=`
-                <p class="text-xs font-medium text-gray-500">${slotLabel}</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="space-y-1">
-                        <label class="text-xs text-gray-600">材料名稱</label>
+                <p class="muted" style="text-transform:none;letter-spacing:0;margin-bottom:6px">${slotLabel}</p>
+                <div class="modal-grid">
+                    <div class="field">
+                        <label>材料名稱</label>
                         <input type="text" list="material-options" value="${matName(s.material)||''}" data-printer="${printer}" data-idx="${i}" data-field="material"
-                            class="cartridge-input w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="e.g. Clear V5">
+                            class="cartridge-input" placeholder="e.g. Clear V5">
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-xs text-gray-600">剩餘 (L)</label>
+                    <div class="field">
+                        <label>剩餘 (L)</label>
                         <input type="number" value="${((s.remaining_ml||0)/1000).toFixed(2)}" min="0" step="1" data-printer="${printer}" data-idx="${i}" data-field="remaining_ml"
-                            class="cartridge-input w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                            class="cartridge-input">
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-xs text-gray-600">初始容量 (L)</label>
+                    <div class="field">
+                        <label>初始容量 (L)</label>
                         <input type="number" value="${((s.initial_ml||DEFAULT_CARTRIDGE_ML)/1000).toFixed(2)}" min="0.01" step="1" data-printer="${printer}" data-idx="${i}" data-field="initial_ml"
-                            class="cartridge-input w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                            class="cartridge-input">
                     </div>
-                    <div class="space-y-1">
-                        <label class="text-xs text-gray-600">樹脂罐位置</label>
+                    <div class="field">
+                        <label>樹脂罐位置</label>
                         <select data-printer="${printer}" data-idx="${i}" data-field="slot"
-                            class="cartridge-input w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                            class="cartridge-input">
                             <option value="FRONT" ${s.slot==='FRONT'?'selected':''}>前匣 (FRONT)</option>
                             <option value="BACK"  ${s.slot==='BACK'?'selected':''}>後匣 (BACK)</option>
                             <option value="SINGLE" ${s.slot==='SINGLE'?'selected':''}>單匣 (SINGLE)</option>
@@ -1106,8 +1259,9 @@ function openCartridgeModal() {
         });
         // 新增樹脂罐按鈕
         const addBtn=document.createElement('button');
-        addBtn.className='text-xs text-teal-600 hover:text-teal-700 flex items-center gap-1';
-        addBtn.innerHTML='<i data-lucide="plus" class="w-3 h-3"></i> 新增樹脂罐';
+        addBtn.className='btn-ghost';
+        addBtn.style.cssText='border:none;background:none;color:var(--accent);padding:0';
+        addBtn.innerHTML='<i data-lucide="plus" style="width:12px;height:12px"></i> 新增樹脂罐';
         addBtn.onclick=()=>{
             if(!inv.cartridges[printer]) inv.cartridges[printer]=[];
             inv.cartridges[printer].push({slot:'FRONT',material:'',remaining_ml:0,initial_ml:DEFAULT_CARTRIDGE_ML,updated_at:new Date().toISOString(),updated_by:'manual'});
@@ -1163,10 +1317,11 @@ function updateStockSortIndicators(){
     ['material','bottles','total_ml','on_machine','safety','status'].forEach(f=>{
         const el=document.getElementById('stock-sort-'+f);
         if(!el) return;
+        const th = el.closest('th');
         if(f===stockSortField){
             el.textContent = stockSortDir==='asc'?'↑':'↓';
-            el.className = 'ml-1 text-blue-600 font-bold';
-        } else { el.textContent=''; el.className='ml-1 text-gray-300'; }
+            if(th) th.classList.add('sorted');
+        } else { el.textContent=''; if(th) th.classList.remove('sorted'); }
     });
 }
 
@@ -1200,7 +1355,7 @@ function renderStockTable() {
         return 0;
     });
 
-    if(!mats.length){ tbody.innerHTML='<tr><td colspan="8" class="p-8 text-center text-gray-400">'+(getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料')+'</td></tr>'; return; }
+    if(!mats.length){ tbody.innerHTML='<tr><td colspan="9" class="empty-row" style="text-align:center">'+(getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料')+'</td></tr>'; return; }
     tbody.innerHTML='';
     mats.forEach(m=>{
         const s=inv.stock[m]||{bottles:0,total_ml:0};
@@ -1209,35 +1364,34 @@ function renderStockTable() {
         const bottles=s.bottles||0;
         const me=m.replace(/'/g,"\\'");
         const tr=document.createElement('tr');
-        tr.className='hover:bg-gray-50';
+        if(low) tr.className='is-low';
         tr.innerHTML=`
-            <td class="p-3 font-medium text-gray-800">${matName(m)}</td>
-            <td class="p-3 text-right">
+            <td style="font-weight:700;color:var(--ink-2)">${matName(m)}</td>
+            <td style="text-align:right">
                 <input type="number" min="0" step="1" value="${bottles}" ${isEditor?'':'disabled'}
                     onchange="updateStockBottles('${me}', this.value)"
-                    class="w-20 px-2 py-1 text-right rounded-md border border-gray-200 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors disabled:bg-gray-50 disabled:text-gray-400">
-                <span class="text-xs text-gray-400 ml-1">L</span>
+                    style="width:70px;text-align:right;height:28px;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)">
+                <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
-            <td class="p-3 text-right font-medium ${low?'text-red-500':'text-gray-700'}">${(((s.total_ml||0))/1000).toFixed(1)} L</td>
-            <td class="p-3 text-right text-gray-700">${getCartridgeTotal(m) > 0 ? `<span class="text-sm">${(getCartridgeTotal(m)/1000).toFixed(2)} L</span>` : '<span class="text-gray-300 text-xs">—</span>'}</td>
-            <td class="p-3 text-right text-gray-700">
-                <span class="font-medium">${(safety/1000).toFixed(1)}</span>
-                <span class="text-xs text-gray-400 ml-1">L</span>
+            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${(((s.total_ml||0))/1000).toFixed(1)} L</td>
+            <td style="text-align:right">${getCartridgeTotal(m) > 0 ? `${(getCartridgeTotal(m)/1000).toFixed(2)} L` : '<span class="muted" style="text-transform:none">—</span>'}</td>
+            <td style="text-align:right">
+                <span style="font-weight:700">${(safety/1000).toFixed(1)}</span>
+                <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
-            <td class="p-3">${low?'<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">需叫料</span>':'<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">充足</span>'}</td>
-            <td class="p-3">
+            <td>${low?'<span class="tag col-red">需叫料</span>':'<span class="tag col-green">充足</span>'}</td>
+            <td>
                 <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="備註" ${isEditor?'':'disabled'}
                     onchange="updateStockNote('${me}', this.value)"
-                    class="w-full px-2 py-1 rounded-md border border-gray-200 hover:border-blue-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors disabled:bg-gray-50 disabled:text-gray-400">
+                    style="width:100%;height:28px;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)">
             </td>
-            <td class="p-3 text-xs text-gray-400">
+            <td class="muted" style="text-transform:none;letter-spacing:0">
                 ${s.updated_at?new Date(s.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
             </td>
-            <td class="p-3 text-center">
-                ${isEditor?`<button onclick="deleteStock('${me}')" title="刪除此材料"
-                    class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>`:'<span class="text-gray-300">—</span>'}
+            <td class="actions">
+                ${isEditor?`<button onclick="deleteStock('${me}')" title="刪除此材料" class="actbtn danger">
+                    <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+                </button>`:'<span class="muted" style="text-transform:none">—</span>'}
             </td>
         `;
         tbody.appendChild(tr);
@@ -1362,15 +1516,15 @@ function showSafetyModal() {
     const body=document.getElementById('safety-modal-body');
     body.innerHTML='';
     const mats=getAllMaterials();
-    if(!mats.length){ body.innerHTML='<p class="text-gray-400 text-sm">尚無材料，請先設定樹脂罐。</p>'; }
+    if(!mats.length){ body.innerHTML='<p class="muted" style="text-transform:none;letter-spacing:0">尚無材料，請先設定樹脂罐。</p>'; }
     mats.forEach(m=>{
         const safety=getSafetyStock(m);
         const row=document.createElement('div');
-        row.className='flex items-center gap-3';
+        row.style.cssText='display:flex;align-items:center;gap:10px';
         row.innerHTML=`
-            <label class="flex-1 text-sm font-medium text-gray-700">${matName(m)}</label>
+            <label style="flex:1;font-size:12.5px;font-weight:600;color:var(--ink-2)">${matName(m)}</label>
             <input type="number" value="${(safety/1000).toFixed(1)}" min="0" step="1" data-material="${m}"
-                class="safety-input w-28 p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-500 outline-none text-right"> L
+                class="safety-input" style="width:90px;height:32px;border:1px solid var(--line);border-radius:6px;padding:0 8px;font-size:12.5px;font-family:inherit;text-align:right"> L
         `;
         body.appendChild(row);
     });
@@ -1408,20 +1562,20 @@ function showDisabledMaterialsModal() {
     const body = document.getElementById('disabled-modal-body');
     const list = getAllDisabledMaterials();
     if (!list.length) {
-        body.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">目前沒有停用的材料</p>';
+        body.innerHTML = '<p class="empty-msg">目前沒有停用的材料</p>';
     } else {
         body.innerHTML = list.map(m => {
             const userBlocked = (inv.disabled_materials || []).includes(m);
             const defaultBlocked = DEFAULT_DISABLED_NAMES.includes(m) || DEFAULT_DISABLED_NAMES.includes(matName(m));
             const me = m.replace(/'/g, "\\'");
             return `
-                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:8px">
                     <div>
-                        <p class="text-sm font-medium text-gray-800">${matName(m)}</p>
-                        <p class="text-xs text-gray-400">${m}${userBlocked && defaultBlocked ? '（系統 + 手動）' : userBlocked ? '（手動停用）' : '（系統預設停用）'}</p>
+                        <p style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${matName(m)}</p>
+                        <p class="muted" style="text-transform:none;letter-spacing:0">${m}${userBlocked && defaultBlocked ? '（系統 + 手動）' : userBlocked ? '（手動停用）' : '（系統預設停用）'}</p>
                     </div>
-                    <button onclick="restoreMaterial('${me}')" class="text-xs px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-md flex items-center gap-1">
-                        <i data-lucide="eye" class="w-3.5 h-3.5"></i> 恢復顯示
+                    <button onclick="restoreMaterial('${me}')" class="btn-ghost" style="border-color:#bfe3cf;background:var(--ok-soft);color:var(--ok)">
+                        <i data-lucide="eye" style="width:13px;height:13px"></i> 恢復顯示
                     </button>
                 </div>
             `;
@@ -1468,10 +1622,11 @@ function updateHistorySortIndicators(){
     ['ts','material','printer','ml'].forEach(f=>{
         const el=document.getElementById('hist-sort-'+f);
         if(!el) return;
+        const th = el.closest('th');
         if(f===histSortField){
             el.textContent = histSortDir==='asc'?'↑':'↓';
-            el.className = 'ml-1 text-blue-600 font-bold';
-        } else { el.textContent=''; el.className='ml-1 text-gray-300'; }
+            if(th) th.classList.add('sorted');
+        } else { el.textContent=''; if(th) th.classList.remove('sorted'); }
     });
 }
 
@@ -1519,31 +1674,30 @@ function renderHistory() {
     const page=filtered.slice((historyPage-1)*HISTORY_PAGE_SIZE,historyPage*HISTORY_PAGE_SIZE);
 
     const tbody=document.getElementById('history-body');
-    if(!filtered.length){ tbody.innerHTML='<tr><td colspan="6" class="p-8 text-center text-gray-400">'+(inv.history.length?'沒有符合篩選條件的資料':'尚無紀錄')+'</td></tr>'; document.getElementById('history-pagination').classList.add('hidden'); return; }
+    if(!filtered.length){ tbody.innerHTML='<tr><td colspan="6" class="empty-row" style="text-align:center">'+(inv.history.length?'沒有符合篩選條件的資料':'尚無紀錄')+'</td></tr>'; document.getElementById('history-pagination').classList.add('hidden'); return; }
     tbody.innerHTML='';
     page.forEach(h=>{
         const typeMap={
-            consume:{label:'列印消耗', color:'text-red-600 bg-red-50'},
-            stockin:{label:'備料入庫', color:'text-green-700 bg-green-50'},
-            manual: {label:'手動調整', color:'text-blue-600 bg-blue-50'},
-            aborted:{label:'列印中止', color:'text-orange-700 bg-orange-50 border border-orange-200'},
+            consume:{label:'列印消耗', color:'col-red'},
+            stockin:{label:'備料入庫', color:'col-green'},
+            manual: {label:'手動調整', color:'col-blue'},
+            aborted:{label:'列印中止', color:'col-orange'},
         };
-        const t=typeMap[h.type]||{label:h.type,color:'bg-gray-100 text-gray-600'};
+        const t=typeMap[h.type]||{label:h.type,color:'col-gray'};
         const tr=document.createElement('tr');
-        tr.className='hover:bg-gray-50';
         // 中止的列印不算進實際消耗
         const isAbort = h.type==='aborted';
         const mlCell = isAbort
-            ? `<span class="text-orange-500">⚠</span> <span class="text-gray-400 text-xs">(${(Math.abs(h.ml||0)/1000).toFixed(2)} L 未計)</span>`
+            ? `<span style="color:var(--warn)">⚠</span> <span class="muted" style="text-transform:none;letter-spacing:0">(${(Math.abs(h.ml||0)/1000).toFixed(2)} L 未計)</span>`
             : `${h.type==='consume'?'−':'+'} ${(Math.abs(h.ml||0)/1000).toFixed(2)} L`;
-        const mlColor = isAbort ? '' : (h.type==='consume'?'text-red-500':h.type==='stockin'?'text-green-600':'');
+        const mlColor = isAbort ? '' : (h.type==='consume'?'color:var(--danger)':h.type==='stockin'?'color:var(--ok)':'');
         tr.innerHTML=`
-            <td class="p-3 text-xs text-gray-500">${new Date(h.ts).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-            <td class="p-3 font-medium text-gray-800 text-sm">${matName(h.material)||'—'}</td>
-            <td class="p-3 text-sm text-gray-600">${printerDisplay(h.printer)||'—'}</td>
-            <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full font-medium ${t.color}">${t.label}</span></td>
-            <td class="p-3 text-right font-medium text-sm ${mlColor}">${mlCell}</td>
-            <td class="p-3 text-xs text-gray-400">${h.note||'—'}</td>
+            <td class="muted" style="text-transform:none;letter-spacing:0">${new Date(h.ts).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+            <td style="font-weight:700;color:var(--ink-2)">${matName(h.material)||'—'}</td>
+            <td>${printerDisplay(h.printer)||'—'}</td>
+            <td><span class="tag ${t.color}">${t.label}</span></td>
+            <td style="text-align:right;font-weight:700;${mlColor}">${mlCell}</td>
+            <td class="note-text">${h.note||'—'}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1557,7 +1711,7 @@ function renderHistory() {
     pgBtns.innerHTML='';
     ['‹',...Array.from({length:Math.min(totalPages,5)},(_, i)=>i+Math.max(1,historyPage-2)),'›'].forEach((v,idx,arr)=>{
         const btn=document.createElement('button');
-        btn.className=`px-2.5 py-1 rounded border text-sm ${typeof v==='number'&&v===historyPage?'bg-blue-600 text-white border-blue-600':'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'}`;
+        btn.className=`page-btn${typeof v==='number'&&v===historyPage?' active':''}`;
         btn.textContent=v;
         if(v==='‹') btn.onclick=()=>{if(historyPage>1){historyPage--;renderHistory();}};
         else if(v==='›') btn.onclick=()=>{if(historyPage<totalPages){historyPage++;renderHistory();}};
@@ -1594,7 +1748,7 @@ function renderMonthly() {
     const printerFilter=document.getElementById('monthly-printer').value;
     const mats=getAllMaterials();
     if(!mats.length){
-        content.innerHTML='<p class="text-center text-gray-400 py-8">尚無資料</p>';
+        content.innerHTML='<p class="empty-msg">尚無資料</p>';
         renderMonthlyPie();
         return;
     }
@@ -1602,10 +1756,10 @@ function renderMonthly() {
     const matchPrinter = h => !printerFilter || (h.printer||'').includes(printerFilter);
 
     const MONTHS=Array.from({length:12},(_,i)=>i+1);
-    let html=`<table class="w-full text-sm border-collapse"><thead><tr class="bg-gray-100 text-gray-600">
-        <th class="p-3 border-b font-medium text-left">材料</th>
-        ${MONTHS.map(m=>`<th class="p-3 border-b font-medium text-right">${m}月</th>`).join('')}
-        <th class="p-3 border-b font-medium text-right">年計</th>
+    let html=`<table><thead><tr>
+        <th style="text-align:left">材料</th>
+        ${MONTHS.map(m=>`<th style="text-align:right">${m}月</th>`).join('')}
+        <th style="text-align:right">年計</th>
     </tr></thead><tbody>`;
 
     mats.forEach(mat=>{
@@ -1616,14 +1770,14 @@ function renderMonthly() {
         });
         const total=monthly.reduce((s,v)=>s+v,0);
         if(!total) return;
-        html+=`<tr class="hover:bg-gray-50 border-b border-gray-100">
-            <td class="p-3 font-medium text-gray-800">${matName(mat)}</td>
-            ${monthly.map(v=>`<td class="p-3 text-right text-gray-600">${v>0?Math.round(v):'—'}</td>`).join('')}
-            <td class="p-3 text-right font-bold text-gray-800">${Math.round(total)}</td>
+        html+=`<tr>
+            <td style="font-weight:700;color:var(--ink-2)">${matName(mat)}</td>
+            ${monthly.map(v=>`<td style="text-align:right">${v>0?Math.round(v):'—'}</td>`).join('')}
+            <td style="text-align:right;font-weight:700;color:var(--ink)">${Math.round(total)}</td>
         </tr>`;
     });
     html+='</tbody></table>';
-    content.innerHTML=`<div class="overflow-x-auto">${html}</div>`;
+    content.innerHTML=`<div class="table-wrap">${html}</div>`;
 
     // 更新詳細統計 summary 標題
     const dt = document.getElementById('detail-title');
@@ -1639,8 +1793,8 @@ let trendChartType = 'line';
 
 function setTrendType(t) {
     trendChartType = t;
-    document.getElementById('trend-line-btn').className = 'px-3 py-1.5 transition-colors ' + (t==='line' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50');
-    document.getElementById('trend-bar-btn').className  = 'px-3 py-1.5 transition-colors ' + (t==='bar'  ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50');
+    document.getElementById('trend-line-btn').classList.toggle('active', t==='line');
+    document.getElementById('trend-bar-btn').classList.toggle('active', t==='bar');
     renderMonthlyTrend();
 }
 
@@ -1772,7 +1926,7 @@ function renderMonthlyPie() {
     if(!entries.length){
         canvas.style.display='none';
         empty.classList.remove('hidden');
-        legend.innerHTML='<p class="text-gray-400 text-sm text-center py-8">當月尚無消耗紀錄</p>';
+        legend.innerHTML='<p class="empty-msg">當月尚無消耗紀錄</p>';
         return;
     }
     canvas.style.display='block';
@@ -1801,16 +1955,16 @@ function renderMonthlyPie() {
     // 自訂圖例
     legend.innerHTML = entries.map(([mat,ml],i)=>{
         const pct=Math.round(ml/total*100);
-        return `<div class="flex items-center justify-between text-sm">
-            <div class="flex items-center gap-2">
-                <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${colors[i]}"></span>
-                <span class="text-gray-700">${matName(mat)}</span>
+        return `<div class="legend-row">
+            <div style="display:flex;align-items:center;gap:6px">
+                <span class="legend-sw" style="background:${colors[i]}"></span>
+                <span style="color:var(--ink-2)">${matName(mat)}</span>
             </div>
-            <div class="text-gray-500"><span class="font-medium text-gray-800">${(ml/1000).toFixed(2)}</span> L · ${pct}%</div>
+            <div class="muted" style="text-transform:none;letter-spacing:0"><span style="font-weight:700;color:var(--ink)">${(ml/1000).toFixed(2)}</span> L · ${pct}%</div>
         </div>`;
-    }).join('') + `<div class="flex items-center justify-between text-sm pt-2 mt-2 border-t border-gray-100">
-        <span class="font-medium text-gray-700">當月總計</span>
-        <span class="font-bold text-gray-800">${(total/1000).toFixed(2)} L</span></div>`;
+    }).join('') + `<div class="legend-row" style="border-top:1px solid var(--line-soft);margin-top:6px;padding-top:8px">
+        <span style="font-weight:700;color:var(--ink-2)">當月總計</span>
+        <span style="font-weight:700;color:var(--ink)">${(total/1000).toFixed(2)} L</span></div>`;
 }
 
 // ══ 匯出 ══

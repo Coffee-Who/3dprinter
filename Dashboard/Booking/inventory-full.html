@@ -232,6 +232,29 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
 .info-box ul{margin:6px 0 0 18px;padding:0}
 .info-box li{margin:2px 0}
 
+.ov-resize-wrap{display:flex;gap:0;margin-bottom:16px;align-items:stretch}
+.ov-left{flex:0 0 65%;min-width:0}
+.ov-right{flex:1;min-width:0}
+.ov-handle{flex:0 0 14px;cursor:col-resize;display:flex;align-items:center;justify-content:center;align-self:stretch}
+.ov-handle-bar{width:3px;height:60%;border-radius:3px;background:var(--line);transition:background .15s}
+.ov-handle:hover .ov-handle-bar,.ov-handle.dragging .ov-handle-bar{background:var(--accent)}
+.ov-card-grid{max-height:340px;overflow-y:auto;display:grid;gap:8px;padding-right:4px;margin-bottom:10px}
+.ov-mat-card{border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;cursor:pointer;transition:box-shadow .12s;border:1px solid var(--line-soft);background:var(--bg-soft)}
+.ov-mat-card.is-low{background:var(--danger-soft);border-color:#f4c2bd}
+.ov-mat-card.compact{padding:8px;gap:6px}
+.ov-mat-card.hover-active,.ov-low-item.hover-active,.ov-table-row.hover-active{box-shadow:0 0 0 2px var(--accent) inset}
+.ov-low-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.ov-low-item{display:flex;justify-content:space-between;align-items:center;background:var(--danger-soft);border-left:3px solid var(--danger);border-radius:0;padding:8px 10px;gap:8px;cursor:pointer;transition:box-shadow .12s}
+.ov-stats-row{display:flex;gap:8px;background:var(--bg-soft);border:1px solid var(--line-soft);border-radius:8px;padding:10px;flex-wrap:wrap}
+.ov-stat{flex:1;min-width:90px;display:flex;align-items:center;gap:6px}
+.ov-stat-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ov-table-wrap{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.ov-table{table-layout:fixed}
+.ov-table th.resizable{position:relative;white-space:nowrap;overflow:hidden}
+.ov-resizer{position:absolute;right:0;top:0;width:6px;height:100%;cursor:col-resize;user-select:none}
+.ov-resizer:hover,.ov-resizer.active{background:var(--accent)}
+.ov-table tbody tr.is-low{background:#fdf3ea}
+
 @media(max-width:960px){
   .shell-sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%);width:224px}
   .shell-sidebar.open{transform:translateX(0)}
@@ -412,10 +435,62 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
             </button>
           </div>
         </div>
-        <div id="overview-grid" class="status-grid">
-            <div class="empty-msg">載入中...</div>
+
+        <div class="ov-resize-wrap" id="ov-resize-wrap">
+          <div class="ov-left" id="ov-left">
+            <div class="sec-head" style="margin-bottom:8px">
+              <div class="sec-title" style="font-size:12px"><i data-lucide="package" style="width:13px;height:13px;color:var(--accent)"></i>庫存總覽</div>
+              <div class="seg" id="ov-col-toggle">
+                <button data-cols="2" onclick="setOverviewCols(2)">2欄</button>
+                <button data-cols="4" class="active" onclick="setOverviewCols(4)">4欄</button>
+                <button data-cols="6" onclick="setOverviewCols(6)">6欄</button>
+              </div>
+            </div>
+            <div id="ov-card-grid" class="ov-card-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="empty-msg">載入中...</div>
+            </div>
+            <div class="ov-stats-row" id="ov-stats-row"></div>
+          </div>
+
+          <div class="ov-handle" id="ov-handle"><div class="ov-handle-bar"></div></div>
+
+          <div class="ov-right" id="ov-right">
+            <div class="sec-title" style="font-size:12px;margin-bottom:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px;color:var(--danger)"></i>材料庫存不足</div>
+            <div class="ov-low-list" id="ov-low-list"></div>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--line-soft);padding-top:14px">
+          <div class="sec-title" style="font-size:12px;margin-bottom:8px"><i data-lucide="table" style="width:13px;height:13px;color:var(--accent)"></i>庫存總覽表格</div>
+          <p class="muted" style="text-transform:none;letter-spacing:0;margin-bottom:8px;color:var(--accent)">↔ 拖曳欄位邊界可調整該欄寬度</p>
+          <div class="ov-table-wrap">
+            <table class="ov-table" id="ov-table">
+              <colgroup>
+                <col style="width:160px" data-col="0">
+                <col style="width:100px" data-col="1">
+                <col style="width:110px" data-col="2">
+                <col style="width:90px" data-col="3">
+                <col style="width:130px" data-col="4">
+                <col style="width:120px" data-col="5">
+                <col style="width:100px" data-col="6">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="resizable">材料</th>
+                  <th class="resizable" style="text-align:right">總庫存(L)</th>
+                  <th class="resizable" style="text-align:right">安全庫存(L)</th>
+                  <th class="resizable" style="text-align:right">達成率</th>
+                  <th class="resizable" style="text-align:right">機台樹脂罐(L)</th>
+                  <th class="resizable" style="text-align:right">備料庫存(L)</th>
+                  <th class="resizable">狀態</th>
+                </tr>
+              </thead>
+              <tbody id="ov-table-body"></tbody>
+            </table>
+          </div>
         </div>
       </div>
+
 
       <!-- ══ 材料庫存（樹脂罐 + 備料）══ -->
       <div class="tab-panel hidden" id="panel-stock">
@@ -1102,64 +1177,257 @@ function renderAlerts() {
 }
 
 // ══ 總覽 ══
+let overviewCols = 4;
+let overviewGaugeCharts = {};
+
+function setOverviewCols(n) {
+    overviewCols = n;
+    document.querySelectorAll('#ov-col-toggle button').forEach(b=>{
+        b.classList.toggle('active', parseInt(b.dataset.cols)===n);
+    });
+    renderOverview();
+}
+
+function ovSetHighlight(mat, on) {
+    document.querySelectorAll(`[data-mat="${CSS.escape(mat)}"]`).forEach(el=>{
+        el.classList.toggle('hover-active', on);
+    });
+}
+
+function ovBindHover() {
+    document.querySelectorAll('.ov-mat-card, .ov-low-item, .ov-table-row').forEach(el=>{
+        const mat = el.dataset.mat;
+        if(!mat) return;
+        el.onmouseenter = ()=>ovSetHighlight(mat, true);
+        el.onmouseleave = ()=>ovSetHighlight(mat, false);
+    });
+}
+
+function makeOverviewGauge(canvasId, pct, color) {
+    const el = document.getElementById(canvasId);
+    if(!el) return;
+    if(overviewGaugeCharts[canvasId]) overviewGaugeCharts[canvasId].destroy();
+    overviewGaugeCharts[canvasId] = new Chart(el, {
+        type:'doughnut',
+        data:{ datasets:[{ data:[Math.min(pct,100), Math.max(100-pct,0)], backgroundColor:[color,'#eef0f3'], borderWidth:0 }] },
+        options:{ responsive:true, maintainAspectRatio:false, cutout:'72%',
+            plugins:{ legend:{display:false}, tooltip:{enabled:false} } },
+        plugins:[{
+            id:'center'+canvasId,
+            afterDraw(chart){
+                const {ctx, chartArea:{width,height,left,top}} = chart;
+                ctx.save();
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                ctx.font='700 10px sans-serif'; ctx.fillStyle=color;
+                ctx.fillText(pct+'%', left+width/2, top+height/2);
+                ctx.restore();
+            }
+        }]
+    });
+}
+
 function renderOverview() {
-    const grid=document.getElementById('overview-grid');
+    const grid=document.getElementById('ov-card-grid');
+    const lowList=document.getElementById('ov-low-list');
+    const statsRow=document.getElementById('ov-stats-row');
+    const tableBody=document.getElementById('ov-table-body');
+    Object.values(overviewGaugeCharts).forEach(c=>c.destroy());
+    overviewGaugeCharts = {};
+
     let mats=getAllMaterials();
-    if(!mats.length){ grid.innerHTML='<div class="empty-msg">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>'; return; }
+    if(!mats.length){
+        grid.innerHTML='<div class="empty-msg">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>';
+        lowList.innerHTML='';
+        statsRow.innerHTML='';
+        tableBody.innerHTML='';
+        return;
+    }
     // 排序：需叫料優先（依嚴重程度：總庫存缺口大者在前），其次依備料庫存高到低
     mats = mats.slice().sort((a,b)=>{
         const aLow = isLowStock(a), bLow = isLowStock(b);
-        if(aLow !== bLow) return aLow ? -1 : 1;   // 需叫料在前
+        if(aLow !== bLow) return aLow ? -1 : 1;
         if(aLow && bLow){
-            // 兩者都缺料：缺口比例越大越前面
             const aGap = getSafetyStock(a) - getTotalInventory(a);
             const bGap = getSafetyStock(b) - getTotalInventory(b);
             if(aGap !== bGap) return bGap - aGap;
         }
-        // 都不缺料 或 缺口同：備料庫存高的在前
         return getStockTotal(b) - getStockTotal(a);
     });
+
+    grid.style.gridTemplateColumns = `repeat(${overviewCols},1fr)`;
+    const compact = overviewCols >= 6;
     grid.innerHTML='';
-    mats.forEach(m=>{
+    lowList.innerHTML='';
+    tableBody.innerHTML='';
+
+    let totalAll=0, cartAll=0, stockAll=0, lowCount=0;
+
+    mats.forEach((m,i)=>{
         const total=getTotalInventory(m);
         const safety=getSafetyStock(m);
         const cartTotal=getCartridgeTotal(m);
         const stockTotal=getStockTotal(m);
         const low=isLowStock(m);
-        const pct=safety>0?Math.min(Math.round(total/safety*100),200):100;
-        const barColor=low?'prog-fill-red':pct>150?'':'prog-fill';
+        const pct=safety>0?Math.round(total/safety*100):100;
+        const gaugeColor = low?'#c0392b':'#0c7a99';
+        const name=matName(m);
+        const canvasId='ov-gauge-'+i;
+
+        totalAll+=total; cartAll+=cartTotal; stockAll+=stockTotal;
+        if(low) lowCount++;
+
+        // 卡片
         const card=document.createElement('div');
-        card.className=`status-card${low?' is-low':''}`;
-        card.innerHTML=`
-            <div class="row">
-                <div>
-                    <p class="name">${matName(m)}</p>
-                    <p class="sub">總庫存</p>
-                </div>
-                ${low?'<span class="s-pill col-red"><i data-lucide="alert-triangle" style="width:10px;height:10px"></i> 需叫料</span>':'<span class="s-pill col-green">庫存充足</span>'}
-            </div>
-            <div style="font-size:22px;font-weight:700;color:var(--ink);margin:8px 0">${(total/1000).toFixed(1)} <span style="font-size:12px;font-weight:400;color:var(--ink-4)">L</span></div>
-            <div style="margin-bottom:8px">
-                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-4);margin-bottom:4px">
-                    <span>安全庫存：${(safety/1000).toFixed(1)} L</span>
-                    <span style="${low?'color:var(--danger);font-weight:700':''}">${pct}%</span>
-                </div>
-                <div class="prog-bar"><div class="prog-fill ${barColor}" style="width:${Math.min(pct,100)}%"></div></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-                <div style="background:var(--bg);border:1px solid var(--line-soft);border-radius:6px;padding:6px;text-align:center">
-                    <p class="sub" style="margin:0">機台樹脂罐</p>
-                    <p style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${(cartTotal/1000).toFixed(1)} L</p>
-                </div>
-                <div style="background:var(--bg);border:1px solid var(--line-soft);border-radius:6px;padding:6px;text-align:center">
-                    <p class="sub" style="margin:0">備料庫存</p>
-                    <p style="font-size:12.5px;font-weight:700;color:var(--ink-2)">${(stockTotal/1000).toFixed(1)} L</p>
-                </div>
-            </div>
-        `;
+        card.className=`ov-mat-card${low?' is-low':''}${compact?' compact':''}`;
+        card.dataset.mat=m;
+        const gaugeSize = compact?40:50;
+        if(compact){
+            card.innerHTML=`
+                <div style="position:relative;width:${gaugeSize}px;height:${gaugeSize}px;flex-shrink:0"><canvas id="${canvasId}"></canvas></div>
+                <div style="flex:1;min-width:0">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+                        <div style="font-size:10px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+                        <span class="s-pill ${low?'col-red':'col-green'}" style="flex-shrink:0">${low?'缺':'充'}</span>
+                    </div>
+                    <div style="font-size:12px;font-weight:700;color:var(--ink);margin:1px 0">${(total/1000).toFixed(1)} <span style="font-size:8px;font-weight:400;color:var(--ink-4)">L</span></div>
+                    <div class="muted" style="text-transform:none;letter-spacing:0;font-size:8px">安全${(safety/1000).toFixed(1)} · <span style="${low?'color:var(--danger);font-weight:700':''}">${pct}%</span></div>
+                </div>`;
+        } else {
+            card.innerHTML=`
+                <div style="position:relative;width:${gaugeSize}px;height:${gaugeSize}px;flex-shrink:0"><canvas id="${canvasId}"></canvas></div>
+                <div style="flex:1;min-width:0">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+                        <div style="font-size:10.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+                        <span class="s-pill ${low?'col-red':'col-green'}" style="flex-shrink:0">${low?'需叫料':'充足'}</span>
+                    </div>
+                    <div style="font-size:14px;font-weight:700;color:var(--ink);margin:2px 0">${(total/1000).toFixed(1)} <span style="font-size:9px;font-weight:400;color:var(--ink-4)">L</span></div>
+                    <div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px;margin-bottom:5px">安全 ${(safety/1000).toFixed(1)} L · <span style="${low?'color:var(--danger);font-weight:700':''}">${pct}%</span></div>
+                    <div style="display:flex;gap:5px">
+                        <div style="background:var(--bg);border-radius:5px;padding:2px 4px;text-align:center;flex:1">
+                            <div class="muted" style="text-transform:none;letter-spacing:0;font-size:8px;white-space:nowrap">機台樹脂罐</div>
+                            <div style="font-size:10px;font-weight:700;color:var(--ink-2)">${(cartTotal/1000).toFixed(1)} L</div>
+                        </div>
+                        <div style="background:var(--bg);border-radius:5px;padding:2px 4px;text-align:center;flex:1">
+                            <div class="muted" style="text-transform:none;letter-spacing:0;font-size:8px;white-space:nowrap">備料庫存</div>
+                            <div style="font-size:10px;font-weight:700;color:var(--ink-2)">${(stockTotal/1000).toFixed(1)} L</div>
+                        </div>
+                    </div>
+                </div>`;
+        }
         grid.appendChild(card);
+
+        // 不足清單
+        if(low){
+            const item=document.createElement('div');
+            item.className='ov-low-item';
+            item.dataset.mat=m;
+            item.innerHTML=`
+                <div style="min-width:0">
+                    <div style="font-size:12px;font-weight:700;color:#8a3a2f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+                    <div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px;color:#a35a4f">總庫存 ${(total/1000).toFixed(1)} L</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                    <div style="font-size:11px;font-weight:700;color:var(--danger)">${pct}%</div>
+                    <div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px;color:#a35a4f">安全 ${(safety/1000).toFixed(1)} L</div>
+                </div>`;
+            lowList.appendChild(item);
+        }
+
+        // 表格列
+        const tr=document.createElement('tr');
+        tr.className=`ov-table-row${low?' is-low':''}`;
+        tr.dataset.mat=m;
+        tr.innerHTML=`
+            <td style="font-weight:700;color:var(--ink)">${name}</td>
+            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${(total/1000).toFixed(1)}</td>
+            <td style="text-align:right">${(safety/1000).toFixed(1)}</td>
+            <td style="text-align:right;${low?'color:var(--danger);font-weight:700':''}">${pct}%</td>
+            <td style="text-align:right">${(cartTotal/1000).toFixed(1)}</td>
+            <td style="text-align:right">${(stockTotal/1000).toFixed(1)}</td>
+            <td><span class="tag ${low?'col-red':'col-green'}">${low?'需叫料':'充足'}</span></td>
+        `;
+        tableBody.appendChild(tr);
     });
+
+    if(!lowCount){
+        lowList.innerHTML='<div style="text-align:center;padding:20px;color:var(--ok);font-size:11px;background:var(--ok-soft);border-radius:8px">目前庫存充足</div>';
+    }
+
+    statsRow.innerHTML=`
+        <div class="ov-stat">
+            <div class="ov-stat-icon" style="background:var(--ok-soft)"><i data-lucide="box" style="width:13px;height:13px;color:var(--ok)"></i></div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">${mats.length}</div><div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px">追蹤材料種類</div></div>
+        </div>
+        <div class="ov-stat">
+            <div class="ov-stat-icon" style="background:var(--accent-soft)"><i data-lucide="droplet" style="width:13px;height:13px;color:var(--accent)"></i></div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">${(totalAll/1000).toFixed(1)} L</div><div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px">總庫存量</div></div>
+        </div>
+        <div class="ov-stat">
+            <div class="ov-stat-icon" style="background:var(--warn-soft)"><i data-lucide="flask-conical" style="width:13px;height:13px;color:var(--warn)"></i></div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">${(cartAll/1000).toFixed(1)} L</div><div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px">機台樹脂罐</div></div>
+        </div>
+        <div class="ov-stat">
+            <div class="ov-stat-icon" style="background:var(--danger-soft)"><i data-lucide="alert-triangle" style="width:13px;height:13px;color:var(--danger)"></i></div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">${lowCount}</div><div class="muted" style="text-transform:none;letter-spacing:0;font-size:9px">需叫料材料</div></div>
+        </div>
+    `;
+
     lucide.createIcons();
+    mats.forEach((m,i)=>{
+        const total=getTotalInventory(m);
+        const safety=getSafetyStock(m);
+        const low=isLowStock(m);
+        const pct=safety>0?Math.round(total/safety*100):100;
+        makeOverviewGauge('ov-gauge-'+i, pct, low?'#c0392b':'#0c7a99');
+    });
+    ovBindHover();
+}
+
+// ══ 庫存總覽：欄寬拖曳 ══
+function initOverviewResize() {
+    const wrap=document.getElementById('ov-resize-wrap');
+    const left=document.getElementById('ov-left');
+    const handle=document.getElementById('ov-handle');
+    if(!wrap || !left || !handle || handle._inited) return;
+    handle._inited=true;
+    let dragging=false;
+    handle.addEventListener('mousedown', e=>{ dragging=true; handle.classList.add('dragging'); e.preventDefault(); });
+    document.addEventListener('mousemove', e=>{
+        if(!dragging) return;
+        const rect=wrap.getBoundingClientRect();
+        let pct=((e.clientX-rect.left)/rect.width)*100;
+        pct=Math.max(30,Math.min(80,pct));
+        left.style.flex='0 0 '+pct+'%';
+    });
+    document.addEventListener('mouseup', ()=>{ dragging=false; handle.classList.remove('dragging'); });
+}
+
+// ══ 庫存總覽表格：欄位寬度拖曳 ══
+function initOverviewTableResize() {
+    const table=document.getElementById('ov-table');
+    if(!table || table._inited) return;
+    table._inited=true;
+    table.querySelectorAll('th.resizable').forEach((th,idx)=>{
+        const resizer=document.createElement('span');
+        resizer.className='ov-resizer';
+        th.appendChild(resizer);
+        const col=table.querySelector(`col[data-col="${idx}"]`);
+        let startX, startW;
+        resizer.addEventListener('mousedown', e=>{
+            startX=e.clientX; startW=th.offsetWidth;
+            resizer.classList.add('active');
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', e=>{
+            if(startX===undefined) return;
+            const newW=Math.max(50, startW+(e.clientX-startX));
+            col.style.width=newW+'px';
+        });
+        document.addEventListener('mouseup', ()=>{
+            startX=undefined;
+            resizer.classList.remove('active');
+        });
+    });
 }
 
 // ══ 機台樹脂罐 ══
@@ -2013,6 +2281,8 @@ function renderAll() {
     const cnt = document.getElementById('disabled-count');
     if (cnt) cnt.textContent = getAllDisabledMaterials().length;
     lucide.createIcons();
+    initOverviewResize();
+    initOverviewTableResize();
 }
 
 // ══ 重新載入資料（unsubscribe → subscribe 強制重拉）══
@@ -2057,6 +2327,7 @@ window.showSafetyModal = showSafetyModal;
 window.showStockModal = showStockModal;
 window.stockSortBy = stockSortBy;
 window.switchTab = switchTab;
+window.setOverviewCols = setOverviewCols;
 window.reloadData = reloadData;
 window.triggerSyncWorkflow = triggerSyncWorkflow;
 window.showDisabledMaterialsModal = showDisabledMaterialsModal;

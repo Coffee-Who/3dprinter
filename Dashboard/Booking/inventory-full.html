@@ -412,15 +412,6 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
     </div>
 
     <div class="shell-body">
-      <!-- 叫料提醒橫幅 -->
-      <div id="alert-banner" class="alert-banner hidden">
-          <i data-lucide="bell-ring" style="width:18px;height:18px" class="icon"></i>
-          <div>
-              <p class="title">以下材料庫存不足，請安排叫料</p>
-              <div id="alert-items"></div>
-          </div>
-      </div>
-
       <!-- ══ 庫存總覽 ══ -->
       <div class="tab-panel" id="panel-overview">
         <div class="sec-head">
@@ -439,7 +430,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
         <div class="ov-resize-wrap" id="ov-resize-wrap">
           <div class="ov-left" id="ov-left">
             <div class="sec-head" style="margin-bottom:8px">
-              <div class="sec-title" style="font-size:12px"><i data-lucide="package" style="width:13px;height:13px;color:var(--accent)"></i>庫存總覽</div>
+              <div></div>
               <div class="seg" id="ov-col-toggle">
                 <button data-cols="2" onclick="setOverviewCols(2)">2欄</button>
                 <button data-cols="4" class="active" onclick="setOverviewCols(4)">4欄</button>
@@ -1167,6 +1158,7 @@ function renderAlerts() {
     const mats=getAllMaterials().filter(m=>isLowStock(m));
     const banner=document.getElementById('alert-banner');
     const items=document.getElementById('alert-items');
+    if(!banner || !items) return;
     if(!mats.length){ banner.classList.add('hidden'); return; }
     banner.classList.remove('hidden');
     items.innerHTML=mats.map(m=>{

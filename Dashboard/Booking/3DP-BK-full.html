@@ -1363,7 +1363,7 @@ function buildPrinterCardHTML(p) {
     const img = getMachineImageFE(p);
 
     const progressHTML = (isPrinting && p.print_name) ? `
-        <div style="flex:1;min-width:0">
+        <div style="margin-top:8px">
             <div class="sub" style="margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.print_name}">${p.print_name}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                 <span class="sub">進度</span>
@@ -1377,8 +1377,8 @@ function buildPrinterCardHTML(p) {
         </div>` : '';
 
     const imgHTML = img
-        ? `<img src="${img}" alt="${printerDisplayFE(p.alias)||p.serial}" loading="lazy" style="width:${progressHTML?'100px':'100%'};height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
-        : `<div class="status-card-img placeholder" style="width:${progressHTML?'100px':'100%'};height:100px;flex-shrink:0;margin-top:0"><i data-lucide="printer" style="width:32px;height:32px"></i></div>`;
+        ? `<img src="${img}" alt="${printerDisplayFE(p.alias)||p.serial}" loading="lazy" style="width:100px;height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
+        : `<div class="status-card-img placeholder" style="width:100px;height:100px;flex-shrink:0;margin-top:0"><i data-lucide="printer" style="width:32px;height:32px"></i></div>`;
 
     return `
         <div class="status-card${isIdle?' idle':''}">
@@ -1387,11 +1387,13 @@ function buildPrinterCardHTML(p) {
                     <div class="name">${printerDisplayFE(p.alias)||p.serial}</div>
                     <div class="sub">${ml?ml+' · ':''}${p.alias||p.serial}</div>
                 </div>
-                <span class="s-pill ${s.cls}"><span class="s-dot ${s.dot}"></span>${s.label}</span>
             </div>
             <div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px">
                 ${imgHTML}
-                ${progressHTML}
+                <div style="flex:1;min-width:0">
+                    <span class="s-pill ${s.cls}"><span class="s-dot ${s.dot}"></span>${s.label}</span>
+                    ${progressHTML}
+                </div>
             </div>
             ${buildMaterialSectionHTML(p)}
         </div>

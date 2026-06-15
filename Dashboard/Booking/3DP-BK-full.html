@@ -597,7 +597,7 @@ let currentUser = null;
 let bookings = [];
 let unsubscribeBookings = null;
 let hasOrder = null, editHasOrder = null, editingId = null;
-let ganttMonthStart = null;
+let ganttMonthStart = startOfMonth(new Date()); // 初始化為當月，確保頁面載入即顯示
 let ganttDetailMode = false;
 let sortField = 'date', sortDir = 'asc';
 const PAGE_SIZE = 10;
@@ -1521,6 +1521,8 @@ function populateSelect(id, options){
  ['edit-sales',SALES],['edit-printer',PRINTERS],['edit-engineer',ENGINEERS]]
     .forEach(([id,opts])=>populateSelect(id,opts));
 ganttMonthStart = startOfMonth(new Date());
+// 頁面載入時立即渲染當月甘特圖（即使還沒收到 Firestore 資料）
+renderGantt();
 safeIcons();
 </script>
 </body></html>

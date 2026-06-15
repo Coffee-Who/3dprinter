@@ -200,27 +200,37 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 .page-btn:disabled{opacity:.4;cursor:not-allowed}
 
 .gantt-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:14px}
-.gantt-toolbar .left{display:flex;align-items:center;gap:8px}
+.gantt-toolbar .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gantt-toolbar .legend{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--ink-3)}
 .gantt-toolbar .legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:-1px}
 .icon-btn{width:30px;height:30px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{background:var(--bg-soft)}
+.gantt-detail-toggle{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3);cursor:pointer;user-select:none}
+.gantt-detail-toggle input{width:auto;height:auto;margin:0;cursor:pointer}
 .gantt-container{overflow-x:auto;padding:0 14px 14px}
 
 .gantt-table-month{border-collapse:collapse;font-size:10.5px;table-layout:fixed}
 .gantt-table-month th,.gantt-table-month td{border:1px solid var(--line-soft);padding:0;text-align:center}
-.gantt-table-month thead th{background:var(--bg-soft);color:var(--ink-3);font-weight:700;padding:4px 0;width:24px;min-width:24px}
+.gantt-table-month thead th{background:var(--bg-soft);color:var(--ink-3);font-weight:700;padding:4px 0}
 .gantt-table-month thead th.today{background:var(--accent-soft);color:var(--accent)}
 .gantt-table-month thead th.weekend{background:var(--bg-panel)}
 .gantt-table-month .gp-head{position:sticky;left:0;background:var(--bg-soft);width:60px;min-width:60px;text-align:left;padding:4px 8px}
 .gantt-table-month .gp-name{position:sticky;left:0;background:var(--bg);font-weight:700;color:var(--ink-2);text-align:left;padding:4px 8px;white-space:nowrap}
 .gantt-table-month td.today-col{background:#f3fafd}
 .gantt-table-month td.weekend-col{background:var(--bg-panel)}
+.gantt-table-month [data-day].col-hl{box-shadow:inset 0 0 0 1px var(--accent)}
 .gantt-cell-split{display:flex;flex-direction:column;height:28px}
+.gantt-table-month.detail .gantt-cell-split{height:36px}
 .gantt-half{flex:1}
 .gantt-half[onclick]{cursor:pointer}
 .gantt-half.conflict{box-shadow:inset 0 0 0 1px #e08a39}
 .gantt-half + .gantt-half{border-top:1px solid var(--bg)}
+.gantt-half-text{display:block;font-size:9px;line-height:1.2;padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;text-align:left}
+
+.gantt-preview{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-panel);font-size:11.5px;color:var(--ink-3);min-height:20px}
+.gantt-preview .ttl{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:12px}
+.gantt-preview .item{margin-bottom:2px}
+.gantt-preview .item:last-child{margin-bottom:0}
 
 .toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(10,14,20,.15);animation:slideIn .3s ease;color:#fff}
 .toast.success{background:var(--ok)}
@@ -436,6 +446,10 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
               <span id="gantt-range" style="font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:80px;text-align:center;display:inline-block"></span>
               <button class="icon-btn" onclick="ganttShiftMonth(1)"><i data-lucide="chevron-right" style="width:15px;height:15px"></i></button>
               <button class="btn-ghost" onclick="ganttThisMonth()">本月</button>
+              <label class="gantt-detail-toggle">
+                <input type="checkbox" id="gantt-detail-checkbox" onchange="toggleGanttDetail(this.checked)">
+                顯示詳細資料
+              </label>
             </div>
             <div class="legend">
               <span><span class="sw" style="background:#f4d35e"></span>待確認</span>
@@ -445,8 +459,10 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
             </div>
           </div>
           <div id="gantt-container" class="gantt-container"></div>
+          <div id="gantt-preview" class="gantt-preview" style="margin:0 14px 14px">將滑鼠移到上方日期，預覽當日所有預約</div>
         </div>
       </div>
+
 
       <!-- ══ 預約清單 ══ -->
       <div class="tab-panel active" id="panel-tab-list" style="margin-top:24px">
@@ -549,6 +565,7 @@ let bookings = [];
 let unsubscribeBookings = null;
 let hasOrder = null, editHasOrder = null, editingId = null;
 let ganttMonthStart = null;
+let ganttDetailMode = false;
 let sortField = 'date', sortDir = 'asc';
 const PAGE_SIZE = 10;
 let currentPage = 1;
@@ -884,15 +901,68 @@ function ganttStatusColor(status) {
         '異常/取消':'#e6a4a4',
     }[status] || 'var(--line-soft)';
 }
+function ganttStatusTextColor(status) {
+    return {
+        '待確認':  '#6b5410',
+        '執行中':  '#ffffff',
+        '已完成':  '#15452a',
+        '異常/取消':'#6e1f1f',
+    }[status] || 'var(--ink-3)';
+}
+function parseDateLocal(dateStr) {
+    if(!dateStr) return null;
+    const parts = dateStr.split('-').map(Number);
+    if(parts.length !== 3 || parts.some(isNaN)) return null;
+    return new Date(parts[0], parts[1]-1, parts[2]);
+}
+// 依「預約日期 + 時段 + 預約天數」展開成所有占用的半日格（每 0.5D = 一個上午或下午）
+function getOccupiedHalfSlots(b) {
+    const start = parseDateLocal(b.date);
+    if(!start) return [];
+    const startHalf = b.slot === 'PM' ? 1 : 0; // AM 與 ALL 都從上午開始
+    const totalHalves = Math.max(1, Math.round((parseFloat(b.duration) || 1) * 2));
+    const out = [];
+    for(let i=0; i<totalHalves; i++){
+        const h = startHalf + i;
+        const dayOffset = Math.floor(h/2);
+        const slot = (h % 2 === 0) ? 'AM' : 'PM';
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+dayOffset);
+        out.push({ dateKey: fmtDateLocal(d), slot });
+    }
+    return out;
+}
+function buildGanttCellMap() {
+    const map = {};
+    GANTT_PRINTERS.forEach(p=>{ map[p] = {}; });
+    bookings.forEach(b=>{
+        if(!GANTT_PRINTERS.includes(b.printer)) return;
+        getOccupiedHalfSlots(b).forEach(({dateKey, slot})=>{
+            if(!map[b.printer][dateKey]) map[b.printer][dateKey] = {AM:[], PM:[]};
+            map[b.printer][dateKey][slot].push(b);
+        });
+    });
+    return map;
+}
 function ganttRenderHalf(items, canEdit) {
     if(!items.length) return '<div class="gantt-half"></div>';
     const isConflict = items.length > 1;
-    const color = ganttStatusColor(items[0].status);
-    const titleText = items.map(b=>`${b.sales||''} · ${b.purpose||''} · ${b.engineer||''} · ${b.status}${b.slot==='ALL'?' · 全天':''}`).join(' ｜ ');
+    const b = items[0];
+    const color = ganttStatusColor(b.status);
+    const titleText = items.map(x=>`${x.sales||''} · ${x.purpose||''} · ${x.engineer||''} · ${x.status}${x.slot==='ALL'?' · 全天':''}${x.duration?(' · '+x.duration):''}`).join(' ｜ ');
     const cls = 'gantt-half' + (isConflict?' conflict':'');
-    const click = canEdit ? ` onclick="openEditModal('${items[0].id}')"` : '';
-    return `<div class="${cls}" style="background:${color}" title="${titleText}"${click}></div>`;
+    const click = canEdit ? ` onclick="openEditModal('${b.id}')"` : '';
+    let inner = '';
+    if(ganttDetailMode){
+        const textColor = ganttStatusTextColor(b.status);
+        const label = [b.sales, b.duration, b.engineer].filter(Boolean).join(' / ');
+        inner = `<span class="gantt-half-text" style="color:${textColor}">${label}</span>`;
+    }
+    return `<div class="${cls}" style="background:${color}" title="${titleText}"${click}>${inner}</div>`;
 }
+window.toggleGanttDetail = function(checked) {
+    ganttDetailMode = checked;
+    renderGantt();
+};
 function renderGantt() {
     if(!ganttMonthStart) ganttMonthStart = startOfMonth(new Date());
     const container = document.getElementById('gantt-container');
@@ -902,14 +972,17 @@ function renderGantt() {
     document.getElementById('gantt-range').textContent = `${year}年${month+1}月`;
     const todayKey = fmtDateLocal(new Date());
     const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='editor');
+    const dayColWidth = ganttDetailMode ? 64 : 24;
+    const cellMap = buildGanttCellMap();
 
-    let html = '<table class="gantt-table-month"><thead><tr><th class="gp-head">機台</th>';
+    let html = `<table class="gantt-table-month${ganttDetailMode?' detail':''}"><thead><tr><th class="gp-head">機台</th>`;
     for(let day=1; day<=daysInMonth; day++){
         const d = new Date(year, month, day);
+        const dayKey = fmtDateLocal(d);
         const dow = d.getDay();
-        const isToday = fmtDateLocal(d)===todayKey;
+        const isToday = dayKey===todayKey;
         const isWeekend = dow===0 || dow===6;
-        html += `<th class="${isToday?'today':''} ${isWeekend?'weekend':''}">${day}</th>`;
+        html += `<th data-day="${dayKey}" style="width:${dayColWidth}px;min-width:${dayColWidth}px" class="${isToday?'today':''} ${isWeekend?'weekend':''}">${day}</th>`;
     }
     html += '</tr></thead><tbody>';
 
@@ -921,20 +994,59 @@ function renderGantt() {
             const dow = d.getDay();
             const isToday = dayKey===todayKey;
             const isWeekend = dow===0 || dow===6;
-            const dayBookings = bookings.filter(b=>b.printer===printer && b.date===dayKey);
-            const allDayItems = dayBookings.filter(b=>b.slot==='ALL');
-            const amItems     = dayBookings.filter(b=>(b.slot||'AM')==='AM');
-            const pmItems     = dayBookings.filter(b=>b.slot==='PM');
-            const amCombined = [...amItems, ...allDayItems];
-            const pmCombined = [...pmItems, ...allDayItems];
+            const cell = (cellMap[printer] && cellMap[printer][dayKey]) || {AM:[], PM:[]};
             const cellCls = `${isToday?'today-col':''} ${isWeekend?'weekend-col':''}`;
-            html += `<td class="${cellCls}"><div class="gantt-cell-split">${ganttRenderHalf(amCombined,canEdit)}${ganttRenderHalf(pmCombined,canEdit)}</div></td>`;
+            html += `<td data-day="${dayKey}" class="${cellCls}"><div class="gantt-cell-split">${ganttRenderHalf(cell.AM,canEdit)}${ganttRenderHalf(cell.PM,canEdit)}</div></td>`;
         }
         html += '</tr>';
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+    bindGanttHoverEvents();
     safeIcons();
+}
+
+// 滑鼠移到日期欄：高亮整列並在下方預覽當日所有預約
+function bindGanttHoverEvents() {
+    const table = document.getElementById('gantt-container').querySelector('table');
+    if(!table) return;
+    table.querySelectorAll('th[data-day]').forEach(th=>{
+        th.addEventListener('mouseenter', ()=>highlightGanttDay(th.dataset.day));
+    });
+    table.addEventListener('mouseleave', clearGanttHighlight);
+}
+function highlightGanttDay(dateKey) {
+    const table = document.getElementById('gantt-container').querySelector('table');
+    if(!table) return;
+    table.querySelectorAll('[data-day]').forEach(el=>{
+        el.classList.toggle('col-hl', el.dataset.day===dateKey);
+    });
+    renderGanttPreview(dateKey);
+}
+function clearGanttHighlight() {
+    const table = document.getElementById('gantt-container').querySelector('table');
+    if(table) table.querySelectorAll('.col-hl').forEach(el=>el.classList.remove('col-hl'));
+    document.getElementById('gantt-preview').innerHTML = '將滑鼠移到上方日期，預覽當日所有預約';
+}
+function renderGanttPreview(dateKey) {
+    const preview = document.getElementById('gantt-preview');
+    const d = parseDateLocal(dateKey);
+    if(!d) return;
+    const seen = new Set();
+    const items = [];
+    bookings.forEach(b=>{
+        if(!GANTT_PRINTERS.includes(b.printer) || seen.has(b.id)) return;
+        if(getOccupiedHalfSlots(b).some(o=>o.dateKey===dateKey)){
+            seen.add(b.id);
+            items.push(b);
+        }
+    });
+    if(!items.length){
+        preview.innerHTML = `<div class="ttl">${d.getMonth()+1}/${d.getDate()}</div>當日無預約`;
+        return;
+    }
+    preview.innerHTML = `<div class="ttl">${d.getMonth()+1}/${d.getDate()} 預約明細</div>` +
+        items.map(b=>`<div class="item">${b.printer} · ${b.slot==='ALL'?'全天':(b.slot==='AM'?'上午起':'下午起')} · 業務 ${b.sales||'—'} · 天數 ${b.duration||'—'} · 工程師 ${b.engineer||'—'} · ${b.status}</div>`).join('');
 }
 
 // ══════════════════════════════════════════════

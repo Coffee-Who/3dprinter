@@ -1361,9 +1361,25 @@ function buildPrinterCardHTML(p) {
     const isIdle = p.status === 'IDLE';
     const ml = getMachineLabelFE(p.machine_type);
     const img = getMachineImageFE(p);
+
+    const progressHTML = (isPrinting && p.print_name) ? `
+        <div style="flex:1;min-width:0">
+            <div class="sub" style="margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.print_name}">${p.print_name}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span class="sub">進度</span>
+                <span style="font-size:11px;font-weight:700;color:var(--accent)">${p.progress}%</span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill${p.status==='PAUSED'?' prog-fill-yellow':''}" style="width:${Math.min(p.progress,100)}%"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px" class="mat">
+                <span>第 ${p.layer_now} / ${p.layer_total} 層</span>
+                <span>${p.time_left!=='-'?'剩餘 '+p.time_left:'計算中...'}</span>
+            </div>
+        </div>` : '';
+
     const imgHTML = img
-        ? `<div class="status-card-img"><img src="${img}" alt="${printerDisplayFE(p.alias)||p.serial}" loading="lazy"></div>`
-        : `<div class="status-card-img placeholder"><i data-lucide="printer" style="width:32px;height:32px"></i></div>`;
+        ? `<img src="${img}" alt="${printerDisplayFE(p.alias)||p.serial}" loading="lazy" style="width:${progressHTML?'100px':'100%'};height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
+        : `<div class="status-card-img placeholder" style="width:${progressHTML?'100px':'100%'};height:100px;flex-shrink:0;margin-top:0"><i data-lucide="printer" style="width:32px;height:32px"></i></div>`;
+
     return `
         <div class="status-card${isIdle?' idle':''}">
             <div class="row">
@@ -1373,19 +1389,10 @@ function buildPrinterCardHTML(p) {
                 </div>
                 <span class="s-pill ${s.cls}"><span class="s-dot ${s.dot}"></span>${s.label}</span>
             </div>
-            ${imgHTML}
-            ${isPrinting&&p.print_name?`
-            <div style="margin-top:8px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                    <span class="sub" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.print_name}">${p.print_name}</span>
-                    <span style="font-size:11px;font-weight:700;color:var(--accent)">${p.progress}%</span>
-                </div>
-                <div class="prog-bar"><div class="prog-fill${p.status==='PAUSED'?' prog-fill-yellow':''}" style="width:${p.progress}%"></div></div>
-                <div style="display:flex;justify-content:space-between;margin-top:4px" class="mat">
-                    <span>第 ${p.layer_now} / ${p.layer_total} 層</span>
-                    <span>${p.time_left!=='-'?'剩餘 '+p.time_left:'計算中...'}</span>
-                </div>
-            </div>`:''}
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px">
+                ${imgHTML}
+                ${progressHTML}
+            </div>
             ${buildMaterialSectionHTML(p)}
         </div>
     `;

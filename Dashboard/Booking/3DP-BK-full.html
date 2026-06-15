@@ -220,12 +220,13 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 .gantt-table-month td.weekend-col{background:var(--bg-panel)}
 .gantt-table-month [data-day].col-hl{box-shadow:inset 0 0 0 1px var(--accent)}
 .gantt-cell-split{display:flex;flex-direction:column;height:28px}
-.gantt-table-month.detail .gantt-cell-split{height:36px}
+.gantt-table-month.detail .gantt-cell-split{height:78px}
 .gantt-half{flex:1}
 .gantt-half[onclick]{cursor:pointer}
 .gantt-half.conflict{box-shadow:inset 0 0 0 1px #e08a39}
 .gantt-half + .gantt-half{border-top:1px solid var(--bg)}
-.gantt-half-text{display:block;font-size:9px;line-height:1.2;padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;text-align:left}
+.gantt-half-text{display:flex;flex-direction:column;justify-content:center;gap:1px;height:100%;padding:0 4px;font-weight:600;text-align:left;overflow:hidden}
+.gantt-half-text .l{display:block;font-size:9px;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 
 .gantt-preview{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-panel);font-size:11.5px;color:var(--ink-3);min-height:20px}
 .gantt-preview .ttl{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:12px}
@@ -954,8 +955,11 @@ function ganttRenderHalf(items, canEdit) {
     let inner = '';
     if(ganttDetailMode){
         const textColor = ganttStatusTextColor(b.status);
-        const label = [b.sales, b.duration, b.engineer].filter(Boolean).join(' / ');
-        inner = `<span class="gantt-half-text" style="color:${textColor}">${label}</span>`;
+        inner = `<div class="gantt-half-text" style="color:${textColor}">` +
+            `<span class="l">${b.sales||'—'}</span>` +
+            `<span class="l">${b.duration||'—'}</span>` +
+            `<span class="l">${b.engineer||'—'}</span>` +
+            `</div>`;
     }
     return `<div class="${cls}" style="background:${color}" title="${titleText}"${click}>${inner}</div>`;
 }
@@ -972,7 +976,7 @@ function renderGantt() {
     document.getElementById('gantt-range').textContent = `${year}年${month+1}月`;
     const todayKey = fmtDateLocal(new Date());
     const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='editor');
-    const dayColWidth = ganttDetailMode ? 64 : 24;
+    const dayColWidth = ganttDetailMode ? 88 : 24;
     const cellMap = buildGanttCellMap();
 
     let html = `<table class="gantt-table-month${ganttDetailMode?' detail':''}"><thead><tr><th class="gp-head">機台</th>`;

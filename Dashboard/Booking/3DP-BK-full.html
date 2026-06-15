@@ -206,17 +206,21 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 .icon-btn{width:30px;height:30px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{background:var(--bg-soft)}
 .gantt-container{overflow-x:auto;padding:0 14px 14px}
-.gantt-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:760px}
-.gantt-table th,.gantt-table td{border:1px solid var(--line-soft);padding:6px}
-.gantt-table thead th{background:var(--bg-soft);color:var(--ink-3);font-weight:700}
-.gantt-table thead th.today{background:var(--accent-soft);color:var(--accent)}
-.gantt-table .gp-name{font-weight:700;color:var(--ink-2);position:sticky;left:0;background:var(--bg)}
-.gantt-table thead th.gp-head{position:sticky;left:0;background:var(--bg-soft)}
-.gantt-table td.today-cell{background:#f3fafd}
-.gantt-item{border-radius:5px;padding:3px 6px;margin-bottom:3px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.gantt-conflict-badge{font-size:10px;color:#a35a17;font-weight:700;display:flex;align-items:center;gap:3px;margin-bottom:2px}
-.gantt-conflict-badge .dot{width:5px;height:5px;border-radius:50%;background:#e08a39;display:inline-block}
-.gantt-cell.conflict{background:#fde6d2;box-shadow:inset 0 0 0 2px #e08a39}
+
+.gantt-table-month{border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+.gantt-table-month th,.gantt-table-month td{border:1px solid var(--line-soft);padding:0;text-align:center}
+.gantt-table-month thead th{background:var(--bg-soft);color:var(--ink-3);font-weight:700;padding:4px 0;width:24px;min-width:24px}
+.gantt-table-month thead th.today{background:var(--accent-soft);color:var(--accent)}
+.gantt-table-month thead th.weekend{background:var(--bg-panel)}
+.gantt-table-month .gp-head{position:sticky;left:0;background:var(--bg-soft);width:60px;min-width:60px;text-align:left;padding:4px 8px}
+.gantt-table-month .gp-name{position:sticky;left:0;background:var(--bg);font-weight:700;color:var(--ink-2);text-align:left;padding:4px 8px;white-space:nowrap}
+.gantt-table-month td.today-col{background:#f3fafd}
+.gantt-table-month td.weekend-col{background:var(--bg-panel)}
+.gantt-cell-split{display:flex;flex-direction:column;height:28px}
+.gantt-half{flex:1}
+.gantt-half[onclick]{cursor:pointer}
+.gantt-half.conflict{box-shadow:inset 0 0 0 1px #e08a39}
+.gantt-half + .gantt-half{border-top:1px solid var(--bg)}
 
 .toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(10,14,20,.15);animation:slideIn .3s ease;color:#fff}
 .toast.success{background:var(--ok)}
@@ -420,16 +424,36 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
         </div>
       </div>
 
+      <!-- ══ 預約甘特圖 ══ -->
+      <div class="tab-panel active" id="panel-tab-gantt" style="margin-top:24px">
+        <div class="sec-head">
+          <div class="sec-title">預約甘特圖</div>
+        </div>
+        <div class="outer-card">
+          <div class="gantt-toolbar">
+            <div class="left">
+              <button class="icon-btn" onclick="ganttShiftMonth(-1)"><i data-lucide="chevron-left" style="width:15px;height:15px"></i></button>
+              <span id="gantt-range" style="font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:80px;text-align:center;display:inline-block"></span>
+              <button class="icon-btn" onclick="ganttShiftMonth(1)"><i data-lucide="chevron-right" style="width:15px;height:15px"></i></button>
+              <button class="btn-ghost" onclick="ganttThisMonth()">本月</button>
+            </div>
+            <div class="legend">
+              <span><span class="sw" style="background:#f4d35e"></span>待確認</span>
+              <span><span class="sw" style="background:#5dade2"></span>執行中</span>
+              <span><span class="sw" style="background:#82c99a"></span>已完成</span>
+              <span><span class="sw" style="background:#e6a4a4"></span>異常/取消</span>
+            </div>
+          </div>
+          <div id="gantt-container" class="gantt-container"></div>
+        </div>
+      </div>
+
       <!-- ══ 預約清單 ══ -->
       <div class="tab-panel active" id="panel-tab-list" style="margin-top:24px">
         <div class="sec-head">
           <div class="sec-title">預約清單</div>
           <div class="sec-actions">
             <span class="muted" id="total-count">共 0 筆</span>
-            <div class="seg">
-              <button id="view-table-btn" class="active" onclick="switchListView('table')"><i data-lucide="table" style="width:13px;height:13px;vertical-align:-2px"></i> 表格</button>
-              <button id="view-gantt-btn" onclick="switchListView('gantt')"><i data-lucide="calendar-range" style="width:13px;height:13px;vertical-align:-2px"></i> 甘特圖</button>
-            </div>
             <button class="btn-ghost" onclick="exportExcel()"><i data-lucide="file-spreadsheet" style="width:13px;height:13px"></i> 匯出 Excel</button>
           </div>
         </div>
@@ -474,25 +498,6 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
               <span id="page-info"></span>
               <div id="page-btns" style="display:flex;gap:4px;align-items:center"></div>
             </div>
-          </div>
-
-          <!-- 甘特圖檢視 -->
-          <div id="list-gantt-view" class="hidden">
-            <div class="gantt-toolbar">
-              <div class="left">
-                <button class="icon-btn" onclick="ganttShiftWeek(-1)"><i data-lucide="chevron-left" style="width:15px;height:15px"></i></button>
-                <span id="gantt-range" style="font-size:12.5px;font-weight:600;color:var(--ink-2)"></span>
-                <button class="icon-btn" onclick="ganttShiftWeek(1)"><i data-lucide="chevron-right" style="width:15px;height:15px"></i></button>
-                <button class="btn-ghost" onclick="ganttToday()">本週</button>
-              </div>
-              <div class="legend">
-                <span><span class="sw" style="background:#f4d35e"></span>待確認</span>
-                <span><span class="sw" style="background:#5dade2"></span>執行中</span>
-                <span><span class="sw" style="background:#82c99a"></span>已完成</span>
-                <span><span class="sw" style="background:#e6a4a4"></span>異常/取消</span>
-              </div>
-            </div>
-            <div id="gantt-container" class="gantt-container"></div>
           </div>
         </div>
       </div>
@@ -543,8 +548,7 @@ let currentUser = null;
 let bookings = [];
 let unsubscribeBookings = null;
 let hasOrder = null, editHasOrder = null, editingId = null;
-let listView = 'table';
-let ganttWeekStart = null;
+let ganttMonthStart = null;
 let sortField = 'date', sortDir = 'asc';
 const PAGE_SIZE = 10;
 let currentPage = 1;
@@ -712,7 +716,7 @@ window.renderTable = function() {
         document.getElementById('total-count').textContent = '共 0 筆';
         tbody.innerHTML = '<tr class="empty-row"><td colspan="10">目前沒有任何預約紀錄</td></tr>';
         document.getElementById('pagination').classList.add('hidden');
-        if(listView==='gantt') renderGantt();
+        renderGantt();
         return;
     }
 
@@ -741,7 +745,7 @@ window.renderTable = function() {
     if(!filtered.length){
         tbody.innerHTML = '<tr class="empty-row"><td colspan="10">沒有符合篩選條件的資料</td></tr>';
         document.getElementById('pagination').classList.add('hidden');
-        if(listView==='gantt') renderGantt();
+        renderGantt();
         return;
     }
 
@@ -825,7 +829,7 @@ window.renderTable = function() {
 
     renderPagination(sorted.length);
     safeIcons();
-    if(listView==='gantt') renderGantt();
+    renderGantt();
 };
 
 function renderPagination(total) {
@@ -862,112 +866,70 @@ function renderPagination(total) {
     pageBtns.appendChild(next);
 }
 
-// 甘特圖
-window.switchListView = function(v) {
-    listView = v;
-    document.getElementById('list-table-view').classList.toggle('hidden', v!=='table');
-    document.getElementById('list-gantt-view').classList.toggle('hidden', v!=='gantt');
-    document.getElementById('view-table-btn').classList.toggle('active', v==='table');
-    document.getElementById('view-gantt-btn').classList.toggle('active', v==='gantt');
-    safeIcons();
-    if(v==='gantt') renderGantt();
-};
-function startOfWeek(d) {
-    const date = new Date(d);
-    const day = date.getDay();
-    const diff = (day === 0 ? -6 : 1 - day);
-    date.setDate(date.getDate() + diff);
-    date.setHours(0,0,0,0);
-    return date;
+// 甘特圖（月檢視）
+function startOfMonth(d) {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
 }
-window.ganttToday = function() { ganttWeekStart = startOfWeek(new Date()); renderGantt(); };
-window.ganttShiftWeek = function(n) {
-    if(!ganttWeekStart) ganttWeekStart = startOfWeek(new Date());
-    ganttWeekStart.setDate(ganttWeekStart.getDate() + n*7);
+window.ganttThisMonth = function() { ganttMonthStart = startOfMonth(new Date()); renderGantt(); };
+window.ganttShiftMonth = function(n) {
+    if(!ganttMonthStart) ganttMonthStart = startOfMonth(new Date());
+    ganttMonthStart = new Date(ganttMonthStart.getFullYear(), ganttMonthStart.getMonth()+n, 1);
     renderGantt();
 };
-function ganttStatusStyle(status) {
+function ganttStatusColor(status) {
     return {
-        '待確認':  'background:#f4d35e;color:#6b5410',
-        '執行中':  'background:#5dade2;color:#fff',
-        '已完成':  'background:#82c99a;color:#15452a',
-        '異常/取消':'background:#e6a4a4;color:#6e1f1f',
-    }[status] || 'background:var(--line-soft);color:var(--ink-3)';
+        '待確認':  '#f4d35e',
+        '執行中':  '#5dade2',
+        '已完成':  '#82c99a',
+        '異常/取消':'#e6a4a4',
+    }[status] || 'var(--line-soft)';
+}
+function ganttRenderHalf(items, canEdit) {
+    if(!items.length) return '<div class="gantt-half"></div>';
+    const isConflict = items.length > 1;
+    const color = ganttStatusColor(items[0].status);
+    const titleText = items.map(b=>`${b.sales||''} · ${b.purpose||''} · ${b.engineer||''} · ${b.status}${b.slot==='ALL'?' · 全天':''}`).join(' ｜ ');
+    const cls = 'gantt-half' + (isConflict?' conflict':'');
+    const click = canEdit ? ` onclick="openEditModal('${items[0].id}')"` : '';
+    return `<div class="${cls}" style="background:${color}" title="${titleText}"${click}></div>`;
 }
 function renderGantt() {
-    if(!ganttWeekStart) ganttWeekStart = startOfWeek(new Date());
+    if(!ganttMonthStart) ganttMonthStart = startOfMonth(new Date());
     const container = document.getElementById('gantt-container');
-    const days = [];
-    for(let i=0;i<7;i++){ const d=new Date(ganttWeekStart); d.setDate(d.getDate()+i); days.push(d); }
-    const weekdayNames = ['週一','週二','週三','週四','週五','週六','週日'];
-    document.getElementById('gantt-range').textContent =
-        `${ganttWeekStart.getMonth()+1}/${ganttWeekStart.getDate()} – ${days[6].getMonth()+1}/${days[6].getDate()}`;
+    const year = ganttMonthStart.getFullYear();
+    const month = ganttMonthStart.getMonth();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    document.getElementById('gantt-range').textContent = `${year}年${month+1}月`;
     const todayKey = fmtDateLocal(new Date());
     const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='editor');
 
-    let html = '<table class="gantt-table"><thead>';
-    html += '<tr><th class="gp-head">機台</th>';
-    days.forEach(d=>{
+    let html = '<table class="gantt-table-month"><thead><tr><th class="gp-head">機台</th>';
+    for(let day=1; day<=daysInMonth; day++){
+        const d = new Date(year, month, day);
+        const dow = d.getDay();
         const isToday = fmtDateLocal(d)===todayKey;
-        html += `<th colspan="2" class="${isToday?'today':''}">
-            <div>${d.getMonth()+1}/${d.getDate()}</div>
-            <div style="color:var(--ink-4);font-weight:400">${weekdayNames[d.getDay()===0?6:d.getDay()-1]}</div>
-        </th>`;
-    });
-    html += '</tr><tr><th class="gp-head"></th>';
-    days.forEach(()=>{ html += '<th style="font-weight:400;color:var(--ink-4)">上午</th><th style="font-weight:400;color:var(--ink-4)">下午</th>'; });
+        const isWeekend = dow===0 || dow===6;
+        html += `<th class="${isToday?'today':''} ${isWeekend?'weekend':''}">${day}</th>`;
+    }
     html += '</tr></thead><tbody>';
 
     GANTT_PRINTERS.forEach(printer=>{
         html += `<tr><td class="gp-name">${printer}</td>`;
-        days.forEach(d=>{
+        for(let day=1; day<=daysInMonth; day++){
+            const d = new Date(year, month, day);
             const dayKey = fmtDateLocal(d);
+            const dow = d.getDay();
             const isToday = dayKey===todayKey;
+            const isWeekend = dow===0 || dow===6;
             const dayBookings = bookings.filter(b=>b.printer===printer && b.date===dayKey);
             const allDayItems = dayBookings.filter(b=>b.slot==='ALL');
             const amItems     = dayBookings.filter(b=>(b.slot||'AM')==='AM');
             const pmItems     = dayBookings.filter(b=>b.slot==='PM');
-            const todayCls = isToday?'today-cell':'';
-
             const amCombined = [...amItems, ...allDayItems];
             const pmCombined = [...pmItems, ...allDayItems];
-            const amConflict = amCombined.length > 1;
-            const pmConflict = pmCombined.length > 1;
-
-            const renderItem = (b) => {
-                const style = ganttStatusStyle(b.status);
-                const text = b.engineer ? `${b.engineer}: ${b.purpose||'—'}` : (b.purpose||b.sales);
-                const allDayMark = b.slot==='ALL' ? ' 🌓' : '';
-                return `<div class="gantt-item" style="${style}" title="${b.sales} · ${b.purpose} · ${b.engineer} · ${b.status}${b.slot==='ALL'?' · 全天':''}" ${canEdit?`onclick="openEditModal('${b.id}')"`:''}>
-                    ${text}${allDayMark}
-                </div>`;
-            };
-            const renderConflictBadge = (n) => `<div class="gantt-conflict-badge"><span class="dot"></span>衝突 ${n}筆</div>`;
-
-            if(allDayItems.length && !amItems.length && !pmItems.length){
-                const isConflict = allDayItems.length > 1;
-                const cls = `${todayCls} ${isConflict?'gantt-cell conflict':''}`;
-                const badge = isConflict ? renderConflictBadge(allDayItems.length) : '';
-                const content = allDayItems.map(renderItem).join('');
-                html += `<td colspan="2" class="${cls}" style="min-width:140px;vertical-align:top">${badge}${content}</td>`;
-                return;
-            }
-
-            if(amCombined.length){
-                const cls = `${todayCls} ${amConflict?'gantt-cell conflict':''}`;
-                const badge = amConflict ? renderConflictBadge(amCombined.length) : '';
-                html += `<td class="${cls}" style="min-width:70px;vertical-align:top">${badge}${amCombined.map(renderItem).join('')}</td>`;
-            } else {
-                html += `<td class="${todayCls}"></td>`;
-            }
-            if(pmCombined.length){
-                const cls = `${todayCls} ${pmConflict?'gantt-cell conflict':''}`;
-                const badge = pmConflict ? renderConflictBadge(pmCombined.length) : '';
-                html += `<td class="${cls}" style="min-width:70px;vertical-align:top">${badge}${pmCombined.map(renderItem).join('')}</td>`;
-            } else {
-                html += `<td class="${todayCls}"></td>`;
-            }
-        });
+            const cellCls = `${isToday?'today-col':''} ${isWeekend?'weekend-col':''}`;
+            html += `<td class="${cellCls}"><div class="gantt-cell-split">${ganttRenderHalf(amCombined,canEdit)}${ganttRenderHalf(pmCombined,canEdit)}</div></td>`;
+        }
         html += '</tr>';
     });
     html += '</tbody></table>';
@@ -1349,7 +1311,7 @@ function populateSelect(id, options){
  ['edit-sales',SALES],['edit-printer',PRINTERS],['edit-engineer',ENGINEERS]]
     .forEach(([id,opts])=>populateSelect(id,opts));
 document.getElementById('date-input').value = fmtDateLocal(new Date());
-ganttWeekStart = startOfWeek(new Date());
+ganttMonthStart = startOfMonth(new Date());
 safeIcons();
 </script>
 </body></html>

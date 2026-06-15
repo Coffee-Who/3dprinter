@@ -498,7 +498,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                             <i data-lucide="pencil" style="width:14px;height:14px"></i> 手動更新樹脂罐
                         </button>
                     </div>
-                    <div id="cartridges-grid" class="cartridge-grid"></div>
+                    <div id="cartridges-grid" class="status-grid"></div>
                 </div>
             </details>
 
@@ -1514,51 +1514,80 @@ function buildLiveStatusHTML(printer) {
 }
 
 function renderCartridges() {
-    const grid=document.getElementById('cartridges-grid');
-    grid.innerHTML='';
-    TRACKED_PRINTERS.forEach(printer=>{
-        const slots=inv.cartridges[printer]||[];
-        const card=document.createElement('div');
-        card.className='outer-card';
-        const slotsHTML=slots.length?slots.map(s=>{
-            const noCapacity = s.remaining_ml == null;
-            const pct=(!noCapacity && s.initial_ml>0)?Math.round(s.remaining_ml/s.initial_ml*100):null;
-            const low=!noCapacity && s.remaining_ml<200;
+    const grid = document.getElementById('cartridges-grid');
+    grid.innerHTML = '';
+    TRACKED_PRINTERS.forEach(printer => {
+        const slots = inv.cartridges[printer] || [];
+        const live = printerLiveStatus[printer];
+        const s = live ? (LIVE_STATUS_MAP[live.status] || LIVE_STATUS_MAP['UNKNOWN']) : null;
+        const isPrinting = live && ['PRINTING','PAUSED','PAUSING'].includes(live.status);
+        const isIdle = live && live.status === 'IDLE';
+        const printerImg = PRINTER_IMAGES[printer] || '';
+        const aliasLabel = printer === 'Form4L' ? 'AdroitSauropod' : printer === 'Form4' ? 'AluminumBowfin' : printer;
+
+        // 進度區塊（與 booking 頁面相同）
+        const progressHTML = (isPrinting && live.print_name) ? `
+            <div style="margin-top:8px">
+                <div class="sub" style="margin-bottom:4px;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${live.print_name}">${live.print_name}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <span class="sub" style="text-transform:none;letter-spacing:0">進度</span>
+                    <span style="font-size:11px;font-weight:700;color:var(--accent)">${live.progress}%</span>
+                </div>
+                <div class="prog-bar"><div class="prog-fill${live.status==='PAUSED'?' prog-fill-yellow':''}" style="width:${Math.min(live.progress,100)}%"></div></div>
+                <div style="display:flex;justify-content:space-between;margin-top:4px" class="sub">
+                    <span style="text-transform:none;letter-spacing:0">第 ${live.layer_now} / ${live.layer_total} 層</span>
+                    <span style="text-transform:none;letter-spacing:0">${live.time_left!=='-'?'剩餘 '+live.time_left:'計算中...'}</span>
+                </div>
+            </div>` : '';
+
+        // 圖片 HTML
+        const imgHTML = printerImg
+            ? `<img src="${printerImg}" alt="${printer}" loading="lazy" style="width:100px;height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
+            : `<div style="width:100px;height:100px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg-panel);border-radius:6px"><i data-lucide="printer" style="width:32px;height:32px;color:var(--ink-4)"></i></div>`;
+
+        // 樹脂罐 HTML（與原有邏輯相同）
+        const slotsHTML = slots.length ? slots.map(slot => {
+            const noCapacity = slot.remaining_ml == null;
+            const pct = (!noCapacity && slot.initial_ml > 0) ? Math.round(slot.remaining_ml / slot.initial_ml * 100) : null;
+            const low = !noCapacity && slot.remaining_ml < 200;
+            const slotLabel = slot.slot==='FRONT'?'前匣':slot.slot==='BACK'?'後匣':slot.slot==='SINGLE'?'單匣':slot.slot;
             return `
             <div style="padding:12px 14px;border-top:1px solid var(--line-soft)">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                     <div>
-                        <span class="muted" style="text-transform:none;letter-spacing:0">${s.slot==='FRONT'?'前匣':s.slot==='BACK'?'後匣':s.slot==='SINGLE'?'單匣':s.slot}</span>
-                        <p style="font-weight:700;color:var(--ink);font-size:13px">${matName(s.material)||'—'}</p>
+                        <span class="muted" style="text-transform:none;letter-spacing:0">${slotLabel}</span>
+                        <p style="font-weight:700;color:var(--ink);font-size:13px;margin:2px 0 0">${matName(slot.material)||'—'}</p>
                     </div>
                     <div style="text-align:right">
                         ${noCapacity
-                            ? '<p style="font-size:11px;color:var(--warn);font-weight:600">容量待補登</p>'
-                            : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((s.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0">${pct}%</p>`:''}`}
+                            ? '<p style="font-size:11px;color:#8b6b13;font-weight:600">容量待補登</p>'
+                            : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((slot.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0;text-transform:none;letter-spacing:0">${pct}%</p>`:''}`}
                     </div>
                 </div>
-                ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${pct}%"></div></div>`:''}
+                ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${Math.min(pct,100)}%"></div></div>`:''}
                 <p class="sub" style="margin-top:6px;text-transform:none;letter-spacing:0">
-                    ${s.updated_by==='auto'?'自動同步':'手動更新'}
-                    · ${s.updated_at?new Date(s.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
+                    ${slot.updated_by==='auto'?'自動同步':'手動更新'}
+                    ${slot.updated_at?' · '+new Date(slot.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}
                 </p>
             </div>`;
-        }).join('') : '<div style="padding:14px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>';
-        const printerImg = PRINTER_IMAGES[printer] || '';
-        const liveHTML = buildLiveStatusHTML(printer);
-        card.innerHTML=`
-            <div style="background:var(--bg-soft);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
-                <div style="display:flex;align-items:center;gap:6px">
-                    <i data-lucide="printer" style="width:14px;height:14px;color:var(--accent)"></i>
-                    <span style="font-weight:700;color:var(--ink);font-size:13px">${printerDisplay(printer)}</span>
-                    <span class="muted" style="text-transform:none;letter-spacing:0">(${printer})</span>
+        }).join('') : `<div style="padding:14px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>`;
+
+        const card = document.createElement('div');
+        card.className = 'status-card' + (isIdle ? ' idle' : '');
+        card.innerHTML = `
+            <div class="row">
+                <div>
+                    <div class="name">${printer}</div>
+                    <div class="sub" style="text-transform:none;letter-spacing:0">${printer} · ${aliasLabel}</div>
                 </div>
-                <span class="muted" style="text-transform:none;letter-spacing:0">${slots.length} 個樹脂罐</span>
             </div>
-            ${(printerImg||liveHTML)?`<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line-soft)">
-                ${printerImg?`<img src="${printerImg}" alt="${printerDisplay(printer)}" style="width:100px;height:100px;object-fit:contain;flex-shrink:0">`:''}
-                ${liveHTML}
-            </div>`:''}
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px">
+                ${imgHTML}
+                <div style="flex:1;min-width:0">
+                    ${s ? `<span class="s-pill ${s.cls}"><span class="s-dot ${s.cls.replace('col-','dot-')}"></span>${s.label}</span>` : ''}
+                    ${progressHTML}
+                </div>
+            </div>
             ${slotsHTML}
         `;
         grid.appendChild(card);

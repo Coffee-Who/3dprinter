@@ -93,7 +93,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .muted{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono)}
 
 .status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:8px}
-.status-card{background:var(--bg-panel);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px}
+.status-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .status-card .row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
 .status-card .name{font-size:13px;font-weight:700;color:var(--ink)}
 .status-card .sub{font-size:11px;color:var(--ink-3);margin-top:4px}
@@ -110,6 +110,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .prog-bar{background:var(--line-soft);border-radius:99px;height:6px;overflow:hidden}
 .prog-fill{height:100%;background:var(--accent)}
 .prog-fill-yellow{background:#c79b2a}
+.prog-fill-red{background:var(--danger)}
 .empty-msg{grid-column:1/-1;text-align:center;color:var(--ink-4);font-size:12.5px;padding:24px 0}
 .error-msg{grid-column:1/-1;text-align:center;color:var(--danger);font-size:12.5px;padding:24px 0}
 
@@ -124,8 +125,8 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .printer-group-body{display:none}
 .printer-group-body.open{display:block;margin-top:10px}
 
-.status-card.idle{background:var(--ok-soft);border-color:transparent;transition:box-shadow .15s,border-color .15s}
-.status-card.idle:hover{box-shadow:0 0 0 1px var(--ok);border-color:var(--ok)}
+.status-card.idle{transition:box-shadow .15s,border-color .15s}
+.status-card.idle:hover{box-shadow:0 0 0 1px var(--accent);border-color:var(--accent)}
 .status-card-img{margin-top:8px;height:110px;border-radius:6px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center}
 .status-card-img img{width:100%;height:100%;object-fit:contain}
 .status-card-img.placeholder{background:var(--bg-panel);color:var(--ink-4)}
@@ -1336,23 +1337,37 @@ async function loadPrinterStatus() {
 
 function buildMaterialSectionHTML(p) {
     const cartridges = p.cartridges || [];
-    const barCls = pct => pct < 20 ? 'var(--danger)' : pct < 40 ? '#c79b2a' : 'var(--accent)';
     if(cartridges.length){
-        return `<div class="mat-section">${cartridges.map(c=>{
+        return cartridges.map(c=>{
             const slotLabel = c.slot==='FRONT'?'前匣':c.slot==='BACK'?'後匣':c.slot==='SINGLE'?'單匣':c.slot||'樹脂罐';
-            const pct = c.remaining_pct;
+            const noCapacity = c.remaining_ml == null;
+            const pct = c.remaining_pct!=null ? Math.round(c.remaining_pct)
+                : (!noCapacity && c.initial_ml>0 ? Math.round(c.remaining_ml/c.initial_ml*100) : null);
+            const low = !noCapacity && c.remaining_ml < 200;
             return `
-                <div class="mat-row"><span class="mlabel">${slotLabel}</span><span class="mname">${matNameFE(c.material)||'—'}</span></div>
-                ${pct!=null
-                    ? `<div class="prog-bar" style="height:5px;margin-bottom:8px"><div class="prog-fill" style="width:${Math.min(pct,100)}%;background:${barCls(pct)}"></div></div>`
-                    : `<p style="font-size:10px;color:#8b6b13;margin-bottom:8px">容量待補登</p>`}
-            `;
-        }).join('')}</div>`;
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <div>
+                        <span class="sub" style="text-transform:none;letter-spacing:0">${slotLabel}</span>
+                        <p style="font-weight:700;color:var(--ink);font-size:13px;margin:2px 0 0">${matNameFE(c.material)||'—'}</p>
+                    </div>
+                    <div style="text-align:right">
+                        ${noCapacity
+                            ? '<p style="font-size:11px;color:#8b6b13;font-weight:600">容量待補登</p>'
+                            : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((c.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0">${pct}%</p>`:''}`}
+                    </div>
+                </div>
+                ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${Math.min(pct,100)}%"></div></div>`:''}
+                <p class="sub" style="margin-top:6px;text-transform:none;letter-spacing:0">
+                    自動同步${p.updated_at?' · '+new Date(p.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}
+                </p>
+            </div>`;
+        }).join('');
     }
     if(p.material){
-        return `<div class="mat-section"><div class="mat-row"><span class="mlabel">材料</span><span class="mname">${matNameFE(p.material)}</span></div></div>`;
+        return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)"><div style="display:flex;justify-content:space-between;align-items:center"><span class="sub" style="text-transform:none;letter-spacing:0">材料</span><p style="font-weight:700;color:var(--ink);font-size:13px;margin:0">${matNameFE(p.material)}</p></div></div>`;
     }
-    return '';
+    return `<div style="padding:14px 0 0;margin-top:12px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>`;
 }
 
 function buildPrinterCardHTML(p) {

@@ -411,6 +411,9 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
       <button data-admin-only class="btn-ghost warn" onclick="triggerSyncWorkflow()" title="觸發 GitHub workflow 重新同步消耗資料（會開新分頁）">
         <i data-lucide="cloud-download" style="width:13px;height:13px"></i> 觸發同步
       </button>
+      <button class="btn-ghost" onclick="manualSyncCartridges()" title="立即從 Formlabs API 同步樹脂罐資料" id="manual-sync-btn">
+        <i data-lucide="refresh-cw" style="width:13px;height:13px" id="manual-sync-icon"></i> 同步樹脂罐
+      </button>
       <button class="btn-ghost" onclick="reloadData()" title="從 Firestore 重新拉取最新資料">
         <i data-lucide="refresh-cw" style="width:13px;height:13px" id="reload-icon"></i> 重新載入
       </button>
@@ -790,12 +793,12 @@ onAuthStateChanged(auth, async (user) => {
             showApp();
             subscribeAll();
 
-            // 每 5 分鐘自動拉一次 printer-status.json 並重新渲染（從 Formlabs API 同步樹脂罐）
+            // 每 20 分鐘自動拉一次 printer-status.json 並重新渲染（從 Formlabs API 同步樹脂罐）
             if (autoRefreshTimer) clearInterval(autoRefreshTimer);
             autoRefreshTimer = setInterval(() => {
-                console.log('[auto-refresh] 每 5 分鐘觸發 autoSyncCartridges');
+                console.log('[auto-refresh] 每 20 分鐘觸發 autoSyncCartridges');
                 autoSyncCartridges().catch(e => console.warn('auto-refresh 失敗:', e.message));
-            }, 5 * 60 * 1000);
+            }, 20 * 60 * 1000);
         } catch (err) {
             showToast('讀取使用者資料失敗：' + err.message, 'error');
         }
@@ -1064,6 +1067,24 @@ async function loadAll() {
     showToast('資料已是最新（即時同步中）', 'success');
 }
 
+// ══ 手動觸發同步樹脂罐 ══
+async function manualSyncCartridges() {
+    const btn = document.getElementById('manual-sync-btn');
+    const icon = document.getElementById('manual-sync-icon');
+    if(btn) btn.disabled = true;
+    if(icon) icon.style.animation = 'spin 0.7s linear infinite';
+    try {
+        await autoSyncCartridges();
+        showToast('✓ 樹脂罐資料已同步', 'success');
+    } catch(e) {
+        showToast('同步失敗：' + e.message, 'error');
+    } finally {
+        if(btn) btn.disabled = false;
+        if(icon) icon.style.animation = '';
+    }
+}
+window.manualSyncCartridges = manualSyncCartridges;
+
 // ══ 從 GitHub printer-status.json 自動同步樹脂罐資料 ══
 async function autoSyncCartridges() {
     try {
@@ -1122,9 +1143,9 @@ async function autoSyncCartridges() {
                 };
             });
 
-            // 與舊資料比對，只有真的有改變才標記
-            const oldStr = JSON.stringify(old.map(o=>({slot:o.slot,material:o.material,remaining_ml:o.remaining_ml})));
-            const newStr = JSON.stringify(merged.map(o=>({slot:o.slot,material:o.material,remaining_ml:o.remaining_ml})));
+            // 比對資料＋時間戳＋updated_by，只要有任何不同就寫回
+            const oldStr = JSON.stringify(old.map(o=>({slot:o.slot,material:o.material,remaining_ml:o.remaining_ml,updated_at:o.updated_at,updated_by:o.updated_by})));
+            const newStr = JSON.stringify(merged.map(o=>({slot:o.slot,material:o.material,remaining_ml:o.remaining_ml,updated_at:o.updated_at,updated_by:o.updated_by})));
             if (oldStr !== newStr) {
                 inv.cartridges[key] = merged;
                 changed = true;

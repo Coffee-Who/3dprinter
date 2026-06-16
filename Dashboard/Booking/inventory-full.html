@@ -1105,6 +1105,8 @@ async function autoSyncCartridges() {
 
             const apiCartridges = p.cartridges || [];
             if (!apiCartridges.length) return;
+            // 用機台層級的 updated_at（cartridge 層級的 updated_at 在 API 中永遠是 null）
+            const printerUpdatedAt = p.updated_at || new Date().toISOString();
 
             const old = inv.cartridges[key] || [];
             const merged = apiCartridges.map(c => {
@@ -1114,7 +1116,8 @@ async function autoSyncCartridges() {
                     material: c.material || existing?.material || '',
                     remaining_ml: c.remaining_ml != null ? c.remaining_ml : (existing?.remaining_ml || 0),
                     initial_ml: existing?.initial_ml || DEFAULT_CARTRIDGE_ML,
-                    updated_at: c.updated_at || new Date().toISOString(),
+                    updated_at: printerUpdatedAt,
+                    updated_by: 'auto',
                     source: 'api',
                 };
             });

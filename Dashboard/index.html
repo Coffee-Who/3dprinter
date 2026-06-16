@@ -993,6 +993,7 @@ function GanttView({ data }) {
   const engineers = window._settings_engineers||K.ENG_ORDER;
 
   return (
+    <React.Fragment>
     <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0,overflow:'hidden'}}>
       <div className="toolbar">
         <span className="toolbar-title">時間軸</span>
@@ -1082,6 +1083,7 @@ function GanttView({ data }) {
         </div>
       </div>
     </div>
+    </div>
     {tooltip&&(()=>{
       const {item:it,x,y}=tooltip;
       const st=K.statusOf(it);
@@ -1104,7 +1106,7 @@ function GanttView({ data }) {
         </div>
       );
     })()}
-  </div>
+    </React.Fragment>
   );
 }
 window.GanttView = GanttView;

@@ -1311,7 +1311,7 @@ window.exportExcel = function(){
 // ══════════════════════════════════════════════
 // ══ 7. 列印機即時狀態（Formlabs，讀 GitHub raw URL）═════
 // ══════════════════════════════════════════════
-const STATUS_URL = `https://raw.githubusercontent.com/Coffee-Who/3dprinter/main/Dashboard/Booking/printer-status.json`;
+const STATUS_URL = `https://cdn.jsdelivr.net/gh/Coffee-Who/3dprinter@main/Dashboard/Booking/printer-status.json`;
 const TAICHUNG_PRINTERS = ['AluminumBowfin','AdroitSauropod'];
 function isTaichungFE(p){
     return TAICHUNG_PRINTERS.some(name=>(p.alias||'').includes(name));

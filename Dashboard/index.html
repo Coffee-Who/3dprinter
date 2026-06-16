@@ -84,20 +84,12 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .toolbar-title{font-size:13px;font-weight:600;letter-spacing:-0.01em;color:var(--ink);white-space:nowrap;flex-shrink:0}
 .toolbar-sub{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0}
 .toolbar-divider{width:1px;height:18px;background:var(--line);margin:0 4px;flex-shrink:0}
-.t-sel-pill{height:30px;padding:0 26px 0 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg-soft);color:var(--ink-2);font:inherit;font-size:12px;cursor:pointer;-webkit-appearance:none;appearance:none;white-space:nowrap;flex-shrink:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 8px center}
+.t-sel-pill{height:30px;padding:0 26px 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);color:var(--ink-2);font:inherit;font-size:12px;cursor:pointer;-webkit-appearance:none;appearance:none;white-space:nowrap;flex-shrink:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 8px center}
 .t-sel-pill:hover{border-color:#cdd1d8;color:var(--ink)}
 .t-sel-pill:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.t-pill-btn{height:30px;padding:0 13px;border:1px solid var(--line);border-radius:6px;background:var(--bg-soft);color:var(--ink-3);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;transition:all 0.12s}
+.t-pill-btn{height:30px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);color:var(--ink-3);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;transition:all 0.12s}
 .t-pill-btn:hover{border-color:#cdd1d8;color:var(--ink)}
 .t-pill-btn.active{background:var(--bg);border-color:var(--ink-2);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--ink-2)}
-.gantt-tooltip{position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 20px rgba(10,14,20,0.15);padding:12px 14px;min-width:210px;max-width:270px;pointer-events:none;font-size:12px;color:var(--ink);transition:opacity 0.1s}
-.gantt-tooltip-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gantt-tooltip-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:2.5px 0}
-.gantt-tooltip-label{color:var(--ink-3);flex-shrink:0}
-.gantt-tooltip-val{color:var(--ink);font-weight:500;text-align:right}
-.gantt-tooltip-prog-wrap{margin-top:6px}
-.gantt-tooltip-track{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px}
-.gantt-tooltip-fill{height:100%;background:var(--accent);border-radius:2px}
 .table-wrap{flex:1;overflow:auto;padding:0 28px 24px}
 .kt{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .kt thead{background:#fafbfc}
@@ -938,8 +930,7 @@ function GanttView({ data }) {
   const { useState: useStateG, useMemo: useMemoG } = React;
   const [engF, setEngF] = useStateG('');
   const [statusF, setStatusF] = useStateG('');
-  const [showDone, setShowDone] = useStateG(true);
-  const [tooltip, setTooltip] = useStateG(null); // {item, x, y}
+  const [showDone, setShowDone] = useStateG(false);
   const filtered = useMemoG(() => {
     let d = data;
     if (!showDone) d = d.filter(x => K.statusOf(x) !== 'done');
@@ -993,7 +984,6 @@ function GanttView({ data }) {
   const engineers = window._settings_engineers||K.ENG_ORDER;
 
   return (
-    <React.Fragment>
     <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0,overflow:'hidden'}}>
       <div className="toolbar">
         <span className="toolbar-title">時間軸</span>
@@ -1011,7 +1001,7 @@ function GanttView({ data }) {
           <option value="cancelled">已取消</option>
         </select>
         <button className={`t-pill-btn${showDone?' active':''}`} onClick={()=>setShowDone(v=>!v)}>
-          {showDone ? '👁 顯示已完成' : '隱藏已完成'}
+          {showDone ? '👁 顯示已完成' : '顯示已完成'}
         </button>
       </div>
       <div className="gantt">
@@ -1062,20 +1052,14 @@ function GanttView({ data }) {
                 })}
                 <div className="today-line" style={{left:todayOffset*DAY_W+DAY_W/2}}/>
                 {hasBar&&(
-                  <div className={`bar ${st}`} style={{left:s*DAY_W,width:Math.max(1,(e-s+1))*DAY_W-2,top:'50%',transform:'translateY(-50%)'}}
-                    onMouseEnter={ev=>setTooltip({item,x:ev.clientX,y:ev.clientY})}
-                    onMouseMove={ev=>setTooltip(t=>t?{...t,x:ev.clientX,y:ev.clientY}:null)}
-                    onMouseLeave={()=>setTooltip(null)}>
+                  <div className={`bar ${st}`} style={{left:s*DAY_W,width:Math.max(1,(e-s+1))*DAY_W-2,top:'50%',transform:'translateY(-50%)'}}>
                     <div className="bar-fill" style={{width:`${item.progress}%`}}/>
                     <span className="bar-text">{item.customer}</span>
                     {due!==null&&due>e&&<div className="bar-due-marker"/>}
                   </div>
                 )}
                 {!hasBar&&due!==null&&(
-                  <div className={`bar todo`} style={{left:due*DAY_W,width:DAY_W-2,top:'50%',transform:'translateY(-50%)',fontSize:9,justifyContent:'center'}}
-                    onMouseEnter={ev=>setTooltip({item,x:ev.clientX,y:ev.clientY})}
-                    onMouseMove={ev=>setTooltip(t=>t?{...t,x:ev.clientX,y:ev.clientY}:null)}
-                    onMouseLeave={()=>setTooltip(null)}>▼</div>
+                  <div className={`bar todo`} style={{left:due*DAY_W,width:DAY_W-2,top:'50%',transform:'translateY(-50%)',fontSize:9,justifyContent:'center'}}>▼</div>
                 )}
               </div>
             );
@@ -1083,30 +1067,6 @@ function GanttView({ data }) {
         </div>
       </div>
     </div>
-    </div>
-    {tooltip&&(()=>{
-      const {item:it,x,y}=tooltip;
-      const st=K.statusOf(it);
-      const stLabel=K.STATUS_META?.[st]?.label||st;
-      const eng=K.ENG_LABEL[it.engineer]||it.engineer||'—';
-      const left=x+16; const top=y-10;
-      return (
-        <div className="gantt-tooltip" style={{left:Math.min(left,window.innerWidth-280),top:Math.min(top,window.innerHeight-220)}}>
-          <div className="gantt-tooltip-title">{it.customer||'—'}</div>
-          <div className="gantt-tooltip-row"><span className="gantt-tooltip-label">EF編號</span><span className="gantt-tooltip-val">{it.id||'—'}</span></div>
-          <div className="gantt-tooltip-row"><span className="gantt-tooltip-label">工程師</span><span className="gantt-tooltip-val">{eng}</span></div>
-          <div className="gantt-tooltip-row"><span className="gantt-tooltip-label">機台</span><span className="gantt-tooltip-val">{it.machine||'—'}</span></div>
-          <div className="gantt-tooltip-row"><span className="gantt-tooltip-label">狀態</span><span className="gantt-tooltip-val">{stLabel}</span></div>
-          {it.startDate&&<div className="gantt-tooltip-row"><span className="gantt-tooltip-label">開始</span><span className="gantt-tooltip-val">{it.startDate}</span></div>}
-          {(it.endDate||it.dueDate)&&<div className="gantt-tooltip-row"><span className="gantt-tooltip-label">截止</span><span className="gantt-tooltip-val">{it.endDate||it.dueDate}</span></div>}
-          <div className="gantt-tooltip-prog-wrap">
-            <div className="gantt-tooltip-row"><span className="gantt-tooltip-label">進度</span><span className="gantt-tooltip-val">{it.progress||0}%</span></div>
-            <div className="gantt-tooltip-track"><div className="gantt-tooltip-fill" style={{width:`${it.progress||0}%`}}/></div>
-          </div>
-        </div>
-      );
-    })()}
-    </React.Fragment>
   );
 }
 window.GanttView = GanttView;

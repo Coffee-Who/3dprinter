@@ -556,7 +556,9 @@ let SALES     = ['Amber','Charlie','Chrissy','Benny','Celine','Mino','Yoga','Jun
 let ENGINEERS = ['Barry','Bill','Jaylen','Jimmy'];
 const PRINTERS  = ['Form4','Form4L','MarkTwo','UR','Other'];
 
-// 從後台設定載入業務/工程師清單
+// 從後台設定載入業務/工程師/機器清單
+// 規則：工程師、機器 → 工作看板設定（settings.engineers / settings.machines）
+//       業務         → 3D列印預約獨立設定（settings.bk_sales）
 (async()=>{
     try {
         const st = await window.FBSettings.get();
@@ -565,26 +567,41 @@ const PRINTERS  = ['Form4','Form4L','MarkTwo','UR','Other'];
 })();
 
 function applySalesSettings(st){
+    // 業務：只讀 bk_sales（3D列印預約獨立欄位）
     if(st.bk_sales && st.bk_sales.length){
         SALES = st.bk_sales.map(s=>s.key||s.label||s);
     }
-    const eng = st.bk_sync!==false ? st.engineers : st.bk_engineers;
-    if(eng && eng.length){
-        ENGINEERS = eng.map(e=>e.key||e.label||e);
+    // 工程師：讀工作看板設定（engineers）
+    if(st.engineers && st.engineers.length){
+        ENGINEERS = st.engineers.map(e=>e.key||e.label||e);
     }
-    // 重新填充所有業務/工程師下拉
+    // 機器：讀工作看板設定（machines），取 name 欄位
+    if(st.machines && st.machines.length){
+        const machList = st.machines.map(m=>m.name||m).filter(Boolean);
+        if(machList.length) window._bk_printers = machList;
+    }
+    // 重新填充業務下拉
     ['add-sales','edit-sales'].forEach(id=>{
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML='';
         SALES.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;el.appendChild(o);});
     });
+    // 重新填充工程師下拉
     ['add-engineer','edit-engineer'].forEach(id=>{
         const el = document.getElementById(id);
         if(!el) return;
         el.innerHTML='';
         ENGINEERS.forEach(e=>{const o=document.createElement('option');o.value=o.textContent=e;el.appendChild(o);});
     });
+    // 重新填充機器下拉（edit-printer）
+    if(window._bk_printers){
+        const el = document.getElementById('edit-printer');
+        if(el){
+            el.innerHTML='';
+            window._bk_printers.forEach(p=>{const o=document.createElement('option');o.value=o.textContent=p;el.appendChild(o);});
+        }
+    }
     // 更新篩選下拉
     populateFilterSelects();
 }

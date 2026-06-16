@@ -938,7 +938,7 @@ function GanttView({ data }) {
   const { useState: useStateG, useMemo: useMemoG } = React;
   const [engF, setEngF] = useStateG('');
   const [statusF, setStatusF] = useStateG('');
-  const [showDone, setShowDone] = useStateG(false);
+  const [showDone, setShowDone] = useStateG(true);
   const [tooltip, setTooltip] = useStateG(null); // {item, x, y}
   const filtered = useMemoG(() => {
     let d = data;
@@ -1011,7 +1011,7 @@ function GanttView({ data }) {
           <option value="cancelled">已取消</option>
         </select>
         <button className={`t-pill-btn${showDone?' active':''}`} onClick={()=>setShowDone(v=>!v)}>
-          {showDone ? '👁 顯示已完成' : '顯示已完成'}
+          {showDone ? '👁 顯示已完成' : '隱藏已完成'}
         </button>
       </div>
       <div className="gantt">

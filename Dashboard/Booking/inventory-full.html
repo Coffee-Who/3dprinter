@@ -97,12 +97,17 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .muted{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono)}
 
 .status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:8px}
-.status-card{background:var(--bg-panel);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px}
+.status-card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .status-card .row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
 .status-card .name{font-size:13px;font-weight:700;color:var(--ink)}
 .status-card .sub{font-size:11px;color:var(--ink-3);margin-top:4px}
 .status-card .mat{font-size:10px;font-family:var(--font-mono);color:var(--ink-4);margin-top:6px}
 .status-card.is-low{border-color:#f4c2bd;background:var(--danger-soft)}
+.status-card.idle{transition:box-shadow .15s,border-color .15s}
+.status-card.idle:hover{box-shadow:0 0 0 1px var(--accent);border-color:var(--accent)}
+.status-card-img{margin-top:8px;height:110px;border-radius:6px;overflow:hidden;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.status-card-img img{width:100%;height:100%;object-fit:contain}
+.status-card-img.placeholder{background:var(--bg-panel);color:var(--ink-4)}
 .s-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:1px 7px;border-radius:999px;font-weight:600;white-space:nowrap}
 .s-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 .col-green{background:var(--ok-soft);color:var(--ok)}.dot-green{background:#1d6f43}
@@ -677,20 +682,20 @@ const PRINTER_IMAGES = {
 const DEFAULT_CARTRIDGE_ML = 1000;
 // 機台即時狀態（與「列印機即時狀態」頁面一致的標籤/顏色）
 const LIVE_STATUS_MAP = {
-    'IDLE':                  {label:'閒置',     cls:'col-green'},
-    'PRINTING':              {label:'列印中',   cls:'col-blue'},
-    'PAUSED':                {label:'已暫停',   cls:'col-yellow'},
-    'PAUSING':               {label:'暫停中',   cls:'col-yellow'},
-    'FINISHED':              {label:'已完成',   cls:'col-green'},
-    'ERROR':                 {label:'異常',     cls:'col-red'},
-    'ABORTED':               {label:'已中止',   cls:'col-red'},
-    'ABORTING':              {label:'中止中',   cls:'col-red'},
-    'PREPRINT':              {label:'準備列印', cls:'col-indigo'},
-    'PREHEAT':               {label:'預熱中',   cls:'col-orange'},
-    'WAITING_FOR_RESOLUTION':{label:'待處理',   cls:'col-red'},
-    'OFFLINE':               {label:'離線',     cls:'col-gray'},
-    'CHECK_PRINTER':         {label:'請檢查機台',cls:'col-orange'},
-    'UNKNOWN':               {label:'未知',     cls:'col-gray'},
+    'IDLE':                  {label:'閒置',     cls:'col-green',  dot:'dot-green'},
+    'PRINTING':              {label:'列印中',   cls:'col-blue',   dot:'dot-blue'},
+    'PAUSED':                {label:'已暫停',   cls:'col-yellow', dot:'dot-yellow'},
+    'PAUSING':               {label:'暫停中',   cls:'col-yellow', dot:'dot-yellow'},
+    'FINISHED':              {label:'已完成',   cls:'col-green',  dot:'dot-green'},
+    'ERROR':                 {label:'異常',     cls:'col-red',    dot:'dot-red'},
+    'ABORTED':               {label:'已中止',   cls:'col-red',    dot:'dot-red'},
+    'ABORTING':              {label:'中止中',   cls:'col-red',    dot:'dot-red'},
+    'PREPRINT':              {label:'準備列印', cls:'col-indigo', dot:'dot-indigo'},
+    'PREHEAT':               {label:'預熱中',   cls:'col-orange', dot:'dot-orange'},
+    'WAITING_FOR_RESOLUTION':{label:'待處理',   cls:'col-red',    dot:'dot-red'},
+    'OFFLINE':               {label:'離線',     cls:'col-gray',   dot:'dot-gray'},
+    'CHECK_PRINTER':         {label:'請檢查機台',cls:'col-orange', dot:'dot-orange'},
+    'UNKNOWN':               {label:'未知',     cls:'col-gray',   dot:'dot-gray'},
 };
 // 自 printer-status.json 同步來的機台即時狀態（progress/層數/剩餘時間/列印件名稱）
 let printerLiveStatus = {};
@@ -1523,72 +1528,83 @@ function renderCartridges() {
         const isPrinting = live && ['PRINTING','PAUSED','PAUSING'].includes(live.status);
         const isIdle = live && live.status === 'IDLE';
         const printerImg = PRINTER_IMAGES[printer] || '';
-        const aliasLabel = printer === 'Form4L' ? 'AdroitSauropod' : printer === 'Form4' ? 'AluminumBowfin' : printer;
 
-        // 進度區塊（與 booking 頁面相同）
+        // 機台顯示名稱與 alias（與 BK 頁面相同）
+        const displayName = printerDisplay(printer);
+
+        // 進度區塊（與 BK buildPrinterCardHTML 完全相同）
         const progressHTML = (isPrinting && live.print_name) ? `
             <div style="margin-top:8px">
-                <div class="sub" style="margin-bottom:4px;text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${live.print_name}">${live.print_name}</div>
+                <div class="sub" style="margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${live.print_name}">${live.print_name}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                    <span class="sub" style="text-transform:none;letter-spacing:0">進度</span>
+                    <span class="sub">進度</span>
                     <span style="font-size:11px;font-weight:700;color:var(--accent)">${live.progress}%</span>
                 </div>
                 <div class="prog-bar"><div class="prog-fill${live.status==='PAUSED'?' prog-fill-yellow':''}" style="width:${Math.min(live.progress,100)}%"></div></div>
-                <div style="display:flex;justify-content:space-between;margin-top:4px" class="sub">
-                    <span style="text-transform:none;letter-spacing:0">第 ${live.layer_now} / ${live.layer_total} 層</span>
-                    <span style="text-transform:none;letter-spacing:0">${live.time_left!=='-'?'剩餘 '+live.time_left:'計算中...'}</span>
+                <div style="display:flex;justify-content:space-between;margin-top:4px" class="mat">
+                    <span>第 ${live.layer_now} / ${live.layer_total} 層</span>
+                    <span>${live.time_left!=='-'?'剩餘 '+live.time_left:'計算中...'}</span>
                 </div>
             </div>` : '';
 
-        // 圖片 HTML
+        // 圖片（與 BK 相同）
         const imgHTML = printerImg
-            ? `<img src="${printerImg}" alt="${printer}" loading="lazy" style="width:100px;height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
-            : `<div style="width:100px;height:100px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg-panel);border-radius:6px"><i data-lucide="printer" style="width:32px;height:32px;color:var(--ink-4)"></i></div>`;
+            ? `<img src="${printerImg}" alt="${displayName}" loading="lazy" style="width:100px;height:100px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--bg)">`
+            : `<div class="status-card-img placeholder" style="width:100px;height:100px;flex-shrink:0;margin-top:0"><i data-lucide="printer" style="width:32px;height:32px"></i></div>`;
 
-        // 樹脂罐 HTML（與原有邏輯相同）
-        const slotsHTML = slots.length ? slots.map(slot => {
-            const noCapacity = slot.remaining_ml == null;
-            const pct = (!noCapacity && slot.initial_ml > 0) ? Math.round(slot.remaining_ml / slot.initial_ml * 100) : null;
-            const low = !noCapacity && slot.remaining_ml < 200;
-            const slotLabel = slot.slot==='FRONT'?'前匣':slot.slot==='BACK'?'後匣':slot.slot==='SINGLE'?'單匣':slot.slot;
-            return `
-            <div style="padding:12px 14px;border-top:1px solid var(--line-soft)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                    <div>
-                        <span class="muted" style="text-transform:none;letter-spacing:0">${slotLabel}</span>
-                        <p style="font-weight:700;color:var(--ink);font-size:13px;margin:2px 0 0">${matName(slot.material)||'—'}</p>
+        // 樹脂罐區塊（與 BK buildMaterialSectionHTML 相同格式）
+        let materialHTML;
+        if (slots.length) {
+            materialHTML = slots.map(slot => {
+                const slotLabel = slot.slot==='FRONT'?'前匣':slot.slot==='BACK'?'後匣':slot.slot==='SINGLE'?'單匣':slot.slot||'樹脂罐';
+                const noCapacity = slot.remaining_ml == null;
+                const pct = noCapacity ? null
+                    : (slot.initial_ml > 0 ? Math.round(slot.remaining_ml / slot.initial_ml * 100) : null);
+                const low = !noCapacity && slot.remaining_ml < 200;
+                const updatedAt = slot.updated_at
+                    ? ' · ' + new Date(slot.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
+                    : '';
+                return `
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <div>
+                            <span class="sub" style="text-transform:none;letter-spacing:0">${slotLabel}</span>
+                            <p style="font-weight:700;color:var(--ink);font-size:13px;margin:2px 0 0">${matName(slot.material)||'—'}</p>
+                        </div>
+                        <div style="text-align:right">
+                            ${noCapacity
+                                ? '<p style="font-size:11px;color:#8b6b13;font-weight:600">容量待補登</p>'
+                                : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((slot.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0">${pct}%</p>`:''}`}
+                        </div>
                     </div>
-                    <div style="text-align:right">
-                        ${noCapacity
-                            ? '<p style="font-size:11px;color:#8b6b13;font-weight:600">容量待補登</p>'
-                            : `<p style="font-size:13px;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((slot.remaining_ml||0)/1000).toFixed(2)} L</p>${pct!=null?`<p class="sub" style="margin:0;text-transform:none;letter-spacing:0">${pct}%</p>`:''}`}
-                    </div>
-                </div>
-                ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${Math.min(pct,100)}%"></div></div>`:''}
-                <p class="sub" style="margin-top:6px;text-transform:none;letter-spacing:0">
-                    ${slot.updated_by==='auto'?'自動同步':'手動更新'}
-                    ${slot.updated_at?' · '+new Date(slot.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}
-                </p>
-            </div>`;
-        }).join('') : `<div style="padding:14px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>`;
+                    ${pct!=null?`<div class="prog-bar"><div class="prog-fill ${pct<20?'prog-fill-red':pct<40?'prog-fill-yellow':''}" style="width:${Math.min(pct,100)}%"></div></div>`:''}
+                    <p class="sub" style="margin-top:6px;text-transform:none;letter-spacing:0">
+                        ${slot.updated_by==='auto'?'自動同步':'手動更新'}${updatedAt}
+                    </p>
+                </div>`;
+            }).join('');
+        } else {
+            materialHTML = `<div style="padding:14px 0 0;margin-top:12px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">尚無樹脂罐資料<br><span style="font-size:11px">系統會在 API 同步後自動帶入，或點上方按鈕手動補登</span></div>`;
+        }
 
+        // 整張卡片（與 BK buildPrinterCardHTML 完全相同結構）
         const card = document.createElement('div');
         card.className = 'status-card' + (isIdle ? ' idle' : '');
         card.innerHTML = `
             <div class="row">
                 <div>
-                    <div class="name">${printer}</div>
-                    <div class="sub" style="text-transform:none;letter-spacing:0">${printer} · ${aliasLabel}</div>
+                    <div class="name">${displayName}</div>
+                    <div class="sub">${displayName} · ${printer}</div>
                 </div>
             </div>
             <div style="display:flex;align-items:flex-start;gap:10px;margin-top:8px">
                 ${imgHTML}
                 <div style="flex:1;min-width:0">
-                    ${s ? `<span class="s-pill ${s.cls}"><span class="s-dot ${s.cls.replace('col-','dot-')}"></span>${s.label}</span>` : ''}
+                    ${s ? `<span class="s-pill ${s.cls}"><span class="s-dot ${s.dot}"></span>${s.label}</span>` : ''}
                     ${progressHTML}
                 </div>
             </div>
-            ${slotsHTML}
+            ${materialHTML}
         `;
         grid.appendChild(card);
     });

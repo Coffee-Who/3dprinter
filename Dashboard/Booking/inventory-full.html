@@ -1082,9 +1082,7 @@ async function autoSyncCartridges() {
             // 機台離線太久（與「列印機即時狀態」頁面一致：status===OFFLINE，
             // 或 last_pinged 超過 OFFLINE_THRESHOLD_MS 無回報）→ 清空樹脂罐資料，
             // 畫面會回到「尚無樹脂罐資料」的空狀態，不再停留在過期數值
-            const lastPinged = p.last_pinged ? new Date(p.last_pinged).getTime() : null;
-            const isOffline = p.status === 'OFFLINE'
-                || (lastPinged != null && (Date.now() - lastPinged) > OFFLINE_THRESHOLD_MS);
+            const isOffline = p.status === 'OFFLINE';
 
             // 即時狀態（顯示在機台示意圖旁）：閒置/列印中/異常等狀態、
             // 進度、第幾層、剩餘時間、列印件名稱

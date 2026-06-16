@@ -79,9 +79,18 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 /* Table */
 .table-view{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--bg);overflow:hidden}
-.toolbar{display:flex;align-items:center;gap:10px;padding:14px 28px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:wrap;flex-shrink:0}
-.toolbar-title{font-size:13px;font-weight:600;letter-spacing:-0.01em;color:var(--ink);margin-right:8px}
-.toolbar-sub{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono);margin-right:auto}
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 28px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:nowrap;flex-shrink:0;overflow-x:auto}
+.toolbar::-webkit-scrollbar{height:3px}
+.toolbar::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+.toolbar-title{font-size:13px;font-weight:600;letter-spacing:-0.01em;color:var(--ink);white-space:nowrap;flex-shrink:0}
+.toolbar-sub{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono);white-space:nowrap;flex-shrink:0}
+.toolbar-divider{width:1px;height:18px;background:var(--line);margin:0 4px;flex-shrink:0}
+.t-sel-pill{height:30px;padding:0 26px 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);color:var(--ink-2);font:inherit;font-size:12px;cursor:pointer;-webkit-appearance:none;appearance:none;white-space:nowrap;flex-shrink:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 8px center}
+.t-sel-pill:hover{border-color:#cdd1d8;color:var(--ink)}
+.t-sel-pill:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.t-pill-btn{height:30px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:var(--bg-soft);color:var(--ink-3);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;transition:all 0.12s}
+.t-pill-btn:hover{border-color:#cdd1d8;color:var(--ink)}
+.t-pill-btn.active{background:var(--bg);border-color:var(--ink-2);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--ink-2)}
 .table-wrap{flex:1;overflow:auto;padding:0 28px 24px}
 .kt{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .kt thead{background:#fafbfc}
@@ -921,7 +930,15 @@ function GanttView({ data }) {
   const K = window.K;
   const { useState: useStateG, useMemo: useMemoG } = React;
   const [engF, setEngF] = useStateG('');
-  const filtered = useMemoG(() => engF ? data.filter(d=>d.engineer===engF) : data, [data, engF]);
+  const [statusF, setStatusF] = useStateG('');
+  const [showDone, setShowDone] = useStateG(false);
+  const filtered = useMemoG(() => {
+    let d = data;
+    if (!showDone) d = d.filter(x => K.statusOf(x) !== 'done');
+    if (engF) d = d.filter(x => x.engineer === engF);
+    if (statusF) d = d.filter(x => K.statusOf(x) === statusF);
+    return d;
+  }, [data, engF, statusF, showDone]);
   const today = K.TODAY;
   const DAY = K.DAY;
   const DAY_W = 22;
@@ -972,10 +989,21 @@ function GanttView({ data }) {
       <div className="toolbar">
         <span className="toolbar-title">時間軸</span>
         <span className="toolbar-sub">{filtered.length} 筆工作</span>
-        <select className="t-sel" value={engF} onChange={e=>setEngF(e.target.value)}>
+        <div className="toolbar-divider"/>
+        <select className="t-sel-pill" value={engF} onChange={e=>setEngF(e.target.value)}>
           <option value="">所有工程師</option>
           {engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]||k}</option>)}
         </select>
+        <select className="t-sel-pill" value={statusF} onChange={e=>setStatusF(e.target.value)}>
+          <option value="">所有進度</option>
+          <option value="todo">待處理</option>
+          <option value="progress">進行中</option>
+          <option value="blocked">封鎖中</option>
+          <option value="cancelled">已取消</option>
+        </select>
+        <button className={`t-pill-btn${showDone?' active':''}`} onClick={()=>setShowDone(v=>!v)}>
+          {showDone ? '👁 顯示已完成' : '顯示已完成'}
+        </button>
       </div>
       <div className="gantt">
         <div className="gantt-left">

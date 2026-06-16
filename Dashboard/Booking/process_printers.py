@@ -190,6 +190,29 @@ for r in result:
 
 
 # ════════════════════════════════════════════════════════
+# Part 1.5: result → Firestore printer_status（即時狀態推播）
+# ════════════════════════════════════════════════════════
+_fs_account_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+if _fs_account_str:
+    try:
+        import firebase_admin as _fa
+        from firebase_admin import credentials as _cred, firestore as _fs
+        _sa = json.loads(_fs_account_str)
+        # 若 firebase_admin 尚未初始化就初始化（Part 2 也會用，避免重複）
+        if not _fa.apps:
+            _fa.initialize_app(_cred.Certificate(_sa))
+        _db = _fs.client()
+        _batch = _db.batch()
+        for r in result:
+            _doc = _db.collection('printer_status').document(r['alias'])
+            _batch.set(_doc, {**r, 'updatedAt': _fs.SERVER_TIMESTAMP})
+        _batch.commit()
+        print('Part 1.5: OK printer_status 已寫入 Firestore（' + str(len(result)) + ' 台）')
+    except Exception as _e:
+        print('Part 1.5: ⚠ Firestore 寫入失敗（不影響 JSON）: ' + str(_e))
+
+
+# ════════════════════════════════════════════════════════
 # Part 2: raw-prints.json → Firestore（消耗扣減）
 # ════════════════════════════════════════════════════════
 

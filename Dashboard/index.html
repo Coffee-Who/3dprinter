@@ -67,11 +67,10 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* Main */
 .shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .shell-top{display:flex;align-items:center;gap:18px;padding:0 28px;border-bottom:1px solid var(--line);background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;min-height:48px}
-.shell-tabs{display:flex;gap:2px}
-.shell-tab{position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:var(--ink-3);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:color 0.15s}
-.shell-tab:hover{color:var(--ink)}
-.shell-tab[aria-selected="true"]{color:var(--ink);font-weight:600}
-.shell-tab[aria-selected="true"]::after{content:'';position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
+.shell-tabs{display:flex;gap:4px;align-items:center}
+.shell-tab{position:relative;border:1px solid transparent;background:transparent;font:inherit;font-size:13px;font-weight:500;color:var(--ink-3);padding:6px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.12s,color 0.12s}
+.shell-tab:hover{color:var(--ink);background:var(--bg-soft)}
+.shell-tab[aria-selected="true"]{color:var(--ink);font-weight:600;background:var(--bg-soft);border-color:var(--line)}
 .shell-tab-icon{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;color:currentColor;flex-shrink:0}
 .shell-spacer{flex:1}
 .shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.08em}

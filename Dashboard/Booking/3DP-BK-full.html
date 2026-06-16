@@ -1380,40 +1380,30 @@ window.toggleTaipeiGroup = function(){
     btn.classList.toggle('open', open);
 };
 
-window.manualRefreshPrinters = async function() {
-    const btn = document.getElementById('printer-refresh-btn');
-    const icon = document.getElementById('printer-refresh-icon');
-    btn.disabled = true;
-    icon.style.animation = 'spin 0.7s linear infinite';
-    document.getElementById('printer-updated').textContent = '刷新中...';
-    await loadPrinterStatus();
-    btn.disabled = false;
-    icon.style.animation = '';
+window.manualRefreshPrinters = function() {
+    showToast('已啟用即時同步，資料自動更新中', 'success');
 };
 
-async function loadPrinterStatus() {
-    try {
-        const res = await fetch(STATUS_URL + '?t=' + Date.now());
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const printers = await res.json();
-        cachedPrinters = Array.isArray(printers) ? printers : [];
-        const updatedAt = cachedPrinters[0]?.updated_at;
-        if(updatedAt){
-            const d = new Date(updatedAt);
-            document.getElementById('printer-updated').textContent =
-                `資料時間：${d.toLocaleDateString('zh-TW')} ${d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
-        }
-        if(!cachedPrinters.length){
+function subscribePrinterStatus() {
+    const col = collection(db, 'printer_status');
+    onSnapshot(col, (snap) => {
+        if(snap.empty){
             document.getElementById('panel-status-tc').innerHTML = '<div class="empty-msg">尚無列印機資料</div>';
             document.getElementById('panel-status-tp').innerHTML = '';
             document.getElementById('taipei-count').textContent = '';
             return;
         }
+        cachedPrinters = snap.docs.map(d => d.data());
+        const raw = cachedPrinters[0]?.updated_at || cachedPrinters[0]?.updatedAt;
+        if(raw){
+            const d = raw.toDate ? raw.toDate() : new Date(raw);
+            document.getElementById('printer-updated').textContent =
+                `資料時間：${d.toLocaleDateString('zh-TW')} ${d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
+        }
         renderStatusPanel(cachedPrinters);
-    } catch(err){
-        document.getElementById('panel-status-tc').innerHTML = `<div class="error-msg">無法載入：${err.message}</div>`;
-        document.getElementById('panel-status-tp').innerHTML = '';
-    }
+    }, (err) => {
+        document.getElementById('panel-status-tc').innerHTML = `<div class="error-msg">即時同步失敗：${err.message}</div>`;
+    });
 }
 
 function buildMaterialSectionHTML(p) {
@@ -1507,8 +1497,7 @@ function renderStatusPanel(printers) {
     safeIcons();
 }
 
-loadPrinterStatus();
-setInterval(loadPrinterStatus, 20*60*1000);
+subscribePrinterStatus();
 
 // ══════════════════════════════════════════════
 // ══ 8. Toast 與工具 ═══════════════════════════

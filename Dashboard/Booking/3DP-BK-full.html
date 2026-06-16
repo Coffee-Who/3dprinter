@@ -192,6 +192,13 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 .actbtn{width:28px;height:28px;border:1px solid var(--line);background:var(--bg);border-radius:6px;cursor:pointer;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center}
 .actbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
 .actbtn.danger:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.act-wrap{position:relative;display:inline-flex;justify-content:center}
+.act-dropdown{display:none;position:absolute;right:0;top:32px;background:var(--bg);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:999;min-width:110px;padding:4px 0;white-space:nowrap}
+.act-dropdown.open{display:block}
+.act-dropdown button{width:100%;display:flex;align-items:center;gap:8px;padding:7px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--ink-2);text-align:left}
+.act-dropdown button:hover{background:var(--accent-soft);color:var(--accent)}
+.act-dropdown button.danger:hover{background:var(--danger-soft);color:var(--danger)}
+.act-dropdown hr{margin:4px 0;border:none;border-top:1px solid var(--line)}
 .empty-row td{text-align:center;color:var(--ink-4);padding:40px 0}
 
 .pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg-soft);font-size:12px;color:var(--ink-3);font-family:var(--font-mono);flex-wrap:wrap;gap:10px}
@@ -889,8 +896,14 @@ window.renderTable = function() {
             </td>
             ${canEdit ? `
             <td class="actions">
-                <button onclick="openEditModal('${b.id}')" title="編輯" class="actbtn"><i data-lucide="pencil" style="width:14px;height:14px"></i></button>
-                <button onclick="deleteBooking('${b.id}')" title="刪除" class="actbtn danger"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+                <div class="act-wrap">
+                    <button class="actbtn" title="操作" onclick="toggleActMenu(event,'menu-${b.id}')"><i data-lucide="more-vertical" style="width:14px;height:14px"></i></button>
+                    <div class="act-dropdown" id="menu-${b.id}">
+                        <button onclick="closeAllActMenus();openEditModal('${b.id}')"><i data-lucide="pencil" style="width:13px;height:13px"></i>編輯</button>
+                        <hr>
+                        <button class="danger" onclick="closeAllActMenus();deleteBooking('${b.id}')"><i data-lucide="trash-2" style="width:13px;height:13px"></i>刪除</button>
+                    </div>
+                </div>
             </td>` : '<td></td>'}
         `;
         tbody.appendChild(tr);
@@ -1222,6 +1235,19 @@ window.updateStatus = async function(id, newStatus){
         });
     } catch(err){ showToast('更新狀態失敗：'+err.message,'error'); }
 };
+
+// ── 操作下拉選單 ──────────────────────────────
+window.toggleActMenu = function(e, menuId){
+    e.stopPropagation();
+    const menu = document.getElementById(menuId);
+    const isOpen = menu.classList.contains('open');
+    closeAllActMenus();
+    if(!isOpen) menu.classList.add('open');
+};
+window.closeAllActMenus = function(){
+    document.querySelectorAll('.act-dropdown.open').forEach(m => m.classList.remove('open'));
+};
+document.addEventListener('click', () => closeAllActMenus());
 
 window.deleteBooking = async function(id){
     const b = bookings.find(x=>x.id===id);

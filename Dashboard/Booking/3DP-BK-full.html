@@ -530,7 +530,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    onSnapshot, serverTimestamp, query, orderBy
+    onSnapshot, serverTimestamp, query, orderBy, getDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 // ══ Firebase 配置 ══════════════════════════════
@@ -556,28 +556,27 @@ let SALES     = ['Amber','Charlie','Chrissy','Benny','Celine','Mino','Yoga','Jun
 let ENGINEERS = ['Barry','Bill','Jaylen','Jimmy'];
 const PRINTERS  = ['Form4','Form4L','MarkTwo','UR','Other'];
 
-// 從後台設定載入業務/工程師/機器清單
-// 規則：工程師、機器 → 工作看板設定（settings.engineers / settings.machines）
-//       業務         → 3D列印預約獨立設定（settings.bk_sales）
-(async()=>{
+// 從後台 Firestore settings/workspace 載入業務/工程師/機器清單
+// 直接用本頁自有的 db（v9 modular），不依賴 window.FBSettings
+async function loadSettings(){
     try {
-        const st = await window.FBSettings.get();
-        if(st) applySalesSettings(st);
-    } catch(e){}
-})();
+        const snap = await getDoc(doc(db, 'settings', 'workspace'));
+        if(snap.exists()) applySalesSettings(snap.data());
+    } catch(e){ console.warn('loadSettings error', e); }
+}
 
 function applySalesSettings(st){
-    // 業務：只讀 bk_sales（3D列印預約獨立欄位）
+    // 業務：讀 bk_sales（3D列印預約獨立欄位），取 key（英文）
     if(st.bk_sales && st.bk_sales.length){
-        SALES = st.bk_sales.map(s=>s.key||s.label||s);
+        SALES = st.bk_sales.map(s=>typeof s==='string'?s:(s.key||s.label||s));
     }
-    // 工程師：讀工作看板設定（engineers）
+    // 工程師：讀工作看板設定（engineers），取 key（英文）
     if(st.engineers && st.engineers.length){
-        ENGINEERS = st.engineers.map(e=>e.key||e.label||e);
+        ENGINEERS = st.engineers.map(e=>typeof e==='string'?e:(e.key||e.label||e));
     }
-    // 機器：讀工作看板設定（machines），取 name 欄位
+    // 機器：讀工作看板設定（machines），取 name
     if(st.machines && st.machines.length){
-        const machList = st.machines.map(m=>m.name||m).filter(Boolean);
+        const machList = st.machines.map(m=>typeof m==='string'?m:(m.name||m)).filter(Boolean);
         if(machList.length) window._bk_printers = machList;
     }
     // 重新填充業務下拉
@@ -634,6 +633,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('sidebar-user').textContent = currentUser.displayName;
         applyRoleUI();
+        await loadSettings();
         subscribeBookings();
         safeIcons();
     } else {

@@ -636,8 +636,10 @@ window.doSignOut = async function(){
 function applyRoleUI() {
     const u = currentUser;
     const canEdit = u.role === 'admin' || u.role === 'editor';
-    document.getElementById('panel-tab-booking').style.display = canEdit ? '' : 'none';
-    document.getElementById('ops-col').classList.toggle('hidden', !canEdit);
+    const bookingPanel = document.getElementById('panel-tab-booking');
+    if(bookingPanel) bookingPanel.style.display = canEdit ? '' : 'none';
+    const opsCol = document.getElementById('ops-col');
+    if(opsCol) opsCol.classList.toggle('hidden', !canEdit);
 }
 
 // ══════════════════════════════════════════════

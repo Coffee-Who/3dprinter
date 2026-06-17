@@ -69,7 +69,7 @@
         await window._db.collection('users').doc(cred.user.uid)
           .set(Object.assign({}, data, { createdAt: ts() }));
         return cred.user.uid;
-      } finally { app2.delete(); }
+      } finally { await app2.delete(); }
     },
     updateUser: async function (uid, data) {
       await window._db.collection('users').doc(uid)

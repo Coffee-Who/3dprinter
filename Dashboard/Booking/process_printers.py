@@ -242,8 +242,9 @@ except json.JSONDecodeError as e:
     sys.exit(1)
 
 try:
-    cred = credentials.Certificate(service_account_dict)
-    firebase_admin.initialize_app(cred)
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(service_account_dict)
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
     # 測試讀取（這會驗證連線和權限）
     test_ref = db.collection('inventory').document('main')

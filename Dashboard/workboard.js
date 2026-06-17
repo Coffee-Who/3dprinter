@@ -279,6 +279,7 @@
     const [sortKey,  setSortKey]  = useState('seq');
     const [sortDir,  setSortDir]  = useState('asc');
     const [page,     setPage]     = useState(1);
+    const [hideDone, setHideDone] = useState(true);
     const PAGE_SIZE = 20;
 
     // 每次都即時從 window 讀取最新設定（labelVer 變動時觸發重新渲染）
@@ -294,6 +295,10 @@
       if (fStatus) {
         const st = K.statusOf(o);
         if (st !== fStatus) return false;
+      }
+      if (hideDone && !fStatus) {
+        const st = K.statusOf(o);
+        if (st === 'done' || st === 'cancelled') return false;
       }
       return true;
     });
@@ -351,6 +356,11 @@
             <option value="done">已完成</option>
             <option value="cancelled">已取消</option>
           </select>
+          <button
+            onClick={()=>{setHideDone(v=>!v);setPage(1);}}
+            style={{height:30,padding:'0 13px',border:'1px solid var(--line)',borderRadius:999,background:hideDone?'var(--bg-soft)':'#e6f1f6',color:hideDone?'var(--ink-3)':'#0c7a99',fontSize:12,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5,whiteSpace:'nowrap',flexShrink:0,fontWeight:hideDone?400:600,transition:'all 0.12s',fontFamily:'inherit'}}>
+            {hideDone ? '顯示已完成／已取消' : '👁 顯示已完成／已取消'}
+          </button>
           <span style={{fontSize:12,color:'#8a93a3',marginLeft:'auto'}}>共 {filtered.length} 筆</span>
         </div>
 

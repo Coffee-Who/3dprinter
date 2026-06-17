@@ -199,7 +199,7 @@ if _fs_account_str:
         from firebase_admin import credentials as _cred, firestore as _fs
         _sa = json.loads(_fs_account_str)
         # 若 firebase_admin 尚未初始化就初始化（Part 2 也會用，避免重複）
-        if not _fa.apps:
+        if not _fa._apps:
             _fa.initialize_app(_cred.Certificate(_sa))
         _db = _fs.client()
         _batch = _db.batch()

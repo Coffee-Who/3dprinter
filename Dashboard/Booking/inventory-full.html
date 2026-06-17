@@ -1932,10 +1932,18 @@ function renderStockTable() {
             <td style="text-align:right">
                 <input type="number" min="0" step="1" value="${bottles}" ${inEditMode?'':'disabled'}
                     onchange="updateStockBottles('${me}', this.value)"
-                    style="width:70px;text-align:right;height:28px;border:1px solid ${inEditMode?'var(--accent)':'var(--line)'};border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:${inEditMode?'var(--bg)':'var(--bg-soft)'};color:var(--ink)">
+                    style="width:70px;text-align:right;height:28px;border:${inEditMode?'1px solid var(--accent)':'none'};border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:${inEditMode?'var(--bg)':'transparent'};color:var(--ink);font-weight:${inEditMode?'400':'700'}">
                 <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
-            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((s.total_ml||0)/1000).toFixed(1)} L</td>
+            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">
+                ${inEditMode
+                    ? `<input type="number" min="0" step="0.1" value="${((s.total_ml||0)/1000).toFixed(1)}"
+                        onchange="updateStockTotalMl('${me}', this.value)"
+                        style="width:70px;text-align:right;height:28px;border:1px solid var(--accent);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)">
+                       <span class="muted" style="text-transform:none;letter-spacing:0">L</span>`
+                    : `${((s.total_ml||0)/1000).toFixed(1)} L`
+                }
+            </td>
             <td style="text-align:right">
                 <span style="font-weight:700">${(safety/1000).toFixed(1)}</span>
                 <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
@@ -1992,6 +2000,24 @@ async function updateSafety(material, value) {
 }
 
 // 直接在表格修改備註
+// 直接在表格修改倉庫存量（直接輸入 L，儲存為 ml）
+async function updateStockTotalMl(material, value) {
+    const liters = parseFloat(value);
+    if(isNaN(liters) || liters < 0){ showToast('請輸入有效的數量','error'); renderStockTable(); return; }
+    if(!inv.stock[material]) inv.stock[material]={bottles:0,total_ml:0};
+    const oldMl = inv.stock[material].total_ml || 0;
+    const newMl = Math.round(liters * 1000 * 10) / 10;
+    const diff  = Math.round((newMl - oldMl) * 10) / 10;
+    inv.stock[material].total_ml = newMl;
+    inv.stock[material].updated_at = new Date().toISOString();
+    inv.stock[material].updated_by = 'manual';
+    if(diff !== 0){
+        addHistory({type:'manual',material,printer:'備料庫存',ml:diff,note:`倉庫存量調整為 ${liters} L`});
+    }
+    renderAll();
+    await saveAll(`調整倉庫存量：${matName(material)} → ${liters} L`);
+}
+
 async function updateStockNote(material, value) {
     if(!inv.stock[material]) inv.stock[material]={bottles:0,total_ml:0};
     inv.stock[material].note = value.trim();
@@ -2672,6 +2698,7 @@ window.renderMonthlyPie = renderMonthlyPie;
 window.renderStockTable = renderStockTable;
 window.updateSafety = updateSafety;
 window.updateStockBottles = updateStockBottles;
+window.updateStockTotalMl = updateStockTotalMl;
 window.updateStockNote = updateStockNote;
 
 // ══ 初始化 ══

@@ -449,7 +449,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
             機台樹脂罐
             <span class="hint">自動從 Formlabs API 抓取；點此展開查看 / 編輯</span>
             <span style="margin-left:auto" onclick="event.stopPropagation()">
-              <button data-editor-only class="btn-primary" onclick="openCartridgeModal()" style="font-size:12px;padding:4px 10px">
+              <button data-editor-only class="btn-primary" onclick="event.stopPropagation();event.preventDefault();openCartridgeModal()" style="font-size:12px;padding:4px 10px">
                 <i data-lucide="pencil" style="width:13px;height:13px"></i> 手動更新樹脂罐
               </button>
             </span>
@@ -498,16 +498,16 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
               <span class="hint">各材料倉庫＋槽內＋機台的彙整</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
-              <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
+              <button data-editor-only class="btn-ghost warn" onclick="event.stopPropagation();event.preventDefault();showDisabledMaterialsModal()">
                 <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
               </button>
-              <button data-editor-only class="btn-primary" onclick="showStockModal()">
+              <button data-editor-only class="btn-primary" onclick="event.stopPropagation();event.preventDefault();showStockModal()">
                 <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
               </button>
-              <button id="stock-edit-mode-btn" data-editor-only class="btn-ghost" onclick="toggleStockEditMode()" style="display:none">
+              <button id="stock-edit-mode-btn" data-editor-only class="btn-ghost" onclick="event.stopPropagation();event.preventDefault();toggleStockEditMode()" style="display:none">
                 <i data-lucide="pencil" style="width:13px;height:13px"></i> 編輯模式
               </button>
-              <button id="stock-edit-done-btn" class="btn-primary" onclick="toggleStockEditMode()" style="display:none;background:var(--ok)">
+              <button id="stock-edit-done-btn" class="btn-primary" onclick="event.stopPropagation();event.preventDefault();toggleStockEditMode()" style="display:none;background:var(--ok)">
                 <i data-lucide="check" style="width:13px;height:13px"></i> 完成編輯
               </button>
             </div>

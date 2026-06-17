@@ -264,7 +264,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
 .ov-table tbody tr.is-low{background:#fdf3ea}
 .stock-resizable{position:relative;white-space:nowrap;overflow:hidden}
 #stock-table{table-layout:fixed}
-.stock-edit-banner{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--accent);font-weight:600;padding:4px 10px;background:var(--accent-soft);border-radius:6px}
+.stock-edit-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--accent);font-weight:600;padding:4px 10px;background:var(--accent-soft);border-radius:6px}
 
 @media(max-width:960px){
   .shell-sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%);width:224px}
@@ -409,7 +409,6 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
       <button class="menu-btn" onclick="toggleSidebar(true)"><i data-lucide="menu" style="width:18px;height:18px"></i></button>
       <div class="shell-tabs">
         <button class="shell-tab active" id="tab-overview" onclick="switchTab('overview')">庫存總覽</button>
-        <button class="shell-tab" id="tab-stock" onclick="switchTab('stock')">材料庫存</button>
         <button class="shell-tab" id="tab-history" onclick="switchTab('history')">消耗記錄</button>
         <button class="shell-tab" id="tab-monthly" onclick="switchTab('monthly')">月度分析</button>
       </div>
@@ -443,7 +442,25 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
           </div>
         </div>
 
-        <div id="ov-resize-wrap" style="margin-bottom:16px">
+        <!-- 機台樹脂罐（可收折，預設展開）-->
+        <details class="collapse" open style="margin-bottom:14px">
+          <summary>
+            <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
+            機台樹脂罐
+            <span class="hint">自動從 Formlabs API 抓取；點此展開查看 / 編輯</span>
+            <span style="margin-left:auto" onclick="event.stopPropagation()">
+              <button data-editor-only class="btn-primary" onclick="openCartridgeModal()" style="font-size:12px;padding:4px 10px">
+                <i data-lucide="pencil" style="width:13px;height:13px"></i> 手動更新樹脂罐
+              </button>
+            </span>
+          </summary>
+          <div class="collapse-body">
+            <div id="cartridges-grid" class="status-grid"></div>
+          </div>
+        </details>
+
+        <!-- 庫存總覽卡片 -->
+        <div id="ov-resize-wrap" style="margin-bottom:14px">
           <div id="ov-left" style="width:100%">
             <div class="sec-head" style="margin-bottom:8px">
               <div></div>
@@ -458,85 +475,52 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
             </div>
             <div class="ov-stats-row" id="ov-stats-row"></div>
           </div>
-          <!-- 右側庫存不足面板已移除 -->
           <div id="ov-right" style="display:none"><div id="ov-low-list"></div></div>
         </div>
 
-        <div style="border-top:1px solid var(--line-soft);padding-top:14px">
-          <div class="sec-title" style="font-size:12px;margin-bottom:8px"><i data-lucide="table" style="width:13px;height:13px;color:var(--accent)"></i>庫存總覽表格</div>
-
-          <div class="ov-table-wrap">
-            <table class="ov-table" id="ov-table">
-              <colgroup>
-                <col style="width:160px" data-col="0">
-                <col style="width:100px" data-col="1">
-                <col style="width:110px" data-col="2">
-                <col style="width:90px" data-col="3">
-                <col style="width:130px" data-col="4">
-                <col style="width:120px" data-col="5">
-                <col style="width:100px" data-col="6">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="resizable">材料</th>
-                  <th class="resizable" style="text-align:right">總庫存(L)</th>
-                  <th class="resizable" style="text-align:right">安全庫存(L)</th>
-                  <th class="resizable" style="text-align:right">達成率</th>
-                  <th class="resizable" style="text-align:right">機台樹脂罐(L)</th>
-                  <th class="resizable" style="text-align:right">備料庫存(L)</th>
-                  <th class="resizable">狀態</th>
-                </tr>
-              </thead>
-              <tbody id="ov-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-
-      <!-- ══ 材料庫存（樹脂罐 + 備料）══ -->
-      <div class="tab-panel hidden" id="panel-stock">
-            <!-- 機台樹脂罐區塊（可摺疊，預設展開）-->
-            <details class="collapse" open>
-                <summary>
-                    <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
-                    機台樹脂罐
-                    <span class="hint">自動從 Formlabs API 抓取；點此展開查看 / 編輯</span>
-                </summary>
-                <div class="collapse-body">
-                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-                        <button data-editor-only class="btn-primary" onclick="openCartridgeModal()">
-                            <i data-lucide="pencil" style="width:14px;height:14px"></i> 手動更新樹脂罐
-                        </button>
-                    </div>
-                    <div id="cartridges-grid" class="status-grid"></div>
-                </div>
-            </details>
-
-            <!-- 備料庫存區塊 -->
-            <div class="sec-head">
-                <div>
-                    <div class="sec-title">材料庫存總覽</div>
-                    <p class="sec-sub">倉庫存量 + 樹脂槽內存量 + 機台上存量的彙整。</p>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                    <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
-                        <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
-                    </button>
-                    <button data-editor-only class="btn-primary" onclick="showStockModal()">
-                        <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
-                    </button>
-                    <button id="stock-edit-mode-btn" data-editor-only class="btn-ghost" onclick="toggleStockEditMode()" style="display:none">
-                        <i data-lucide="pencil" style="width:13px;height:13px"></i> 編輯模式
-                    </button>
-                    <button id="stock-edit-done-btn" class="btn-primary" onclick="toggleStockEditMode()" style="display:none;background:var(--ok)">
-                        <i data-lucide="check" style="width:13px;height:13px"></i> 完成編輯
-                    </button>
-                </div>
+        <!-- 材料庫存總覽表格（可收折，預設展開）-->
+        <details class="collapse" open id="stock-table-collapse">
+          <summary style="justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
+              <i data-lucide="table" style="width:14px;height:14px;color:var(--accent)"></i>
+              材料庫存總覽
+              <span class="hint">各材料倉庫＋槽內＋機台的彙整</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation()">
+              <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
+                <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
+              </button>
+              <button data-editor-only class="btn-primary" onclick="showStockModal()">
+                <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
+              </button>
+              <button id="stock-edit-mode-btn" data-editor-only class="btn-ghost" onclick="toggleStockEditMode()" style="display:none">
+                <i data-lucide="pencil" style="width:13px;height:13px"></i> 編輯模式
+              </button>
+              <button id="stock-edit-done-btn" class="btn-primary" onclick="toggleStockEditMode()" style="display:none;background:var(--ok)">
+                <i data-lucide="check" style="width:13px;height:13px"></i> 完成編輯
+              </button>
+            </div>
+          </summary>
+          <div class="collapse-body" style="padding:0">
+            <!-- 編輯模式 banner -->
+            <div id="stock-edit-banner" style="display:none;padding:8px 14px;background:#f0fdf4;border-bottom:0.5px solid #86efac">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#15803d">
+                <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0"></span>
+                <strong>編輯模式已開啟</strong> — 可直接修改樹脂槽內存量、倉庫存量與備註，完成後點「完成編輯」
+                <button class="btn-primary" onclick="toggleStockEditMode()" style="margin-left:auto;font-size:11px;padding:3px 10px;background:var(--ok);border:none;border-radius:6px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:4px">
+                  <i data-lucide="check" style="width:12px;height:12px"></i> 完成編輯
+                </button>
+              </div>
+            </div>
+            <!-- 圖例 -->
+            <div style="display:flex;gap:12px;padding:8px 14px 4px;flex-wrap:wrap">
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-3)"><span style="width:10px;height:10px;border-radius:2px;background:#fee2e2;border:0.5px solid #fca5a5;display:inline-block"></span>需叫料：總庫存 &lt; 安全庫存</span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-3)"><span style="width:10px;height:10px;border-radius:2px;background:#fefce8;border:0.5px solid #fde047;display:inline-block"></span>注意：總庫存 &lt; 安全庫存 + 0.5 L</span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-3)"><span style="width:10px;height:10px;border-radius:2px;background:#dcfce7;border:0.5px solid #86efac;display:inline-block"></span>充足</span>
             </div>
             <!-- 篩選工具列 -->
-            <div class="outer-card" style="margin-bottom:0">
-            <div class="filters">
+            <div class="filters" style="padding:4px 14px 6px">
                 <span class="lbl">篩選：</span>
                 <select id="stock-filter-status" onchange="renderStockTable()">
                     <option value="">全部狀態</option>
@@ -547,7 +531,8 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                 <input type="text" id="stock-filter-name" oninput="renderStockTable()" placeholder="搜尋材料名稱..." style="width:160px">
                 <button class="clear" onclick="resetStockFilters()">清除</button>
             </div>
-            <div id="stock-table-wrap" class="table-wrap">
+            <!-- 表格 -->
+            <div id="stock-table-wrap" class="table-wrap" style="border-radius:0">
                 <table id="stock-table" style="table-layout:fixed;width:100%">
                     <colgroup>
                         <col style="min-width:120px" data-stock-col="0">
@@ -578,10 +563,11 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                     <tbody id="stock-table-body"></tbody>
                 </table>
             </div>
-            </div>
+          </div>
+        </details>
       </div>
 
-      <!-- ══ 消耗記錄 ══ -->
+                  <!-- ══ 消耗記錄 ══ -->
       <div class="tab-panel hidden" id="panel-history">
             <div class="sec-head">
               <div>
@@ -1204,9 +1190,9 @@ function showToast(msg,type) {
 }
 
 function switchTab(tab) {
-    if (tab === 'cartridges') tab = 'stock';  // 舊版相容：cartridges 已合併到 stock
+    if (tab === 'cartridges' || tab === 'stock') tab = 'overview';
     currentTab=tab;
-    ['overview','stock','history','monthly'].forEach(t=>{
+    ['overview','history','monthly'].forEach(t=>{
         document.getElementById('panel-'+t).classList.toggle('hidden',t!==tab);
         const btn = document.getElementById('tab-'+t);
         if (btn) btn.classList.toggle('active',t===tab);
@@ -1507,18 +1493,22 @@ function toggleStockEditMode() {
     const doneBtn  = document.getElementById('stock-edit-done-btn');
     const actCol   = document.getElementById('stock-actions-col');
     const actTh    = document.getElementById('stock-actions-th');
+    const banner   = document.getElementById('stock-edit-banner');
     if(window.stockEditMode) {
         if(editBtn)  editBtn.style.display='none';
         if(doneBtn)  doneBtn.style.display='';
         if(actCol)   { actCol.style.width='60px'; actCol.style.overflow=''; }
         if(actTh)    { actTh.style.width='60px'; actTh.style.overflow=''; actTh.style.padding='10px 12px'; actTh.textContent='操作'; }
+        if(banner)   banner.style.display='';
     } else {
         if(editBtn)  editBtn.style.display='';
         if(doneBtn)  doneBtn.style.display='none';
         if(actCol)   { actCol.style.width='0px'; actCol.style.overflow='hidden'; }
         if(actTh)    { actTh.style.width='0px'; actTh.style.overflow='hidden'; actTh.style.padding='0'; actTh.textContent=''; }
+        if(banner)   banner.style.display='none';
     }
     renderStockTable();
+    lucide.createIcons();
 }
 
 // ══ 備料庫存表格：欄位寬度拖曳 ══
@@ -2540,7 +2530,7 @@ function renderAll() {
     initOverviewResize();
     initOverviewTableResize();
     initStockTableResize();
-    // 顯示編輯模式按鈕（僅編輯者）
+    // 顯示編輯模式按鈕（僅編輯者）— panel-overview 常駐，直接設定
     const editModeBtn = document.getElementById('stock-edit-mode-btn');
     const doneModeBtn = document.getElementById('stock-edit-done-btn');
     if(editModeBtn && isEditor) {

@@ -1252,8 +1252,12 @@ function getStockTotal(material) {
     return inv.stock[material]?.total_ml || 0;
 }
 
+function getSlotTotal(material) {
+    return Math.round(((inv.stock[material]?.bottles || 0) * ML_PER_BOTTLE) * 10) / 10;
+}
+
 function getTotalInventory(material) {
-    return getCartridgeTotal(material) + getStockTotal(material);
+    return getCartridgeTotal(material) + getSlotTotal(material) + getStockTotal(material);
 }
 
 function getSafetyStock(material) {
@@ -1974,20 +1978,20 @@ async function updateStockBottles(material, value) {
     if(isNaN(bottles) || bottles < 0){ showToast('請輸入有效的罐數','error'); renderStockTable(); return; }
 
     if(!inv.stock[material]) inv.stock[material]={bottles:0,total_ml:0};
-    const oldMl = inv.stock[material].total_ml || 0;
+    const oldMl = Math.round((inv.stock[material].bottles || 0) * ML_PER_BOTTLE * 10) / 10;
     const newMl = Math.round(bottles * ML_PER_BOTTLE * 10) / 10;
     const diff  = Math.round((newMl - oldMl) * 10) / 10;
 
     inv.stock[material].bottles  = bottles;
-    inv.stock[material].total_ml = newMl;
+    // 注意：不修改 total_ml（倉庫存量），兩欄位獨立
     inv.stock[material].updated_at = new Date().toISOString();
     inv.stock[material].updated_by = 'manual';
 
     if(diff !== 0){
-        addHistory({type:'manual',material,printer:'備料庫存',ml:diff,note:`調整為 ${bottles} 罐`});
+        addHistory({type:'manual',material,printer:'樹脂槽內存量',ml:diff,note:`槽內存量調整為 ${bottles} 罐`});
     }
     renderAll();
-    await saveAll(`調整備料：${matName(material)} → ${bottles} 罐`);
+    await saveAll(`調整槽內存量：${matName(material)} → ${bottles} 罐`);
 }
 
 // 直接在表格修改安全庫存（輸入罐數，換算成 ml 儲存）

@@ -1570,6 +1570,8 @@ function toggleStockEditMode() {
         });
     }
 
+    // 重新渲染表格，確保所有 input 的 disabled 狀態、樣式都正確反映編輯模式
+    renderStockTable();
     lucide.createIcons();
 }
 
@@ -2599,6 +2601,15 @@ function renderAll() {
     const doneModeBtn = document.getElementById('stock-edit-done-btn');
     if(editModeBtn) editModeBtn.style.display = (isEditor && !window.stockEditMode) ? '' : 'none';
     if(doneModeBtn) doneModeBtn.style.display = (isEditor && window.stockEditMode)  ? '' : 'none';
+    // 還原收折狀態（防止 renderOverview/renderCartridges 等重設後 display 被覆蓋）
+    const matInvBody = document.getElementById('mat-inv-body');
+    const matInvChev = document.getElementById('mat-inv-chev');
+    if(matInvBody) matInvBody.style.display = (window._matInvOpen !== false) ? '' : 'none';
+    if(matInvChev) matInvChev.style.transform = (window._matInvOpen !== false) ? '' : 'rotate(-90deg)';
+    const stockTableWrap = document.getElementById('stock-table-body-wrap');
+    const stockTableChev = document.getElementById('stock-table-chev');
+    if(stockTableWrap) stockTableWrap.style.display = (window._stockTableOpen !== false) ? '' : 'none';
+    if(stockTableChev) stockTableChev.style.transform = (window._stockTableOpen !== false) ? '' : 'rotate(-90deg)';
 }
 
 // ══ 重新載入資料（unsubscribe → subscribe 強制重拉）══

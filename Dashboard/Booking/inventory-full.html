@@ -259,6 +259,9 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
 .ov-resizer{position:absolute;right:0;top:0;width:6px;height:100%;cursor:col-resize;user-select:none}
 .ov-resizer:hover,.ov-resizer.active{background:var(--accent)}
 .ov-table tbody tr.is-low{background:#fdf3ea}
+.stock-resizable{position:relative;white-space:nowrap;overflow:hidden}
+#stock-table{table-layout:fixed}
+.stock-edit-banner{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--accent);font-weight:600;padding:4px 10px;background:var(--accent-soft);border-radius:6px}
 
 @media(max-width:960px){
   .shell-sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%);width:224px}
@@ -437,8 +440,8 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
           </div>
         </div>
 
-        <div class="ov-resize-wrap" id="ov-resize-wrap">
-          <div class="ov-left" id="ov-left">
+        <div id="ov-resize-wrap" style="margin-bottom:16px">
+          <div id="ov-left" style="width:100%">
             <div class="sec-head" style="margin-bottom:8px">
               <div></div>
               <div class="seg" id="ov-col-toggle">
@@ -452,18 +455,13 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
             </div>
             <div class="ov-stats-row" id="ov-stats-row"></div>
           </div>
-
-          <div class="ov-handle" id="ov-handle"><div class="ov-handle-bar"></div></div>
-
-          <div class="ov-right" id="ov-right">
-            <div class="sec-title" style="font-size:12px;margin-bottom:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px;color:var(--danger)"></i>材料庫存不足</div>
-            <div class="ov-low-list" id="ov-low-list"></div>
-          </div>
+          <!-- 右側庫存不足面板已移除 -->
+          <div id="ov-right" style="display:none"><div id="ov-low-list"></div></div>
         </div>
 
         <div style="border-top:1px solid var(--line-soft);padding-top:14px">
           <div class="sec-title" style="font-size:12px;margin-bottom:8px"><i data-lucide="table" style="width:13px;height:13px;color:var(--accent)"></i>庫存總覽表格</div>
-          <p class="muted" style="text-transform:none;letter-spacing:0;margin-bottom:8px;color:var(--accent)">↔ 拖曳欄位邊界可調整該欄寬度</p>
+
           <div class="ov-table-wrap">
             <table class="ov-table" id="ov-table">
               <colgroup>
@@ -518,9 +516,20 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                     <div class="sec-title">備料庫存</div>
                     <p class="sec-sub">尚未放入機器的備用料罐庫存。</p>
                 </div>
-                <button data-editor-only class="btn-primary" onclick="showStockModal()">
-                    <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
-                </button>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
+                        <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
+                    </button>
+                    <button data-editor-only class="btn-primary" onclick="showStockModal()">
+                        <i data-lucide="package-plus" style="width:14px;height:14px"></i> 新增入庫
+                    </button>
+                    <button id="stock-edit-mode-btn" data-editor-only class="btn-ghost" onclick="toggleStockEditMode()" style="display:none">
+                        <i data-lucide="pencil" style="width:13px;height:13px"></i> 編輯模式
+                    </button>
+                    <button id="stock-edit-done-btn" class="btn-primary" onclick="toggleStockEditMode()" style="display:none;background:var(--ok)">
+                        <i data-lucide="check" style="width:13px;height:13px"></i> 完成編輯
+                    </button>
+                </div>
             </div>
             <!-- 篩選工具列 -->
             <div class="outer-card" style="margin-bottom:0">
@@ -533,24 +542,31 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                 </select>
                 <input type="text" id="stock-filter-name" oninput="renderStockTable()" placeholder="搜尋材料名稱..." style="width:160px">
                 <button class="clear" onclick="resetStockFilters()">清除</button>
-                <div style="flex:1"></div>
-                <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
-                    <i data-lucide="eye-off" style="width:13px;height:13px"></i> 已停用材料 (<span id="disabled-count">0</span>)
-                </button>
             </div>
             <div id="stock-table-wrap" class="table-wrap">
-                <table>
+                <table id="stock-table" style="table-layout:fixed;width:100%">
+                    <colgroup>
+                        <col style="min-width:120px" data-stock-col="0">
+                        <col style="width:110px" data-stock-col="1">
+                        <col style="width:100px" data-stock-col="2">
+                        <col style="width:110px" data-stock-col="3">
+                        <col style="width:120px" data-stock-col="4">
+                        <col style="width:80px" data-stock-col="5">
+                        <col style="width:160px" data-stock-col="6">
+                        <col style="width:130px" data-stock-col="7">
+                        <col id="stock-actions-col" style="width:0px;overflow:hidden" data-stock-col="8">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th class="sortable" onclick="stockSortBy('material')">材料名稱<span id="stock-sort-material" class="sort"></span></th>
-                            <th class="sortable" style="text-align:right" onclick="stockSortBy('bottles')">數量 (L)<span id="stock-sort-bottles" class="sort"></span></th>
-                            <th class="sortable" style="text-align:right" onclick="stockSortBy('total_ml')">備料 (L)<span id="stock-sort-total_ml" class="sort"></span></th>
-                            <th class="sortable" style="text-align:right" onclick="stockSortBy('on_machine')">機台上 (L)<span id="stock-sort-on_machine" class="sort"></span></th>
-                            <th class="sortable" style="text-align:right" onclick="stockSortBy('safety')">安全庫存 (L)<span id="stock-sort-safety" class="sort"></span></th>
-                            <th class="sortable" onclick="stockSortBy('status')">狀態<span id="stock-sort-status" class="sort"></span></th>
-                            <th>備註</th>
-                            <th>最後更新</th>
-                            <th style="text-align:center">操作</th>
+                            <th class="sortable stock-resizable" onclick="stockSortBy('material')">材料名稱<span id="stock-sort-material" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('bottles')">數量 (L)<span id="stock-sort-bottles" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('total_ml')">備料 (L)<span id="stock-sort-total_ml" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('on_machine')">機台上 (L)<span id="stock-sort-on_machine" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('safety')">安全庫存 (L)<span id="stock-sort-safety" class="sort"></span></th>
+                            <th class="sortable stock-resizable" onclick="stockSortBy('status')">狀態<span id="stock-sort-status" class="sort"></span></th>
+                            <th class="stock-resizable">備註</th>
+                            <th class="stock-resizable">最後更新</th>
+                            <th id="stock-actions-th" style="text-align:center;width:0px;overflow:hidden;padding:0;border:none"></th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-body"></tbody>
@@ -1364,7 +1380,7 @@ function renderOverview() {
         const card=document.createElement('div');
         card.className=`ov-mat-card${low?' is-low':''}${compact?' compact':''}`;
         card.dataset.mat=m;
-        const gaugeSize = compact?40:50;
+        const gaugeSize = compact?52:68;
         if(compact){
             card.innerHTML=`
                 <div style="position:relative;width:${gaugeSize}px;height:${gaugeSize}px;flex-shrink:0"><canvas id="${canvasId}"></canvas></div>
@@ -1469,21 +1485,61 @@ function renderOverview() {
 
 // ══ 庫存總覽：欄寬拖曳 ══
 function initOverviewResize() {
-    const wrap=document.getElementById('ov-resize-wrap');
-    const left=document.getElementById('ov-left');
-    const handle=document.getElementById('ov-handle');
-    if(!wrap || !left || !handle || handle._inited) return;
-    handle._inited=true;
-    let dragging=false;
-    handle.addEventListener('mousedown', e=>{ dragging=true; handle.classList.add('dragging'); e.preventDefault(); });
-    document.addEventListener('mousemove', e=>{
-        if(!dragging) return;
-        const rect=wrap.getBoundingClientRect();
-        let pct=((e.clientX-rect.left)/rect.width)*100;
-        pct=Math.max(30,Math.min(80,pct));
-        left.style.flex='0 0 '+pct+'%';
+    // 左右拖曳把手已移除，此函數保留為空以避免呼叫錯誤
+}
+
+// ══ 備料庫存：編輯模式切換 ══
+window.stockEditMode = false;
+function toggleStockEditMode() {
+    window.stockEditMode = !window.stockEditMode;
+    const editBtn  = document.getElementById('stock-edit-mode-btn');
+    const doneBtn  = document.getElementById('stock-edit-done-btn');
+    const actCol   = document.getElementById('stock-actions-col');
+    const actTh    = document.getElementById('stock-actions-th');
+    if(window.stockEditMode) {
+        if(editBtn)  editBtn.style.display='none';
+        if(doneBtn)  doneBtn.style.display='';
+        if(actCol)   { actCol.style.width='60px'; actCol.style.overflow=''; }
+        if(actTh)    { actTh.style.width='60px'; actTh.style.overflow=''; actTh.style.padding='10px 12px'; actTh.textContent='操作'; }
+    } else {
+        if(editBtn)  editBtn.style.display='';
+        if(doneBtn)  doneBtn.style.display='none';
+        if(actCol)   { actCol.style.width='0px'; actCol.style.overflow='hidden'; }
+        if(actTh)    { actTh.style.width='0px'; actTh.style.overflow='hidden'; actTh.style.padding='0'; actTh.textContent=''; }
+    }
+    renderStockTable();
+}
+
+// ══ 備料庫存表格：欄位寬度拖曳 ══
+function initStockTableResize() {
+    const table = document.getElementById('stock-table');
+    if(!table || table._stockResizeInited) return;
+    table._stockResizeInited = true;
+    table.querySelectorAll('th.stock-resizable').forEach((th, idx) => {
+        th.style.position = 'relative';
+        const resizer = document.createElement('span');
+        resizer.style.cssText = 'position:absolute;right:0;top:0;width:6px;height:100%;cursor:col-resize;user-select:none;z-index:1';
+        resizer.addEventListener('mouseenter', ()=>resizer.style.background='var(--accent)');
+        resizer.addEventListener('mouseleave', ()=>{ if(!resizer._dragging) resizer.style.background=''; });
+        th.appendChild(resizer);
+        const col = table.querySelector(`col[data-stock-col="${idx}"]`);
+        let startX, startW;
+        resizer.addEventListener('mousedown', e => {
+            startX = e.clientX; startW = th.offsetWidth;
+            resizer._dragging = true;
+            resizer.style.background = 'var(--accent)';
+            e.preventDefault(); e.stopPropagation();
+        });
+        document.addEventListener('mousemove', e => {
+            if(startX === undefined) return;
+            const newW = Math.max(60, startW + (e.clientX - startX));
+            if(col) col.style.width = newW + 'px';
+            th.style.minWidth = newW + 'px';
+        });
+        document.addEventListener('mouseup', () => {
+            if(startX !== undefined) { startX = undefined; resizer._dragging = false; resizer.style.background=''; }
+        });
     });
-    document.addEventListener('mouseup', ()=>{ dragging=false; handle.classList.remove('dragging'); });
 }
 
 // ══ 庫存總覽表格：欄位寬度拖曳 ══
@@ -1782,6 +1838,7 @@ function renderStockTable() {
 
     if(!mats.length){ tbody.innerHTML='<tr><td colspan="9" class="empty-row" style="text-align:center">'+(getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料')+'</td></tr>'; return; }
     tbody.innerHTML='';
+    const inEditMode = window.stockEditMode === true;
     mats.forEach(m=>{
         const s=inv.stock[m]||{bottles:0,total_ml:0};
         const safety=getSafetyStock(m);
@@ -1793,9 +1850,9 @@ function renderStockTable() {
         tr.innerHTML=`
             <td style="font-weight:700;color:var(--ink-2)">${matName(m)}</td>
             <td style="text-align:right">
-                <input type="number" min="0" step="1" value="${bottles}" ${isEditor?'':'disabled'}
+                <input type="number" min="0" step="1" value="${bottles}" ${inEditMode?'':'disabled'}
                     onchange="updateStockBottles('${me}', this.value)"
-                    style="width:70px;text-align:right;height:28px;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)">
+                    style="width:70px;text-align:right;height:28px;border:1px solid ${inEditMode?'var(--accent)':'var(--line)'};border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:${inEditMode?'var(--bg)':'var(--bg-soft)'};color:var(--ink)">
                 <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
             <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${(((s.total_ml||0))/1000).toFixed(1)} L</td>
@@ -1806,17 +1863,17 @@ function renderStockTable() {
             </td>
             <td>${low?'<span class="tag col-red">需叫料</span>':'<span class="tag col-green">充足</span>'}</td>
             <td>
-                <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="備註" ${isEditor?'':'disabled'}
+                <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="${inEditMode?'輸入備註...':''}" ${inEditMode?'':'disabled'}
                     onchange="updateStockNote('${me}', this.value)"
-                    style="width:100%;height:28px;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:var(--bg);color:var(--ink)">
+                    style="width:100%;height:28px;border:1px solid ${inEditMode?'var(--accent)':'transparent'};border-radius:6px;padding:0 ${inEditMode?'6':'0'}px;font-size:12.5px;font-family:inherit;background:${inEditMode?'var(--bg)':'transparent'};color:var(--ink)">
             </td>
             <td class="muted" style="text-transform:none;letter-spacing:0">
                 ${s.updated_at?new Date(s.updated_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
             </td>
-            <td class="actions">
+            <td class="actions stock-edit-col" style="${inEditMode?'':'display:none'}">
                 ${isEditor?`<button onclick="deleteStock('${me}')" title="刪除此材料" class="actbtn danger">
                     <i data-lucide="trash-2" style="width:14px;height:14px"></i>
-                </button>`:'<span class="muted" style="text-transform:none">—</span>'}
+                </button>`:''}
             </td>
         `;
         tbody.appendChild(tr);
@@ -2459,6 +2516,16 @@ function renderAll() {
     lucide.createIcons();
     initOverviewResize();
     initOverviewTableResize();
+    initStockTableResize();
+    // 顯示編輯模式按鈕（僅編輯者）
+    const editModeBtn = document.getElementById('stock-edit-mode-btn');
+    const doneModeBtn = document.getElementById('stock-edit-done-btn');
+    if(editModeBtn && isEditor) {
+        editModeBtn.style.display = window.stockEditMode ? 'none' : '';
+    }
+    if(doneModeBtn) {
+        doneModeBtn.style.display = window.stockEditMode ? '' : 'none';
+    }
 }
 
 // ══ 重新載入資料（unsubscribe → subscribe 強制重拉）══

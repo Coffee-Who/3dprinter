@@ -1333,10 +1333,10 @@ function renderOverview() {
 
     let mats=getAllMaterials();
     if(!mats.length){
-        grid.innerHTML='<div class="empty-msg">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>';
-        lowList.innerHTML='';
-        statsRow.innerHTML='';
-        tableBody.innerHTML='';
+        if(grid) grid.innerHTML='<div class="empty-msg">尚無庫存資料，請先在「機台樹脂罐」頁面手動輸入樹脂罐資訊。</div>';
+        if(lowList) lowList.innerHTML='';
+        if(statsRow) statsRow.innerHTML='';
+        if(tableBody) tableBody.innerHTML='';
         return;
     }
     // 排序：需叫料優先（依嚴重程度：總庫存缺口大者在前），其次依備料庫存高到低
@@ -1351,11 +1351,12 @@ function renderOverview() {
         return getStockTotal(b) - getStockTotal(a);
     });
 
+    if(!grid) return;
     grid.style.gridTemplateColumns = `repeat(${overviewCols},1fr)`;
     const compact = overviewCols >= 6;
     grid.innerHTML='';
-    lowList.innerHTML='';
-    tableBody.innerHTML='';
+    if(lowList) lowList.innerHTML='';
+    if(tableBody) tableBody.innerHTML='';
 
     let totalAll=0, cartAll=0, stockAll=0, lowCount=0;
 
@@ -1443,10 +1444,10 @@ function renderOverview() {
             <td style="text-align:right">${(stockTotal/1000).toFixed(1)}</td>
             <td><span class="tag ${low?'col-red':'col-green'}">${low?'需叫料':'充足'}</span></td>
         `;
-        tableBody.appendChild(tr);
+        if(tableBody) tableBody.appendChild(tr);
     });
 
-    if(!lowCount){
+    if(!lowCount && lowList){
         lowList.innerHTML='<div style="text-align:center;padding:20px;color:var(--ok);font-size:11px;background:var(--ok-soft);border-radius:8px">目前庫存充足</div>';
     }
 
@@ -1601,6 +1602,7 @@ function buildLiveStatusHTML(printer) {
 
 function renderCartridges() {
     const grid = document.getElementById('cartridges-grid');
+    if(!grid) return;
     grid.innerHTML = '';
     TRACKED_PRINTERS.forEach(printer => {
         const slots = inv.cartridges[printer] || [];
@@ -1839,6 +1841,7 @@ function renderStockTable() {
         return 0;
     });
 
+    if(!tbody) return;
     if(!mats.length){ tbody.innerHTML=`<tr><td colspan="10" class="empty-row" style="text-align:center">${getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料'}</td></tr>`; return; }
     tbody.innerHTML='';
     const inEditMode = window.stockEditMode === true;

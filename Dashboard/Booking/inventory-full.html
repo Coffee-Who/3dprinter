@@ -1521,25 +1521,55 @@ function toggleStockTableCollapse() {
 window.stockEditMode = false;
 function toggleStockEditMode() {
     window.stockEditMode = !window.stockEditMode;
-    const editBtn  = document.getElementById('stock-edit-mode-btn');
-    const doneBtn  = document.getElementById('stock-edit-done-btn');
-    const actCol   = document.getElementById('stock-actions-col');
-    const actTh    = document.getElementById('stock-actions-th');
-    const banner   = document.getElementById('stock-edit-banner');
-    if(window.stockEditMode) {
-        if(editBtn)  editBtn.style.display='none';
-        if(doneBtn)  doneBtn.style.display='';
-        if(actCol)   { actCol.style.width='60px'; actCol.style.overflow=''; }
-        if(actTh)    { actTh.style.width='60px'; actTh.style.overflow=''; actTh.style.padding='10px 12px'; actTh.textContent='操作'; }
-        if(banner)   banner.style.display='';
-    } else {
-        if(editBtn)  editBtn.style.display='';
-        if(doneBtn)  doneBtn.style.display='none';
-        if(actCol)   { actCol.style.width='0px'; actCol.style.overflow='hidden'; }
-        if(actTh)    { actTh.style.width='0px'; actTh.style.overflow='hidden'; actTh.style.padding='0'; actTh.textContent=''; }
-        if(banner)   banner.style.display='none';
+    console.log('[editMode] toggled to:', window.stockEditMode);
+
+    // 直接操作 DOM，不依賴任何條件
+    const editBtn = document.getElementById('stock-edit-mode-btn');
+    const doneBtn = document.getElementById('stock-edit-done-btn');
+    const actCol  = document.getElementById('stock-actions-col');
+    const actTh   = document.getElementById('stock-actions-th');
+    const banner  = document.getElementById('stock-edit-banner');
+    const on = window.stockEditMode;
+
+    // 切換按鈕
+    if(editBtn) { editBtn.style.display = on ? 'none' : ''; }
+    if(doneBtn) { doneBtn.style.display = on ? '' : 'none'; }
+
+    // 顯示/隱藏 banner
+    if(banner) { banner.style.display = on ? '' : 'none'; }
+
+    // 顯示/隱藏 操作欄
+    if(actCol) { actCol.style.cssText = on ? 'width:60px' : 'width:0px;overflow:hidden'; }
+    if(actTh)  {
+        if(on) {
+            actTh.style.cssText = 'text-align:center;width:60px;padding:10px 12px';
+            actTh.textContent = '操作';
+        } else {
+            actTh.style.cssText = 'width:0px;overflow:hidden;padding:0;border:none';
+            actTh.textContent = '';
+        }
     }
-    renderStockTable();
+
+    // 直接更新每一列的 input，不重新渲染整個 table
+    const tbody = document.getElementById('stock-table-body');
+    if(tbody) {
+        tbody.querySelectorAll('input[type="number"], input[type="text"]').forEach(inp => {
+            inp.disabled = !on;
+            if(inp.type === 'number') {
+                inp.style.border = on ? '1px solid var(--accent)' : '1px solid var(--line)';
+                inp.style.background = on ? 'var(--bg)' : 'var(--bg-soft)';
+            } else {
+                inp.style.border = on ? '1px solid var(--accent)' : '1px solid transparent';
+                inp.style.background = on ? 'var(--bg)' : 'transparent';
+                inp.style.padding = on ? '0 6px' : '0';
+                inp.placeholder = on ? '輸入備註...' : '';
+            }
+        });
+        tbody.querySelectorAll('td.stock-edit-col, td.actions').forEach(td => {
+            td.style.display = on ? '' : 'none';
+        });
+    }
+
     lucide.createIcons();
 }
 

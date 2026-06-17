@@ -459,24 +459,34 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
           </div>
         </details>
 
-        <!-- 庫存總覽卡片 -->
-        <div id="ov-resize-wrap" style="margin-bottom:14px">
-          <div id="ov-left" style="width:100%">
-            <div class="sec-head" style="margin-bottom:8px">
-              <div></div>
-              <div class="seg" id="ov-col-toggle">
-                <button data-cols="2" onclick="setOverviewCols(2)">2欄</button>
-                <button data-cols="4" class="active" onclick="setOverviewCols(4)">4欄</button>
-                <button data-cols="6" onclick="setOverviewCols(6)">6欄</button>
+        <!-- 材料庫存（可收折）-->
+        <details class="collapse" open id="material-inventory-collapse" style="margin-bottom:14px">
+          <summary>
+            <i data-lucide="chevron-right" style="width:14px;height:14px" class="chev"></i>
+            <i data-lucide="package" style="width:14px;height:14px;color:var(--accent)"></i>
+            材料庫存
+            <span class="hint">各材料的即時庫存卡片總覽</span>
+          </summary>
+          <div class="collapse-body" style="padding:10px 0 0 0">
+            <div id="ov-resize-wrap">
+              <div id="ov-left" style="width:100%">
+                <div class="sec-head" style="margin-bottom:8px">
+                  <div></div>
+                  <div class="seg" id="ov-col-toggle">
+                    <button data-cols="2" onclick="setOverviewCols(2)">2欄</button>
+                    <button data-cols="4" class="active" onclick="setOverviewCols(4)">4欄</button>
+                    <button data-cols="6" onclick="setOverviewCols(6)">6欄</button>
+                  </div>
+                </div>
+                <div id="ov-card-grid" class="ov-card-grid" style="grid-template-columns:repeat(4,1fr)">
+                    <div class="empty-msg">載入中...</div>
+                </div>
+                <div class="ov-stats-row" id="ov-stats-row"></div>
               </div>
+              <div id="ov-right" style="display:none"><div id="ov-low-list"></div></div>
             </div>
-            <div id="ov-card-grid" class="ov-card-grid" style="grid-template-columns:repeat(4,1fr)">
-                <div class="empty-msg">載入中...</div>
-            </div>
-            <div class="ov-stats-row" id="ov-stats-row"></div>
           </div>
-          <div id="ov-right" style="display:none"><div id="ov-low-list"></div></div>
-        </div>
+        </details>
 
         <!-- 材料庫存總覽表格（可收折，預設展開）-->
         <details class="collapse" open id="stock-table-collapse">
@@ -2533,14 +2543,14 @@ function renderAll() {
     initOverviewResize();
     initOverviewTableResize();
     initStockTableResize();
-    // 顯示編輯模式按鈕（僅編輯者）— panel-overview 常駐，直接設定
+    // 顯示編輯模式按鈕（僅編輯者）— 每次 renderAll 都重設，確保時序正確
     const editModeBtn = document.getElementById('stock-edit-mode-btn');
     const doneModeBtn = document.getElementById('stock-edit-done-btn');
-    if(editModeBtn && isEditor) {
-        editModeBtn.style.display = window.stockEditMode ? 'none' : '';
+    if(editModeBtn) {
+        editModeBtn.style.display = (isEditor && !window.stockEditMode) ? '' : 'none';
     }
     if(doneModeBtn) {
-        doneModeBtn.style.display = window.stockEditMode ? '' : 'none';
+        doneModeBtn.style.display = (isEditor && window.stockEditMode) ? '' : 'none';
     }
 }
 

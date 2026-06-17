@@ -504,10 +504,12 @@ function TableView({ data, setData }) {
   const [sortDir, setSortDir] = useStateT('asc');
   const [page, setPage] = useStateT(1);
   const [pageSize, setPageSize] = useStateT(20);
+  const [hideDone, setHideDone] = useStateT(true);
 
   const filtered = useMemoT(() => {
     let arr = K.applyFilters(data, { search, engineer: engF, machine: machF, status: statusF });
     if (matF) arr = arr.filter(d => d.material === matF);
+    if (hideDone && !statusF) arr = arr.filter(d => K.statusOf(d) !== 'done' && K.statusOf(d) !== 'cancelled');
     arr = [...arr].sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       const va = a[sortKey], vb = b[sortKey];
@@ -580,7 +582,10 @@ function TableView({ data, setData }) {
           <option value="">所有材料狀況</option>
           {K.MATERIALS.map(m=><option key={m} value={m}>{m}</option>)}
         </select>
-        <button className="t-btn" onClick={()=>{setSearch('');setEngF('');setMachF('');setStatusF('');setMatF('');}}>清除</button>
+        <button className={`t-pill-btn${!hideDone?' active':''}`} onClick={()=>{setHideDone(v=>!v);setPage(1);}}>
+          {hideDone ? '顯示已完成' : '👁 顯示已完成'}
+        </button>
+        <button className="t-btn" onClick={()=>{setSearch('');setEngF('');setMachF('');setStatusF('');setMatF('');setHideDone(true);setPage(1);}}>清除</button>
       </div>
       <div className="table-wrap">
         <table className="kt">

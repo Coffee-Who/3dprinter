@@ -114,6 +114,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .col-blue{background:var(--accent-soft);color:var(--accent)}.dot-blue{background:#0c7a99}
 .col-yellow{background:var(--warn-soft);color:#8b6b13}.dot-yellow{background:#c79b2a}
 .col-red{background:var(--danger-soft);color:var(--danger)}.dot-red{background:#c0392b}
+.col-amber{background:#fef9c3;color:#92400e}
 .col-indigo{background:var(--indigo-soft);color:var(--indigo)}.dot-indigo{background:#4f46c7}
 .col-orange{background:#fde6d2;color:#a35a17}.dot-orange{background:#e08a39}
 .col-gray{background:var(--line-soft);color:var(--ink-4)}.dot-gray{background:#b4b7bd}
@@ -166,6 +167,8 @@ tbody tr:hover{background:var(--bg-soft)}
 tbody tr:last-child td{border-bottom:0}
 tbody tr.is-low{background:#fdf3ea}
 tbody tr.is-low:hover{background:#fbe9d9}
+tbody tr.is-warn{background:#fefce8}
+tbody tr.is-warn:hover{background:#fef9c3}
 .date-cell{font-weight:700;color:var(--ink-2);white-space:nowrap}
 .tag{display:inline-flex;align-items:center;height:20px;padding:0 8px;font-size:11px;border-radius:999px;font-weight:600;white-space:nowrap}
 .mono{font-family:var(--font-mono);color:var(--ink-2)}
@@ -513,8 +516,8 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
             <!-- 備料庫存區塊 -->
             <div class="sec-head">
                 <div>
-                    <div class="sec-title">備料庫存</div>
-                    <p class="sec-sub">尚未放入機器的備用料罐庫存。</p>
+                    <div class="sec-title">材料庫存總覽</div>
+                    <p class="sec-sub">倉庫存量 + 樹脂槽內存量 + 機台上存量的彙整。</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
                     <button data-editor-only class="btn-ghost warn" onclick="showDisabledMaterialsModal()">
@@ -538,6 +541,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                 <select id="stock-filter-status" onchange="renderStockTable()">
                     <option value="">全部狀態</option>
                     <option value="low">僅需叫料</option>
+                    <option value="warn">注意庫存</option>
                     <option value="ok">僅充足</option>
                 </select>
                 <input type="text" id="stock-filter-name" oninput="renderStockTable()" placeholder="搜尋材料名稱..." style="width:160px">
@@ -548,21 +552,23 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                     <colgroup>
                         <col style="min-width:120px" data-stock-col="0">
                         <col style="width:110px" data-stock-col="1">
-                        <col style="width:100px" data-stock-col="2">
+                        <col style="width:110px" data-stock-col="2">
                         <col style="width:110px" data-stock-col="3">
-                        <col style="width:120px" data-stock-col="4">
-                        <col style="width:80px" data-stock-col="5">
-                        <col style="width:160px" data-stock-col="6">
-                        <col style="width:130px" data-stock-col="7">
-                        <col id="stock-actions-col" style="width:0px;overflow:hidden" data-stock-col="8">
+                        <col style="width:110px" data-stock-col="4">
+                        <col style="width:120px" data-stock-col="5">
+                        <col style="width:80px" data-stock-col="6">
+                        <col style="width:160px" data-stock-col="7">
+                        <col style="width:130px" data-stock-col="8">
+                        <col id="stock-actions-col" style="width:0px;overflow:hidden" data-stock-col="9">
                     </colgroup>
                     <thead>
                         <tr>
                             <th class="sortable stock-resizable" onclick="stockSortBy('material')">材料名稱<span id="stock-sort-material" class="sort"></span></th>
-                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('bottles')">數量 (L)<span id="stock-sort-bottles" class="sort"></span></th>
-                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('total_ml')">備料 (L)<span id="stock-sort-total_ml" class="sort"></span></th>
-                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('on_machine')">機台上 (L)<span id="stock-sort-on_machine" class="sort"></span></th>
-                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('safety')">安全庫存 (L)<span id="stock-sort-safety" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('total')">總庫存 (L)<br><span style="font-size:10px;font-weight:400;opacity:0.6">倉庫＋槽內＋機台</span><span id="stock-sort-total" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('on_machine')">機台上存量 (L)<br><span style="font-size:10px;font-weight:400;opacity:0.6">Formlabs API 同步</span><span id="stock-sort-on_machine" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('bottles')">樹脂槽內存量 (L)<br><span style="font-size:10px;font-weight:400;opacity:0.6">槽位裡的樹脂</span><span id="stock-sort-bottles" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('total_ml')">倉庫存量 (L)<br><span style="font-size:10px;font-weight:400;opacity:0.6">尚未上機的備料</span><span id="stock-sort-total_ml" class="sort"></span></th>
+                            <th class="sortable stock-resizable" style="text-align:right" onclick="stockSortBy('safety')">安全庫存 (L)<br><span style="font-size:10px;font-weight:400;opacity:0.6">叫料警戒線</span><span id="stock-sort-safety" class="sort"></span></th>
                             <th class="sortable stock-resizable" onclick="stockSortBy('status')">狀態<span id="stock-sort-status" class="sort"></span></th>
                             <th class="stock-resizable">備註</th>
                             <th class="stock-resizable">最後更新</th>
@@ -1260,6 +1266,11 @@ function getSafetyStock(material) {
 function isLowStock(material) {
     return getTotalInventory(material) < getSafetyStock(material);
 }
+function isWarnStock(material) {
+    const total = getTotalInventory(material);
+    const safety = getSafetyStock(material);
+    return total >= safety && total < safety + 500; // 500ml = 0.5L
+}
 
 // ══ 叫料提醒 ══
 function renderAlerts() {
@@ -1795,7 +1806,7 @@ function resetStockFilters(){
     renderStockTable();
 }
 function updateStockSortIndicators(){
-    ['material','bottles','total_ml','on_machine','safety','status'].forEach(f=>{
+    ['material','bottles','total_ml','total','on_machine','safety','status'].forEach(f=>{
         const el=document.getElementById('stock-sort-'+f);
         if(!el) return;
         const th = el.closest('th');
@@ -1815,8 +1826,9 @@ function renderStockTable() {
     const fStatus = document.getElementById('stock-filter-status')?.value || '';
     const fName   = (document.getElementById('stock-filter-name')?.value || '').toLowerCase();
     mats = mats.filter(m=>{
-        if(fStatus==='low' && !isLowStock(m)) return false;
-        if(fStatus==='ok'  &&  isLowStock(m)) return false;
+        if(fStatus==='low'  && !isLowStock(m)) return false;
+        if(fStatus==='warn' && !isWarnStock(m)) return false;
+        if(fStatus==='ok'   && (isLowStock(m)||isWarnStock(m))) return false;
         if(fName && !(m.toLowerCase().includes(fName) || matName(m).toLowerCase().includes(fName))) return false;
         return true;
     });
@@ -1827,41 +1839,52 @@ function renderStockTable() {
         if(stockSortField==='material'){ ka=matName(a); kb=matName(b); }
         else if(stockSortField==='bottles'){ ka=(inv.stock[a]?.bottles||0); kb=(inv.stock[b]?.bottles||0); }
         else if(stockSortField==='total_ml'){ ka=(inv.stock[a]?.total_ml||0); kb=(inv.stock[b]?.total_ml||0); }
+        else if(stockSortField==='total'){ ka=getTotalInventory(a); kb=getTotalInventory(b); }
         else if(stockSortField==='on_machine'){ ka=getCartridgeTotal(a); kb=getCartridgeTotal(b); }
         else if(stockSortField==='safety'){ ka=getSafetyStock(a); kb=getSafetyStock(b); }
-        else if(stockSortField==='status'){ ka=isLowStock(a)?0:1; kb=isLowStock(b)?0:1; }
+        else if(stockSortField==='status'){ ka=isLowStock(a)?0:isWarnStock(a)?1:2; kb=isLowStock(b)?0:isWarnStock(b)?1:2; }
         const dir = stockSortDir==='asc'?1:-1;
         if(ka<kb) return -1*dir;
         if(ka>kb) return  1*dir;
         return 0;
     });
 
-    if(!mats.length){ tbody.innerHTML='<tr><td colspan="9" class="empty-row" style="text-align:center">'+(getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料')+'</td></tr>'; return; }
+    if(!mats.length){ tbody.innerHTML=`<tr><td colspan="10" class="empty-row" style="text-align:center">${getAllMaterials().length?'沒有符合篩選條件的資料':'尚無庫存資料'}</td></tr>`; return; }
     tbody.innerHTML='';
     const inEditMode = window.stockEditMode === true;
     mats.forEach(m=>{
         const s=inv.stock[m]||{bottles:0,total_ml:0};
         const safety=getSafetyStock(m);
         const low=isLowStock(m);
+        const warn=isWarnStock(m);
+        const total=getTotalInventory(m);
         const bottles=s.bottles||0;
         const me=m.replace(/'/g,"\\'");
         const tr=document.createElement('tr');
         if(low) tr.className='is-low';
+        else if(warn) tr.className='is-warn';
+        const totalColor = low ? 'var(--danger)' : warn ? '#b45309' : 'var(--ok)';
+        const statusBadge = low
+            ? '<span class="tag col-red">需叫料</span>'
+            : warn
+            ? '<span class="tag col-amber">注意</span>'
+            : '<span class="tag col-green">充足</span>';
         tr.innerHTML=`
             <td style="font-weight:700;color:var(--ink-2)">${matName(m)}</td>
+            <td style="text-align:right;font-weight:700;color:${totalColor}">${(total/1000).toFixed(1)} L</td>
+            <td style="text-align:right">${getCartridgeTotal(m) > 0 ? `${(getCartridgeTotal(m)/1000).toFixed(2)} L` : '<span class="muted" style="text-transform:none">—</span>'}</td>
             <td style="text-align:right">
                 <input type="number" min="0" step="1" value="${bottles}" ${inEditMode?'':'disabled'}
                     onchange="updateStockBottles('${me}', this.value)"
                     style="width:70px;text-align:right;height:28px;border:1px solid ${inEditMode?'var(--accent)':'var(--line)'};border-radius:6px;padding:0 6px;font-size:12.5px;font-family:inherit;background:${inEditMode?'var(--bg)':'var(--bg-soft)'};color:var(--ink)">
                 <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
-            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${(((s.total_ml||0))/1000).toFixed(1)} L</td>
-            <td style="text-align:right">${getCartridgeTotal(m) > 0 ? `${(getCartridgeTotal(m)/1000).toFixed(2)} L` : '<span class="muted" style="text-transform:none">—</span>'}</td>
+            <td style="text-align:right;font-weight:700;color:${low?'var(--danger)':'var(--ink-2)'}">${((s.total_ml||0)/1000).toFixed(1)} L</td>
             <td style="text-align:right">
                 <span style="font-weight:700">${(safety/1000).toFixed(1)}</span>
                 <span class="muted" style="text-transform:none;letter-spacing:0">L</span>
             </td>
-            <td>${low?'<span class="tag col-red">需叫料</span>':'<span class="tag col-green">充足</span>'}</td>
+            <td>${statusBadge}</td>
             <td>
                 <input type="text" value="${(s.note||'').replace(/"/g,'&quot;')}" placeholder="${inEditMode?'輸入備註...':''}" ${inEditMode?'':'disabled'}
                     onchange="updateStockNote('${me}', this.value)"

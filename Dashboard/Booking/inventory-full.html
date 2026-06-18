@@ -65,7 +65,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .sidebar-item-label{font-size:13px;font-weight:700;letter-spacing:-0.005em;line-height:1.1;white-space:nowrap}
 .sidebar-item-sub{font-size:9.5px;font-family:var(--font-mono);color:var(--ink-4);letter-spacing:0.08em;white-space:nowrap}
 .sidebar-foot{padding:14px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:var(--ink-4);display:flex;flex-direction:column;gap:3px}
-.sidebar-foot-name{color:var(--ink-2);font-weight:700}
+.sidebar-foot-date{color:var(--ink-2);font-feature-settings:'tnum'}
+.sb-divider{height:1px;background:var(--line);margin:8px 12px}
+.sb-admin-lbl{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px 2px}
 
 .shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .shell-top{display:flex;align-items:center;gap:18px;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;min-height:48px;flex-wrap:wrap}
@@ -385,20 +387,21 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
     <div class="sidebar-brand">
       <div class="shell-brand-mark"></div>
       <div>
-        <div class="shell-brand-title">3D 列印平台</div>
+        <div class="shell-brand-title">台中設備工程</div>
         <div class="shell-brand-sub">SWTC · PORTAL</div>
       </div>
     </div>
     <nav class="sidebar-nav">
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">工作看板</span><span class="sidebar-item-sub">WORK BOARD</span></div></a>
-      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="circle-alert" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">異常與資源</span><span class="sidebar-item-sub">ISSUES</span></div></a>
       <a class="sidebar-item" href="3DP-BK-full.html"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
-      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="box" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印樣品</span><span class="sidebar-item-sub">SAMPLES</span></div></a>
       <a class="sidebar-item active" href="inventory-full.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">材料庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
-      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="settings" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="circle-alert" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">異常與資源</span><span class="sidebar-item-sub">ISSUES</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="user" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
     </nav>
     <div class="sidebar-foot">
-      <span class="sidebar-foot-name" id="sidebar-user">—</span>
+      <span style="color:var(--ink-2);font-weight:600" id="sidebar-user">—</span>
+      <span class="sidebar-foot-date" id="sidebar-date"></span>
+      <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit;">登出</button>
       <span id="dateNow">—</span>
       <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit">登出</button>
     </div>
@@ -809,6 +812,7 @@ onAuthStateChanged(auth, async (user) => {
             currentUser = { uid: user.uid, email: user.email || '', displayName, role, permissions };
             isEditor = (role === 'admin' || role === 'editor');
             document.getElementById('sidebar-user').textContent = displayName;
+        const nd = new Date(); document.getElementById('sidebar-date').textContent = nd.getFullYear()+'/'+(nd.getMonth()+1).toString().padStart(2,'0')+'/'+nd.getDate().toString().padStart(2,'0');
             showApp();
             subscribeAll();
 

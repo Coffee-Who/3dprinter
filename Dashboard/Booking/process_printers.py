@@ -99,6 +99,19 @@ for p in printers:
     primary_material  = ''
     primary_level_pct = None
 
+    if not cartridge_list:
+        # 機台沒有樹脂罐（Cartridge missing），寫入佔位資料讓前端顯示
+        cartridges_out = [{
+            'slot':          'SINGLE',
+            'material':      '',
+            'initial_ml':    0,
+            'dispensed_ml':  0,
+            'remaining_ml':  None,
+            'remaining_pct': None,
+            'is_empty':      False,
+            'missing':       True,
+        }]
+
     for cs in cartridge_list:
         if not isinstance(cs, dict):
             continue

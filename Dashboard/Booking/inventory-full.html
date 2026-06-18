@@ -1700,6 +1700,15 @@ function renderCartridges() {
         let materialHTML;
         if (slots.length) {
             materialHTML = slots.map(slot => {
+                // API 回報 Cartridge missing
+                if (slot.missing) {
+                    return `
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);text-align:center;color:var(--ink-4);font-size:12.5px">
+                    <i data-lucide="package-x" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;opacity:0.5"></i>
+                    無樹脂罐（Cartridge Missing）<br>
+                    <span style="font-size:11px">請確認樹脂罐已正確安裝</span>
+                </div>`;
+                }
                 const slotLabel = slot.slot==='FRONT'?'前匣':slot.slot==='BACK'?'後匣':slot.slot==='SINGLE'?'單匣':slot.slot||'樹脂罐';
                 const noCapacity = slot.remaining_ml == null;
                 const pct = noCapacity ? null

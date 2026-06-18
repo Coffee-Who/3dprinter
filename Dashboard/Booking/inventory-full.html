@@ -731,6 +731,29 @@ const PRINTER_STATUS_PATH = 'Dashboard/Booking/printer-status.json';
 // 預設安全庫存（ml）
 const DEFAULT_SAFETY = 1000;
 
+// ══ 材料代碼 → 顯示名稱對照 ══
+const CODE_TO_NAME = {
+    'FLGPCL05':'Clear V5','FLGPWH05':'White V5','FLGPGR05':'Grey V5','FLGPBK05':'Black V5',
+    'FLFL8001':'Flexible 80A V1','FLFL8002':'Flexible 80A V2','FLHTAM02':'High Temp V2',
+    'FLRG4001':'Rigid 4000','FLRG1002':'Rigid 10K V1.1','FLFLES02':'Elastic 50A V2',
+    'FLESD001':'ESD Resin','FLSI4001':'Silicone 40A','FLTO1502':'Tough 1500 V2',
+    'FLTO2002':'Tough 2000 V2','FLFAMD01':'Fast Model','FLPRMD01':'Precision Model',
+    'FLFRGR01':'Flame Retardant','FLTO1501':'Tough 1500 V1.1','FLTO2001':'Tough 2000 V1.1',
+};
+const NAME_TO_CODE_FE = {};
+Object.entries(CODE_TO_NAME).forEach(([code,name])=>{ NAME_TO_CODE_FE[name]=code; });
+NAME_TO_CODE_FE['Flexible 80A']  = 'FLFL8002';
+NAME_TO_CODE_FE['Rigid 4000 V1'] = 'FLRG4001';
+
+function matName(code) {
+    return CODE_TO_NAME[code] || code;
+}
+function matCode(input) {
+    if(!input) return input;
+    if(CODE_TO_NAME[input]) return input;
+    return NAME_TO_CODE_FE[input] || input;
+}
+
 // 預設停用的舊版本材料（除非使用者主動恢復顯示）
 // 使用者要求不抓取以下材料
 const DEFAULT_DISABLED_NAMES = [
@@ -850,7 +873,8 @@ window.toggleSidebar = function(open){
 };
 function updateClock(){
     const d = new Date();
-    document.getElementById('dateNow').textContent = d.toLocaleDateString('zh-TW');
+    const el = document.getElementById('sidebar-date');
+    if(el) el.textContent = d.toLocaleDateString('zh-TW');
 }
 updateClock();
 setInterval(updateClock, 60000);
@@ -950,28 +974,6 @@ function subscribeAll() {
     });
 }
 
-// ══ 材料代碼 → 顯示名稱對照 ══
-const CODE_TO_NAME = {
-    'FLGPCL05':'Clear V5','FLGPWH05':'White V5','FLGPGR05':'Grey V5','FLGPBK05':'Black V5',
-    'FLFL8001':'Flexible 80A V1','FLFL8002':'Flexible 80A V2','FLHTAM02':'High Temp V2',
-    'FLRG4001':'Rigid 4000','FLRG1002':'Rigid 10K V1.1','FLFLES02':'Elastic 50A V2',
-    'FLESD001':'ESD Resin','FLSI4001':'Silicone 40A','FLTO1502':'Tough 1500 V2',
-    'FLTO2002':'Tough 2000 V2','FLFAMD01':'Fast Model','FLPRMD01':'Precision Model',
-    'FLFRGR01':'Flame Retardant','FLTO1501':'Tough 1500 V1.1','FLTO2001':'Tough 2000 V1.1',
-};
-const NAME_TO_CODE_FE = {};
-Object.entries(CODE_TO_NAME).forEach(([code,name])=>{ NAME_TO_CODE_FE[name]=code; });
-NAME_TO_CODE_FE['Flexible 80A']  = 'FLFL8002';
-NAME_TO_CODE_FE['Rigid 4000 V1'] = 'FLRG4001';
-
-function matName(code) {
-    return CODE_TO_NAME[code] || code;
-}
-function matCode(input) {
-    if(!input) return input;
-    if(CODE_TO_NAME[input]) return input;
-    return NAME_TO_CODE_FE[input] || input;
-}
 
 // ══ 機台代號 → 顯示名稱 ══
 const PRINTER_DISPLAY = {

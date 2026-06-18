@@ -1144,7 +1144,19 @@ async function autoSyncCartridges() {
             }
 
             const apiCartridges = p.cartridges || [];
-            if (!apiCartridges.length) return;
+
+            // 機台沒有樹脂罐（Cartridge missing）→ 寫入 missing 佔位，清掉舊資料
+            if (!apiCartridges.length) {
+                const missingSlot = [{ slot: 'SINGLE', material: '', remaining_ml: null, initial_ml: 0, missing: true, updated_at: p.updated_at || new Date().toISOString(), updated_by: 'auto' }];
+                const oldStr = JSON.stringify(inv.cartridges[key] || []);
+                const newStr = JSON.stringify(missingSlot);
+                if (oldStr !== newStr) {
+                    inv.cartridges[key] = missingSlot;
+                    changed = true;
+                }
+                renderCartridges();
+                return;
+            }
             // 用機台層級的 updated_at（cartridge 層級的 updated_at 在 API 中永遠是 null）
             const printerUpdatedAt = p.updated_at || new Date().toISOString();
 

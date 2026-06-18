@@ -35,10 +35,23 @@
   .brand-name{font-size:18px;font-weight:700;color:#16263d;}
   .brand-div{width:1px;height:14px;background:rgba(22,38,61,0.22);}
   .brand-sub{font-size:13px;font-weight:500;color:#6b7a90;}
+
+  /* Nav 右側：連結 + 登入區塊 */
+  .nav-right{display:flex;align-items:center;gap:14px;}
   .nav-links{display:flex;align-items:center;gap:32px;}
   .nav-links a{font-size:14.5px;font-weight:400;color:#6b7a90;text-decoration:none;}
   .nav-links a.active{font-weight:500;color:#2b3b54;}
-  .nav-cta{font-weight:600!important;color:#fff!important;padding:9px 22px;border-radius:999px;background:linear-gradient(145deg,#2563EB,#1d4ed8);box-shadow:0 6px 16px rgba(37,99,235,0.30);}
+
+  /* 登入按鈕（未登入） */
+  .login-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 22px;border-radius:999px;background:linear-gradient(145deg,#2563EB,#1d4ed8);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,0.30);transition:transform .2s ease,box-shadow .2s ease;font-family:inherit;}
+  .login-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(37,99,235,0.42);}
+
+  /* 已登入：使用者 chip */
+  .user-chip{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border-radius:999px;background:rgba(255,255,255,0.92);border:1.5px solid rgba(37,99,235,0.22);box-shadow:0 2px 10px rgba(37,99,235,0.12);}
+  .user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,#2563EB,#1d4ed8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0;}
+  .user-name{font-size:13.5px;font-weight:600;color:#16263d;}
+  .logout-btn{font-size:12px;color:#6b7a90;background:none;border:none;cursor:pointer;padding:3px 8px;border-radius:6px;font-family:inherit;transition:background .15s,color .15s;}
+  .logout-btn:hover{background:#eef2ff;color:#2563EB;}
 
   main{position:relative;z-index:10;display:flex;align-items:center;max-width:1320px;margin:0 auto;padding:48px 56px 60px;}
   .copy{flex:0 0 44%;max-width:560px;}
@@ -63,26 +76,68 @@
   @keyframes floatB{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
   @keyframes floatC{0%,100%{transform:translateY(0);}50%{transform:translateY(-11px);}}
 
-  .circle{position:absolute;border-radius:50%;text-decoration:none;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,border-color .28s ease;}
+  /* ── 所有圓圈統一 glass 白色預設 ── */
+  .circle{
+    position:absolute;border-radius:50%;text-decoration:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    backdrop-filter:blur(6px);
+    background:linear-gradient(150deg,rgba(255,255,255,0.97),rgba(222,237,253,0.92));
+    border:1.5px solid rgba(37,99,235,0.22);
+    box-shadow:0 18px 40px rgba(37,99,235,0.15),inset 0 1px 0 rgba(255,255,255,0.9);
+    transition:transform .28s cubic-bezier(.22,1,.36,1),box-shadow .28s ease,background .28s ease,border-color .28s ease;
+  }
   .circle .label{font-weight:700;color:#16263d;}
-  .circle.glass{background:linear-gradient(150deg,rgba(255,255,255,0.95),rgba(222,237,253,0.9));border:1.5px solid rgba(37,99,235,0.22);box-shadow:0 18px 40px rgba(37,99,235,0.15),inset 0 1px 0 rgba(255,255,255,0.9);}
-  .circle.glass:hover{transform:scale(1.1);box-shadow:0 30px 58px rgba(37,99,235,0.32);border-color:#2563EB;}
 
-  .c-board{top:56px;left:168px;width:214px;height:214px;gap:13px;background:linear-gradient(150deg,#2563EB,#1d4ed8);border:1px solid rgba(255,255,255,0.45);box-shadow:0 22px 48px rgba(37,99,235,0.34),inset 0 1px 0 rgba(255,255,255,0.45);animation:floatB 7s ease-in-out infinite;}
-  .c-board:hover{transform:scale(1.08);box-shadow:0 34px 72px rgba(37,99,235,0.5);}
-  .c-board .label{color:#fff;font-size:20px;}
-  .c-booking{top:40px;left:412px;width:172px;height:172px;gap:10px;animation:floatA 6.2s ease-in-out infinite;}
+  /* Hover → 放大 + 藍色 + 白框凸顯 */
+  .circle:hover{
+    transform:scale(1.10);
+    background:linear-gradient(145deg,#2563EB,#1d4ed8);
+    border:2.5px solid rgba(255,255,255,0.88);
+    box-shadow:0 30px 58px rgba(37,99,235,0.46),0 0 0 4px rgba(37,99,235,0.16),inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+  .circle:hover .label{color:#fff;}
+  .circle:hover .icon-blue{display:none;}
+  .circle:hover .icon-white{display:block;}
+  .icon-white{display:none;}
+
+  /* 各圓大小與位置 */
+  .c-board  {top:56px; left:168px;width:214px;height:214px;gap:13px;animation:floatB 7s ease-in-out infinite;}
+  .c-board .label{font-size:20px;}
+  .c-booking{top:40px; left:412px;width:172px;height:172px;gap:10px;animation:floatA 6.2s ease-in-out infinite;}
   .c-booking .label{font-size:16px;}
-  .c-stock{top:300px;left:118px;width:162px;height:162px;gap:10px;animation:floatC 6.8s ease-in-out infinite;}
+  .c-stock  {top:300px;left:118px;width:162px;height:162px;gap:10px;animation:floatC 6.8s ease-in-out infinite;}
   .c-stock .label{font-size:16px;}
-  .c-issue{top:332px;left:378px;width:152px;height:152px;gap:9px;animation:floatB 6.5s ease-in-out infinite;}
+  .c-issue  {top:332px;left:378px;width:152px;height:152px;gap:9px; animation:floatB 6.5s ease-in-out infinite;}
   .c-issue .label{font-size:15px;}
+
+  /* ── 登入 Modal ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,25,50,0.50);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .modal-overlay.show{opacity:1;pointer-events:auto;}
+  .modal-card{background:#fff;border-radius:22px;padding:40px 44px;width:400px;max-width:95vw;box-shadow:0 32px 64px rgba(0,0,0,0.20);transform:translateY(16px) scale(0.97);transition:transform .25s cubic-bezier(.22,1,.36,1);}
+  .modal-overlay.show .modal-card{transform:translateY(0) scale(1);}
+  .modal-logo{display:flex;align-items:center;gap:12px;margin-bottom:26px;}
+  .modal-logo-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,#2563EB,#1d4ed8);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,99,235,0.30);flex-shrink:0;}
+  .modal-logo-mark span{width:13px;height:13px;border:2.5px solid #fff;border-radius:50%;}
+  .modal-title{font-size:18px;font-weight:700;color:#16263d;}
+  .modal-sub{font-size:12px;color:#6b7a90;margin-top:2px;}
+  .m-field{margin-bottom:16px;}
+  .m-field label{display:block;font-size:12px;font-weight:600;color:#5a6270;margin-bottom:6px;letter-spacing:0.02em;}
+  .m-field input{width:100%;padding:10px 14px;border:1.5px solid #e0e7f0;border-radius:10px;font-size:14px;font-family:inherit;outline:none;color:#16263d;transition:border-color .15s,box-shadow .15s;}
+  .m-field input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,0.10);}
+  .remember-row{display:flex;align-items:center;gap:9px;margin-bottom:22px;cursor:pointer;user-select:none;}
+  .remember-row input[type=checkbox]{width:16px;height:16px;accent-color:#2563EB;cursor:pointer;flex-shrink:0;}
+  .remember-row span{font-size:13px;color:#5a6270;}
+  .login-err{display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:8px;padding:9px 13px;font-size:12.5px;margin-bottom:14px;}
+  .login-err.show{display:block;}
+  .modal-submit{width:100%;padding:13px;border:none;border-radius:999px;background:linear-gradient(145deg,#2563EB,#1d4ed8);color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(37,99,235,0.28);transition:transform .2s ease,box-shadow .2s ease;font-family:inherit;}
+  .modal-submit:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(37,99,235,0.42);}
+  .modal-hint{font-size:12px;color:#9aabb8;text-align:center;margin-top:14px;}
 
   @media (max-width:1080px){
     main{flex-direction:column;align-items:flex-start;gap:20px;padding:32px 28px 60px;}
     h1{font-size:48px;}
     .stage{min-width:0;width:100%;height:560px;}
-    .nav-links a:not(.nav-cta){display:none;}
+    .nav-links a{display:none;}
   }
 </style>
 </head>
@@ -100,12 +155,24 @@
         <span class="brand-sub">3D Print Studio</span>
       </div>
     </div>
-    <div class="nav-links">
-      <a class="active" href="#工作看板連結">工作看板</a>
-      <a href="#列印機預約連結">列印機預約</a>
-      <a href="#材料庫存連結">材料庫存</a>
-      <a href="#異常與資源連結">異常與資源</a>
-      <a class="nav-cta" href="#工作看板連結">進入系統</a>
+    <div class="nav-right">
+      <div class="nav-links">
+        <a class="active" href="https://coffee-who.github.io/3dprinter/Dashboard/index.html">工作看板</a>
+        <a href="https://coffee-who.github.io/3dprinter/Dashboard/Booking/3DP-BK-full.html">列印機預約</a>
+        <a href="https://coffee-who.github.io/3dprinter/Dashboard/Booking/inventory-full.html">材料庫存</a>
+        <a href="https://coffee-who.github.io/3dprinter/Dashboard/index.html?tab=issues">異常與資源</a>
+      </div>
+      <!-- 未登入：顯示登入按鈕 -->
+      <button class="login-btn" id="openLoginBtn" onclick="openModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#fff" stroke-width="1.8"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+        登入系統
+      </button>
+      <!-- 已登入：顯示使用者 chip -->
+      <div class="user-chip" id="userChip" style="display:none;">
+        <div class="user-avatar" id="userAvatar">CW</div>
+        <span class="user-name" id="userName"></span>
+        <button class="logout-btn" onclick="doLogout()">登出</button>
+      </div>
     </div>
   </nav>
 
@@ -115,7 +182,7 @@
       <h1>實威國際<br>3D 列印<br><span class="hl">入口平台<i></i></span></h1>
       <p class="lead">工作看板、列印機預約、材料庫存、異常與資源，<br>四大模組一處整合，點擊圓形入口即可前往。</p>
       <div class="actions">
-        <a class="btn" href="#工作看板連結">進入工作看板
+        <a class="btn" href="https://coffee-who.github.io/3dprinter/Dashboard/index.html">進入工作看板
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
       </div>
@@ -129,30 +196,135 @@
       <span class="dot" style="top:286px;left:330px;width:6px;height:6px;background:#2563EB;"></span>
 
       <!-- 1 工作看板 -->
-      <a class="circle c-board" href="#工作看板連結">
-        <svg width="46" height="46" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="6" height="13" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="3" y="18" width="6" height="3" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="15" y="3" width="6" height="6" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="15" y="11" width="6" height="10" rx="1.4" stroke="#fff" stroke-width="1.6"/></svg>
+      <a class="circle c-board" href="https://coffee-who.github.io/3dprinter/Dashboard/index.html">
+        <svg class="icon-blue" width="46" height="46" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="6" height="13" rx="1.4" stroke="#1d4ed8" stroke-width="1.6"/><rect x="3" y="18" width="6" height="3" rx="1.4" stroke="#1d4ed8" stroke-width="1.6"/><rect x="15" y="3" width="6" height="6" rx="1.4" stroke="#1d4ed8" stroke-width="1.6"/><rect x="15" y="11" width="6" height="10" rx="1.4" stroke="#1d4ed8" stroke-width="1.6"/></svg>
+        <svg class="icon-white" width="46" height="46" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="6" height="13" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="3" y="18" width="6" height="3" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="15" y="3" width="6" height="6" rx="1.4" stroke="#fff" stroke-width="1.6"/><rect x="15" y="11" width="6" height="10" rx="1.4" stroke="#fff" stroke-width="1.6"/></svg>
         <span class="label">工作看板</span>
       </a>
 
       <!-- 2 列印機預約 -->
-      <a class="circle glass c-booking" href="#列印機預約連結">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="#1d4ed8" stroke-width="1.6"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#1d4ed8" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15" r="2.4" stroke="#1d4ed8" stroke-width="1.6"/></svg>
+      <a class="circle c-booking" href="https://coffee-who.github.io/3dprinter/Dashboard/Booking/3DP-BK-full.html">
+        <svg class="icon-blue" width="34" height="34" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="#1d4ed8" stroke-width="1.6"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#1d4ed8" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15" r="2.4" stroke="#1d4ed8" stroke-width="1.6"/></svg>
+        <svg class="icon-white" width="34" height="34" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="#fff" stroke-width="1.6"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15" r="2.4" stroke="#fff" stroke-width="1.6"/></svg>
         <span class="label">列印機預約</span>
       </a>
 
       <!-- 3 材料庫存 -->
-      <a class="circle glass c-stock" href="#材料庫存連結">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke="#1d4ed8" stroke-width="1.6" stroke-linejoin="round"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9" stroke="#1d4ed8" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <a class="circle c-stock" href="https://coffee-who.github.io/3dprinter/Dashboard/Booking/inventory-full.html">
+        <svg class="icon-blue" width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke="#1d4ed8" stroke-width="1.6" stroke-linejoin="round"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9" stroke="#1d4ed8" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="icon-white" width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
         <span class="label">材料庫存</span>
       </a>
 
       <!-- 4 異常與資源 -->
-      <a class="circle glass c-issue" href="#異常與資源連結">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1d4ed8" stroke-width="1.6"/><path d="M12 7.5v5.5M12 16.2h.01" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <a class="circle c-issue" href="https://coffee-who.github.io/3dprinter/Dashboard/index.html?tab=issues">
+        <svg class="icon-blue" width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1d4ed8" stroke-width="1.6"/><path d="M12 7.5v5.5M12 16.2h.01" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="icon-white" width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.6"/><path d="M12 7.5v5.5M12 16.2h.01" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="label">異常與資源</span>
       </a>
     </div>
   </main>
 </div>
+
+<!-- ── 登入 Modal ── -->
+<div class="modal-overlay" id="loginModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-logo">
+      <div class="modal-logo-mark"><span></span></div>
+      <div>
+        <div class="modal-title">登入系統</div>
+        <div class="modal-sub">實威國際 · 3D Print Studio</div>
+      </div>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="m-field">
+      <label>電子郵件</label>
+      <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="m-field">
+      <label>密碼</label>
+      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMe" checked/>
+      <span>記住帳號密碼</span>
+    </label>
+    <button class="modal-submit" id="loginSubmitBtn" onclick="doLogin()">登入</button>
+    <p class="modal-hint">沒有帳號？請聯絡系統管理員</p>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'portal_remembered';
+
+  /* ── Modal 開關 ── */
+  function openModal(){
+    // 若有記住的帳密，自動填入
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if(saved){
+        document.getElementById('loginEmail').value = saved.email || '';
+        document.getElementById('loginPw').value    = saved.pw    || '';
+        document.getElementById('rememberMe').checked = true;
+      }
+    } catch(e){}
+    document.getElementById('loginModal').classList.add('show');
+    setTimeout(()=>document.getElementById('loginEmail').focus(), 120);
+  }
+  function closeModal(){
+    document.getElementById('loginModal').classList.remove('show');
+  }
+
+  /* ── 登入（串接 Firebase 時替換此段） ── */
+  function doLogin(){
+    const email  = document.getElementById('loginEmail').value.trim();
+    const pw     = document.getElementById('loginPw').value;
+    const remember = document.getElementById('rememberMe').checked;
+    const errEl  = document.getElementById('loginErr');
+    errEl.classList.remove('show');
+
+    if(!email || !pw){
+      errEl.textContent = '請填寫電子郵件與密碼';
+      errEl.classList.add('show');
+      return;
+    }
+
+    /* --- 記住帳密 --- */
+    if(remember){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({email, pw}));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    /* --- 顯示使用者資訊 --- */
+    const name = email.split('@')[0]
+      .replace(/[._-]/g,' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+    const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+    document.getElementById('userAvatar').textContent = initials;
+    document.getElementById('userName').textContent   = name;
+    document.getElementById('openLoginBtn').style.display = 'none';
+    document.getElementById('userChip').style.display = 'flex';
+    closeModal();
+  }
+
+  /* ── 登出 ── */
+  function doLogout(){
+    document.getElementById('openLoginBtn').style.display = '';
+    document.getElementById('userChip').style.display = 'none';
+  }
+
+  /* ── 頁面載入時檢查是否已記住帳密（可選：自動帶入但不自動登入） ── */
+  window.addEventListener('DOMContentLoaded', ()=>{
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if(saved){
+        document.getElementById('loginEmail').value = saved.email || '';
+        document.getElementById('loginPw').value    = saved.pw    || '';
+      }
+    } catch(e){}
+  });
+</script>
 </body>
 </html>

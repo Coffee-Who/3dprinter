@@ -1147,11 +1147,10 @@ async function autoSyncCartridges() {
 
             // 機台沒有樹脂罐（Cartridge missing）→ 寫入 missing 佔位，清掉舊資料
             if (!apiCartridges.length) {
-                const missingSlot = [{ slot: 'SINGLE', material: '', remaining_ml: null, initial_ml: 0, missing: true, updated_at: p.updated_at || new Date().toISOString(), updated_by: 'auto' }];
-                const oldStr = JSON.stringify(inv.cartridges[key] || []);
-                const newStr = JSON.stringify(missingSlot);
-                if (oldStr !== newStr) {
-                    inv.cartridges[key] = missingSlot;
+                const existing = inv.cartridges[key] || [];
+                const alreadyMissing = existing.length === 1 && existing[0].missing === true;
+                if (!alreadyMissing) {
+                    inv.cartridges[key] = [{ slot: 'SINGLE', material: '', remaining_ml: null, initial_ml: 0, missing: true, updated_at: p.updated_at || new Date().toISOString(), updated_by: 'auto' }];
                     changed = true;
                 }
                 renderCartridges();

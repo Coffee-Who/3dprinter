@@ -388,7 +388,6 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
       <span style="color:var(--ink-2);font-weight:600" id="sidebar-user">—</span>
       <span class="sidebar-foot-date" id="sidebar-date"></span>
       <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit;">登出</button>
-      <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit">登出</button>
     </div>
   </aside>
 
@@ -628,10 +627,11 @@ onAuthStateChanged(auth, async (user) => {
         };
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('sidebar-user').textContent = currentUser.displayName;
-        const nd = new Date(); document.getElementById('sidebar-date').textContent = nd.getFullYear()+'/'+(nd.getMonth()+1).toString().padStart(2,'0')+'/'+nd.getDate().toString().padStart(2,'0');
+        const _nd = new Date(); const _dateEl = document.getElementById('sidebar-date'); if(_dateEl) _dateEl.textContent = _nd.toLocaleDateString('zh-TW');
         applyRoleUI();
         await loadSettings();
         subscribeBookings();
+        subscribePrinterStatus();
         safeIcons();
     } else {
         currentUser = null;
@@ -665,8 +665,10 @@ window.toggleSidebar = function(open){
 };
 function updateClock(){
     const d = new Date();
-    document.getElementById('timeNow').textContent = d.toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    document.getElementById('dateNow').textContent = d.toLocaleDateString('zh-TW');
+    const timeEl = document.getElementById('timeNow');
+    if(timeEl) timeEl.textContent = d.toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const dateEl = document.getElementById('sidebar-date');
+    if(dateEl) dateEl.textContent = d.toLocaleDateString('zh-TW');
 }
 updateClock();
 setInterval(updateClock, 60000);
@@ -771,7 +773,8 @@ const STATUS_CLASS = {
     '異常/取消':{cls:'col-red',   sel:'background:var(--danger-soft);color:var(--danger)'},
 };
 
-window.renderTable = function() {
+window.renderTable = renderTable;
+function renderTable() {
     if (!currentUser) return;
     const tbody = document.getElementById('table-body');
     populateFilterSelects();
@@ -1500,7 +1503,6 @@ function renderStatusPanel(printers) {
     safeIcons();
 }
 
-subscribePrinterStatus();
 
 // ══════════════════════════════════════════════
 // ══ 8. Toast 與工具 ═══════════════════════════

@@ -12,6 +12,7 @@
     <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .hidden{display:none !important}
+#main-app{height:100%}
 :root{
   --bg:#ffffff;
   --bg-soft:#fafbfc;
@@ -44,9 +45,9 @@
   --font-mono:'JetBrains Mono','SF Mono',ui-monospace,monospace;
   --sidebar-w:224px;
 }
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
 
-.shell{height:100vh;background:var(--bg);display:flex;position:relative;overflow:hidden}
+.shell{height:100%;background:var(--bg);display:flex;position:relative;overflow:hidden}
 
 .shell-sidebar{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .2s}
 .sidebar-brand{display:flex;align-items:center;gap:10px;padding:18px 16px 16px;border-bottom:1px solid var(--line)}
@@ -71,14 +72,15 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 
 .shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .shell-top{display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;height:48px;flex-wrap:nowrap;overflow:hidden}
-.shell-tabs{display:flex;gap:2px;overflow-x:auto}
+.shell-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.shell-tabs::-webkit-scrollbar{display:none}
 .shell-tab{position:relative;border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;color:var(--ink-3);padding:14px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;transition:color .15s}
 .shell-tab:hover{color:var(--ink)}
 .shell-tab.active{color:var(--ink);font-weight:700}
 .shell-tab.active::after{content:'';position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
 .shell-spacer{flex:1}
 .shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.08em;white-space:nowrap}
-.shell-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding:20px 24px}
+.shell-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding:20px 24px}
 .menu-btn{display:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;width:34px;height:34px;align-items:center;justify-content:center;font-size:18px;color:var(--ink-3);cursor:pointer;flex-shrink:0}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:90}
 

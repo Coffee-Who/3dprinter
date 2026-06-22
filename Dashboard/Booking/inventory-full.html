@@ -2251,8 +2251,9 @@ function renderHistory() {
         return true;
     });
 
-    // 相同材料只保留最新一筆（舊的紀錄在此畫面被取代/隱藏，但 Firestore 原始資料不受影響）
-    {
+    // 相同材料只保留最新一筆（僅在「未自訂日期區間」時套用，有自訂日期時顯示全部紀錄）
+    const hasCustomDateRange = !!(fFrom || fTo);
+    if(!hasCustomDateRange){
         const latestByMaterial = new Map();
         filtered.forEach(h=>{
             const key = h.material || '';

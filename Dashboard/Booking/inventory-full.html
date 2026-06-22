@@ -80,7 +80,10 @@ html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);f
 .shell-tab.active::after{content:'';position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
 .shell-spacer{flex:1}
 .shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:0.08em;white-space:nowrap}
-.shell-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);padding:20px 24px}
+.shell-body{flex:1;min-height:0;overflow:hidden;background:var(--bg);padding:20px 24px;display:flex;flex-direction:column}
+.shell-body>.tab-panel{flex:1;min-height:0}
+/* overview & monthly 需要自己捲動 */
+#panel-overview,#panel-monthly{overflow-y:auto;overflow-x:hidden}
 .menu-btn{display:none;border:1px solid var(--line);background:var(--bg);border-radius:6px;width:34px;height:34px;align-items:center;justify-content:center;font-size:18px;color:var(--ink-3);cursor:pointer;flex-shrink:0}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,14,20,.35);z-index:90}
 
@@ -580,15 +583,15 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
       </div>
 
                   <!-- ══ 消耗記錄 ══ -->
-      <div class="tab-panel hidden" id="panel-history">
-            <div class="sec-head">
+      <div class="tab-panel hidden" id="panel-history" style="display:flex;flex-direction:column;min-height:0;height:100%">
+            <div class="sec-head" style="flex-shrink:0">
               <div>
                 <div class="sec-title">消耗記錄</div>
                 <p class="sec-sub">列印完成後自動記錄的材料消耗，以及手動入庫紀錄。預設僅顯示近 30 天、且每種材料只顯示最新一筆，可用下方篩選器查看更早或完整紀錄。</p>
               </div>
             </div>
-            <div class="outer-card" style="margin-bottom:0">
-            <div class="filters">
+            <div class="outer-card" style="margin-bottom:0;flex:1;min-height:0;display:flex;flex-direction:column">
+            <div class="filters" style="flex-shrink:0">
                 <span class="lbl">篩選：</span>
                 <select id="history-filter" onchange="renderHistory()">
                     <option value="">全部材料</option>
@@ -611,7 +614,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                 <input type="date" id="history-filter-to" onchange="renderHistory()" title="結束日期">
                 <button class="clear" onclick="resetHistoryFilters()">清除</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" style="flex:1;min-height:0;overflow-y:auto;overflow-x:auto">
                 <table>
                     <thead>
                         <tr>
@@ -626,7 +629,7 @@ details.collapse .collapse-body{padding:14px;border-top:1px solid var(--line)}
                     <tbody id="history-body"></tbody>
                 </table>
             </div>
-            <div id="history-pagination" class="pagination hidden">
+            <div id="history-pagination" class="pagination hidden" style="flex-shrink:0">
                 <span id="history-page-info"></span>
                 <div style="display:flex;gap:4px" id="history-page-btns"></div>
             </div>

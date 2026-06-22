@@ -411,6 +411,10 @@
     const [search3,   setSearch3]   = useState('');
     const [methodF,   setMethodF]   = useState('');
     const [labelVer,  setLabelVer]  = useState(0);
+    const [editMode,   setEditMode]  = useState(false);
+    const [anomalySort, setAnomalySort] = useState({field:'seq',dir:'asc'});
+    const [ipaSort,     setIpaSort]     = useState({field:'seq',dir:'asc'});
+    const [toolSort,    setToolSort]    = useState({field:'seq',dir:'asc'});
 
     const canE = window.hasPerm(user, 'edit_issues');
     const canD = window.hasPerm(user, 'delete_issues');
@@ -460,6 +464,33 @@
     });
 
     const pillCls = st => st==='已完成'?'kt-pill kt-pill-完成':st==='處理中'?'kt-pill kt-pill-處理':'kt-pill kt-pill-暫停';
+
+    const sortArr = (arr, s) => {
+      const d = s.dir==='asc'?1:-1;
+      return [...arr].sort((a,b)=>{
+        let ka,kb;
+        if(s.field==='seq'){ ka=a.seq||0; kb=b.seq||0; }
+        else if(s.field==='date'){ ka=a.date||''; kb=b.date||''; }
+        else if(s.field==='purchaseDate'){ ka=a.purchaseDate||''; kb=b.purchaseDate||''; }
+        else if(s.field==='pdate'){ ka=(a.progresses&&a.progresses[0])?a.progresses[0].date:''; kb=(b.progresses&&b.progresses[0])?b.progresses[0].date:''; }
+        if(ka<kb) return -d; if(ka>kb) return d; return 0;
+      });
+    };
+    const mkSort = (setter) => (field) => setter(s => s.field===field?{field,dir:s.dir==='asc'?'desc':'asc'}:{field,dir:'asc'});
+    const SortTh = ({label, field, cur, onSort, style}) => {
+      const active = cur.field===field;
+      const arrow = active?(cur.dir==='asc'?'↑':'↓'):'↕';
+      return React.createElement('th',{className:'sortable'+(active?' sort-active':''),onClick:()=>onSort(field),style:{cursor:'pointer',userSelect:'none',whiteSpace:'nowrap',...(style||{})}},
+        label, React.createElement('span',{style:{marginLeft:3,opacity:active?1:0.35,fontSize:10,color:active?'var(--accent)':'inherit'}},arrow));
+    };
+    const SettingsBtn = () => React.createElement('button',{
+      className:'btn-ghost'+(editMode?' warn':''),
+      style:{marginLeft:'auto',display:'flex',alignItems:'center',gap:6},
+      onClick:()=>setEditMode(m=>!m)
+    }, React.createElement('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+      React.createElement('circle',{cx:12,cy:12,r:3}),
+      React.createElement('path',{d:'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'})
+    ), editMode?'結束設定':'設定');
 
     // ── sidebar subtab 樣式 ──
     const SUBTABS = [
@@ -517,12 +548,19 @@
               </div>
               <select className="t-sel" value={statusF} onChange={e=>setStatusF(e.target.value)}><option value="">所有狀態</option><option>處理中</option><option>已完成</option><option>暫停</option></select>
               <select className="t-sel" value={engF} onChange={e=>setEngF(e.target.value)}><option value="">所有工程師</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]||k}</option>)}</select>
+              <SettingsBtn/>
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>
-                <th className="col-seq">序</th><th>客戶</th><th>異常日期</th><th>品名</th><th>工程師</th><th>狀態</th><th>進度日期</th><th>進度狀況</th><th className="col-actions">操作</th>
+                <SortTh label="序" field="seq" cur={anomalySort} onSort={mkSort(setAnomalySort)} style={{width:36,textAlign:'center'}}/>
+                <th>客戶</th>
+                <SortTh label="異常日期" field="date" cur={anomalySort} onSort={mkSort(setAnomalySort)}/>
+                <th>品名</th><th>工程師</th><th>狀態</th>
+                <SortTh label="進度日期" field="pdate" cur={anomalySort} onSort={mkSort(setAnomalySort)}/>
+                <th>進度狀況</th>
+                {editMode&&<th className="col-actions">操作</th>}
               </tr></thead><tbody>
-                {filtA.map(it=>{
+                {sortArr(filtA,anomalySort).map(it=>{
                   const tone=K.ENG_TONE[it.engineer]||{fg:'#5a6270',bg:'#eef0f3'};
                   const first=(it.progresses||[])[0]||{date:'—',status:'—'};
                   const rest=(it.progresses||[]).slice(1);
@@ -536,20 +574,21 @@
                       <td><span className={pillCls(it.status)}>{it.status}</span></td>
                       <td className="col-date">{first.date}</td>
                       <td>{first.status}</td>
-                      <td className="col-actions"><span className="kt-act">
+                      {editMode&&<td className="col-actions"><span className="kt-act" style={{opacity:1,pointerEvents:'all'}}>
                         {canE&&<button className="kt-actbtn" title="編輯" onClick={()=>{setEditItem(it);setModal('a');}}>✎</button>}
                         {canD&&<button className="kt-actbtn danger" title="刪除" onClick={()=>delA(it)}>✕</button>}
-                      </span></td>
+                      </span></td>}
                     </tr>
                     {rest.map((p,i)=>(
                       <tr key={i} className="kt-anomaly-sub">
-                        <td colSpan="6"><span className="kt-anomaly-sub-marker">↳ 後續 #{i+2}</span></td>
-                        <td className="col-date">{p.date}</td><td>{p.status}</td><td></td>
+                        <td colSpan={editMode?7:6}><span className="kt-anomaly-sub-marker">↳ 後續 #{i+2}</span></td>
+                        <td className="col-date">{p.date}</td><td>{p.status}</td>
+                        {editMode&&<td></td>}
                       </tr>
                     ))}
                   </React.Fragment>);
                 })}
-                {!filtA.length&&<tr><td colSpan="9"><div className="kt-empty">無異常紀錄</div></td></tr>}
+                {!filtA.length&&<tr><td colSpan={editMode?9:8}><div className="kt-empty">無異常紀錄</div></td></tr>}
               </tbody></table>
             </div>
           </>}
@@ -563,25 +602,29 @@
               </div>
               <span className="toolbar-sub">合計 <b style={{color:'#0a0e14'}}>{filtI.reduce((s,r)=>s+Number(r.quantity||0),0)}</b> 桶</span>
               <select className="t-sel" value={personF} onChange={e=>setPersonF(e.target.value)}><option value="">所有人員</option>{engineers.map(k=><option key={k} value={k}>{K.ENG_LABEL[k]||k}</option>)}</select>
+              <SettingsBtn/>
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>
-                <th className="col-seq">序</th><th>採購日期</th><th>使用區間</th><th>品名</th><th>數量</th><th>採購人員</th><th>備註</th><th className="col-actions">操作</th>
+                <SortTh label="序" field="seq" cur={ipaSort} onSort={mkSort(setIpaSort)} style={{width:36,textAlign:'center'}}/>
+                <SortTh label="採購日期" field="purchaseDate" cur={ipaSort} onSort={mkSort(setIpaSort)}/>
+                <th>使用區間</th><th>品名</th><th>數量</th><th>採購人員</th><th>備註</th>
+                {editMode&&<th className="col-actions">操作</th>}
               </tr></thead><tbody>
-                {filtI.map(it=>{
+                {sortArr(filtI,ipaSort).map(it=>{
                   const tone=K.ENG_TONE[it.person]||{fg:'#5a6270',bg:'#eef0f3'};
                   return (<tr key={it._id}>
                     <td className="col-seq">{it.seq}</td><td className="col-date">{it.purchaseDate}</td><td className="col-date">{it.useDate}</td><td>{it.product}</td>
                     <td><span className="kt-num-badge">{it.quantity} 桶</span></td>
                     <td><span className="kt-eng"><span className="kt-eng-dot" style={{color:tone.fg,background:tone.bg}}>{K.ENG_INIT[it.person]||it.person.slice(0,2)}</span>{K.ENG_LABEL[it.person]||it.person}</span></td>
                     <td style={{color:'#5a6270'}}>{it.remark||'—'}</td>
-                    <td className="col-actions"><span className="kt-act">
+                    {editMode&&<td className="col-actions"><span className="kt-act" style={{opacity:1,pointerEvents:'all'}}>
                       {canE&&<button className="kt-actbtn" onClick={()=>{setEditItem(it);setModal('i');}}>✎</button>}
                       {canD&&<button className="kt-actbtn danger" onClick={()=>delI(it)}>✕</button>}
-                    </span></td>
+                    </span></td>}
                   </tr>);
                 })}
-                {!filtI.length&&<tr><td colSpan="8"><div className="kt-empty">無採購紀錄</div></td></tr>}
+                {!filtI.length&&<tr><td colSpan={editMode?8:7}><div className="kt-empty">無採購紀錄</div></td></tr>}
               </tbody></table>
             </div>
           </>}
@@ -595,22 +638,27 @@
               </div>
               <span className="toolbar-sub">合計 <b style={{color:'#0a0e14'}}>NT$ {filtT.reduce((s,r)=>s+(Number(r.price||0)*Number(r.quantity||1)),0).toLocaleString()}</b></span>
               <select className="t-sel" value={methodF} onChange={e=>setMethodF(e.target.value)}><option value="">所有方式</option><option>Easy Flow</option><option>零用金</option></select>
+              <SettingsBtn/>
             </div>
             <div className="table-wrap">
               <table className="kt"><thead><tr>
-                <th className="col-seq">序</th><th>採購日期</th><th>品名</th><th>數量</th><th>採購方式</th><th>單號</th><th>備註</th><th style={{textAlign:'right'}}>金額</th><th className="col-actions">操作</th>
+                <SortTh label="序" field="seq" cur={toolSort} onSort={mkSort(setToolSort)} style={{width:36,textAlign:'center'}}/>
+                <SortTh label="採購日期" field="purchaseDate" cur={toolSort} onSort={mkSort(setToolSort)}/>
+                <th>品名</th><th>數量</th><th>採購方式</th><th>單號</th><th>備註</th>
+                <th style={{textAlign:'right'}}>金額</th>
+                {editMode&&<th className="col-actions">操作</th>}
               </tr></thead><tbody>
-                {filtT.map(it=>(<tr key={it._id}>
+                {sortArr(filtT,toolSort).map(it=>(<tr key={it._id}>
                   <td className="col-seq">{it.seq}</td><td className="col-date">{it.purchaseDate||'—'}</td><td>{it.product}</td>
                   <td><span className="kt-num-badge">{it.quantity}</span></td><td>{it.method}</td><td className="col-id">{it.number||'—'}</td>
                   <td style={{color:'#5a6270'}}>{it.remark||'—'}</td>
                   <td className="kt-money">NT$ {(Number(it.price||0)*Number(it.quantity||1)).toLocaleString()}</td>
-                  <td className="col-actions"><span className="kt-act">
+                  {editMode&&<td className="col-actions"><span className="kt-act" style={{opacity:1,pointerEvents:'all'}}>
                     {canE&&<button className="kt-actbtn" onClick={()=>{setEditItem(it);setModal('e');}}>✎</button>}
                     {canD&&<button className="kt-actbtn danger" onClick={()=>delE(it)}>✕</button>}
-                  </span></td>
+                  </span></td>}
                 </tr>))}
-                {!filtT.length&&<tr><td colSpan="9"><div className="kt-empty">無設備</div></td></tr>}
+                {!filtT.length&&<tr><td colSpan={editMode?9:8}><div className="kt-empty">無設備</div></td></tr>}
               </tbody></table>
             </div>
           </>}

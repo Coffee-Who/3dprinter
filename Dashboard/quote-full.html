@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D列印估價 · 台中設備工程</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff;--bg-soft:#fafbfc;--bg-panel:#f5f7f9;
+  --line:#e6e8ec;--line-soft:#eef0f3;
+  --ink:#0a0e14;--ink-2:#3b4250;--ink-3:#5a6270;--ink-4:#8a93a3;
+  --accent:#0c7a99;--accent-soft:#e6f1f6;
+  --ok:#1d6f43;--ok-soft:#e6f1ea;
+  --warn:#c79b2a;--warn-soft:#fbf3dc;
+  --danger:#c0392b;--danger-soft:#fbe7e3;
+  --font-ui:'Noto Sans TC',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --sidebar-w:224px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(10,14,20,.035) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;mask-image:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.15))}
+
+/* ── Shell ── */
+.shell{height:100vh;display:flex;position:relative;z-index:1;overflow:hidden}
+
+/* ── Sidebar ── */
+.shell-sidebar{width:var(--sidebar-w);flex:0 0 var(--sidebar-w);background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:18px 16px 16px;border-bottom:1px solid var(--line)}
+.brand-mark{width:28px;height:28px;background:#0a0e14;border-radius:7px;position:relative;flex-shrink:0}
+.brand-mark::before{content:'';position:absolute;top:6px;left:6px;width:6px;height:6px;background:var(--accent);border-radius:1px}
+.brand-mark::after{content:'';position:absolute;bottom:6px;right:6px;width:10px;height:2px;background:var(--accent);border-radius:1px}
+.brand-title{font-size:14px;font-weight:600;letter-spacing:-.01em;line-height:1.1}
+.brand-sub{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:.1em;margin-top:3px}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow-y:auto}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;background:transparent;border-radius:6px;cursor:pointer;text-align:left;font:inherit;font-size:13px;font-weight:600;color:var(--ink-3);transition:background .12s,color .12s;width:100%}
+.sidebar-item:hover{background:var(--bg);color:var(--ink)}
+.sidebar-item[aria-selected="true"]{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.sidebar-item[aria-selected="true"] .si-icon{color:var(--accent)}
+.si-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--ink-4);font-size:14px;flex-shrink:0}
+.si-label{font-size:13px;font-weight:600;letter-spacing:-.005em}
+.si-sub{font-size:9.5px;font-family:var(--font-mono);color:var(--ink-4);letter-spacing:.08em;margin-top:1px}
+.sb-divider{height:1px;background:var(--line);margin:6px 4px}
+.sidebar-foot{padding:14px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:var(--ink-4)}
+
+/* ── Main ── */
+.shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.shell-top{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);min-height:48px;flex-shrink:0;position:sticky;top:0;z-index:20}
+.shell-top-title{font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.shell-badge{height:18px;padding:0 8px;font-size:10px;border-radius:999px;font-family:var(--font-mono);font-weight:600;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center}
+.shell-spacer{flex:1}
+.shell-aux{font-size:10.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:.06em}
+.top-btn{height:30px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink-3);font:inherit;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .12s}
+.top-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.top-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* ── Pages ── */
+.page{display:none;flex:1;min-height:0;overflow:hidden}
+.page.on{display:flex}
+#pg-quote{flex-direction:row}
+#pg-settings{flex-direction:column;overflow-y:auto;background:var(--bg)}
+
+/* ── QUOTE: 3-col layout ── */
+.col-L{width:196px;flex:0 0 196px;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;background:var(--bg-soft)}
+.col-L-scroll{flex:1;overflow-y:auto;min-height:0}
+.col-L-scroll::-webkit-scrollbar{width:3px}
+.col-L-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+.col-C{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);border-right:1px solid var(--line)}
+.col-R{width:210px;flex:0 0 210px;display:flex;flex-direction:column;overflow-y:auto;background:var(--bg)}
+.col-R::-webkit-scrollbar{width:3px}
+.col-R::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+
+/* sections */
+.sec{padding:10px 12px;border-bottom:1px solid var(--line-soft)}
+.sec:last-child{border-bottom:none}
+.sec-lbl{font-size:9.5px;font-weight:600;font-family:var(--font-mono);color:var(--ink-4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+
+/* upload zone */
+.upload-zone{border:1.5px dashed var(--line);border-radius:6px;padding:11px 8px;text-align:center;cursor:pointer;background:var(--bg);transition:all .12s}
+.upload-zone:hover{border-color:var(--accent);background:var(--accent-soft)}
+.upload-zone input{display:none}
+.uz-icon{font-size:20px;margin-bottom:3px}
+.uz-lbl{font-size:11px;font-weight:600;color:var(--ink-3)}
+.uz-sub{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);margin-top:1px}
+
+/* printer cards */
+.pcard{border:1px solid var(--line);border-radius:5px;padding:7px 10px;background:var(--bg);cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:4px;transition:all .12s}
+.pcard:last-of-type{margin-bottom:0}
+.pcard.on{border-color:var(--accent);background:var(--accent-soft)}
+.pcard-dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex-shrink:0;transition:background .12s}
+.pcard.on .pcard-dot{background:var(--accent)}
+.pcard-name{font-size:12px;font-weight:600;color:var(--ink)}
+.pcard-dim{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono)}
+
+/* select */
+.f-sel{width:100%;height:30px;padding:0 24px 0 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink-2);font:inherit;font-size:12px;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 4l3 3 3-3' fill='none' stroke='%235a6270' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
+.f-sel:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.f-hint{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);margin-top:3px}
+
+/* model type */
+.mtype-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mtype-btn{padding:6px 4px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink-3);font:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .12s}
+.mtype-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* dim inputs */
+.dim-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.dim-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.dim-inp{width:100%;padding:5px 4px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:12px;font-family:var(--font-mono);text-align:center}
+.dim-inp:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.dim-lbl{font-size:9px;color:var(--ink-4);font-family:var(--font-mono)}
+
+/* layer */
+.layer-row{display:flex;gap:3px}
+.layer-btn{flex:1;padding:5px 3px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink-3);font-size:10.5px;font-weight:600;cursor:pointer;text-align:center;font-family:var(--font-mono);transition:all .12s}
+.layer-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* calc btn */
+.calc-btn{width:100%;padding:8px;border-radius:6px;background:var(--accent);color:#fff;border:0;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:background .12s}
+.calc-btn:hover{background:#0a6985}
+.calc-btn:active{transform:scale(.98)}
+
+/* ── COST PANEL pinned bottom of left col ── */
+.cost-panel{flex-shrink:0;border-top:1px solid var(--line);background:var(--bg)}
+.cost-rows{padding:8px 12px 4px}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line-soft);font-size:11px}
+.cost-row:last-child{border-bottom:none}
+.cost-lbl{color:var(--ink-3);display:flex;align-items:center;gap:5px}
+.cost-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.cost-val{font-family:var(--font-mono);color:var(--ink-2);font-size:10.5px;font-feature-settings:'tnum'}
+.total-strip{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--accent-soft);border-top:1px solid #b8d3df}
+.total-lbl{font-size:12px;font-weight:600;color:var(--ink)}
+.total-val{font-size:18px;font-weight:600;font-family:var(--font-mono);color:var(--accent);letter-spacing:-.02em;font-feature-settings:'tnum'}
+
+/* ── CENTER viewer ── */
+.viewer-toolbar{display:flex;align-items:center;gap:5px;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg-soft);flex-shrink:0;flex-wrap:wrap}
+.view-tab{padding:4px 10px;border-radius:4px;border:1px solid transparent;font-size:11.5px;font-weight:600;color:var(--ink-4);cursor:pointer;font-family:var(--font-ui);background:transparent;transition:all .12s}
+.view-tab.on{background:var(--bg);border-color:var(--line);color:var(--ink)}
+.vtb-sep{width:1px;height:14px;background:var(--line);margin:0 2px}
+.vtb-btn{padding:4px 9px;border-radius:4px;border:1px solid var(--line);font-size:11.5px;font-weight:500;color:var(--ink-3);cursor:pointer;font-family:var(--font-ui);background:var(--bg);transition:all .12s}
+.vtb-btn:hover{color:var(--ink)}
+.vtb-auto{padding:4px 11px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-soft);font-size:11.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:var(--font-ui);display:flex;align-items:center;gap:4px;transition:all .12s}
+.vtb-auto:hover{background:#d4eaf2}
+.viewer-canvas{flex:1;min-height:0;position:relative;background:var(--bg-panel);overflow:hidden}
+.viewer-canvas canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
+.viewer-foot{padding:7px 12px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--bg-soft);flex-shrink:0;flex-wrap:wrap;gap:6px}
+.vf-item{font-size:10px;font-family:var(--font-mono);color:var(--ink-4)}
+.vf-val{color:var(--ink-2);font-weight:500}
+.orient-pills{display:flex;gap:4px}
+.o-pill{background:var(--accent-soft);border:1px solid #b8d3df;border-radius:4px;padding:2px 8px;font-size:10px;font-family:var(--font-mono);color:var(--accent);font-weight:600}
+
+/* ── RIGHT col ── */
+.r-sec{padding:10px 12px;border-bottom:1px solid var(--line-soft)}
+.r-sec:last-child{border-bottom:none;padding-bottom:16px}
+.r-title{font-size:9.5px;font-weight:600;font-family:var(--font-mono);color:var(--ink-4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
+.orient-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.o-card{border:1px solid var(--line);border-radius:5px;padding:8px 6px;text-align:center;background:var(--bg-soft)}
+.o-val{font-size:15px;font-weight:600;font-family:var(--font-mono);color:var(--accent)}
+.o-lbl{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);margin-top:1px}
+.risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.risk-card{border-radius:5px;padding:9px 10px}
+.risk-hi{background:var(--danger-soft);border:1px solid #f3c8c0}
+.risk-lo{background:var(--ok-soft);border:1px solid #b6d9c4}
+.risk-t{font-size:9px;font-weight:700;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.risk-hi .risk-t{color:var(--danger)}.risk-lo .risk-t{color:var(--ok)}
+.risk-items{font-size:11px;color:var(--ink-3);line-height:1.8}
+.tip-box{background:var(--warn-soft);border:1px solid #f0e4b8;border-radius:6px;padding:10px 11px}
+.tip-title{font-size:9px;font-weight:700;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--warn);margin-bottom:6px}
+.tip-item{font-size:11.5px;color:var(--ink-3);line-height:1.75;padding-left:12px;position:relative}
+.tip-item::before{content:"→";color:var(--warn);position:absolute;left:0;font-size:10px;top:1px}
+
+/* ── SETTINGS PAGE ── */
+.settings-body{padding:22px 28px 40px;max-width:700px;width:100%}
+.settings-head{margin-bottom:18px}
+.settings-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.settings-sub{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono)}
+.sync-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-soft);border:1px solid var(--line);border-radius:6px;margin-bottom:16px;font-size:11.5px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--ink-4);flex-shrink:0}
+.sync-dot.ok{background:var(--ok)}.sync-dot.err{background:var(--danger)}.sync-dot.spin{background:var(--warn);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.mat-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mat-table thead{background:var(--bg-soft)}
+.mat-table th{text-align:left;font-weight:600;font-size:10px;font-family:var(--font-mono);color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;padding:10px 13px;border-bottom:1px solid var(--line)}
+.mat-table td{padding:8px 13px;border-bottom:1px solid var(--line-soft);color:var(--ink-2);vertical-align:middle}
+.mat-table tbody tr:last-child td{border-bottom:none}
+.mat-table tbody tr:hover{background:var(--bg-soft)}
+.ed-inp{width:100%;padding:5px 8px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:12px;transition:border-color .12s}
+.ed-inp:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.mono-cell{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+.act-btn{width:26px;height:26px;border:1px solid var(--line);background:var(--bg);border-radius:5px;cursor:pointer;color:var(--ink-3);font-size:12px;display:inline-flex;align-items:center;justify-content:center;transition:all .12s}
+.act-btn:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.add-row{display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.add-inp{padding:7px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:13px;transition:border-color .12s;flex:1;min-width:120px}
+.add-inp:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.add-btn{height:36px;padding:0 16px;border-radius:6px;background:var(--ink);color:#fff;border:0;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .12s}
+.add-btn:hover{background:#25303f}
+.save-btn{height:36px;padding:0 18px;border-radius:6px;background:var(--accent);color:#fff;border:0;font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .12s}
+.save-btn:hover{background:#0a6985}
+.settings-note{font-size:11.5px;color:var(--ink-4);font-family:var(--font-mono);line-height:1.8;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ── Toast ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:1000}
+.toast-item{padding:9px 16px;border-radius:8px;font-size:12px;background:var(--bg-soft);border:1px solid var(--line);animation:tin .2s ease;font-family:var(--font-mono);display:flex;align-items:center;gap:6px}
+.toast-item.ok{background:#0d2a14;border-color:var(--ok);color:#5dc98a}
+.toast-item.err{background:#2d0000;border-color:var(--danger);color:#f08080}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+
+<div class="shell">
+  <!-- ── Sidebar ── -->
+  <div class="shell-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-title">台中設備工程</div>
+        <div class="brand-sub">3D · OPS</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item" onclick="goTo('workboard')">
+        <span class="si-icon">▦</span>
+        <div><div class="si-label">工作看板</div></div>
+      </button>
+      <button class="sidebar-item" onclick="goTo('booking')">
+        <span class="si-icon">◫</span>
+        <div><div class="si-label">3D列印機預約</div></div>
+      </button>
+      <button class="sidebar-item" onclick="goTo('inventory')">
+        <span class="si-icon">⊟</span>
+        <div><div class="si-label">材料庫存管理</div></div>
+      </button>
+      <button class="sidebar-item" aria-selected="true">
+        <span class="si-icon">≋</span>
+        <div><div class="si-label">3D列印估價</div></div>
+      </button>
+      <button class="sidebar-item" onclick="goTo('issues')">
+        <span class="si-icon">△</span>
+        <div><div class="si-label">異常與資源</div></div>
+      </button>
+      <div class="sb-divider"></div>
+      <button class="sidebar-item" onclick="goTo('admin')">
+        <span class="si-icon">⚙</span>
+        <div><div class="si-label">後台管理</div></div>
+      </button>
+    </nav>
+    <div class="sidebar-foot" id="user-foot">載入中…</div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="shell-main">
+    <div class="shell-top">
+      <div class="shell-top-title">3D列印估價 <span class="shell-badge">QUOTE</span></div>
+      <div class="shell-spacer"></div>
+      <div class="shell-aux">上傳 STL 後自動計算材積 · 費用 · 時間</div>
+      <button class="top-btn active" id="btn-quote" onclick="switchPage('quote')">估價</button>
+      <button class="top-btn" id="btn-settings" onclick="switchPage('settings')">⚙ 材料設定</button>
+    </div>
+
+    <!-- ══ QUOTE PAGE ══ -->
+    <div class="page on" id="pg-quote">
+
+      <!-- LEFT: inputs + cost -->
+      <div class="col-L">
+        <div class="col-L-scroll">
+          <div class="sec">
+            <div class="sec-lbl">上傳模型</div>
+            <label class="upload-zone" id="upload-zone">
+              <input type="file" id="stl-file" accept=".stl,.obj,.3mf,.step,.stp" onchange="onFileChange(this)">
+              <div class="uz-icon">📂</div>
+              <div class="uz-lbl" id="file-name">上傳模型</div>
+              <div class="uz-sub">STL · OBJ · 3MF · STEP</div>
+            </label>
+          </div>
+
+          <div class="sec">
+            <div class="sec-lbl">列印機台</div>
+            <div class="pcard on" id="pc-f4" onclick="selectPrinter('f4')">
+              <div class="pcard-dot"></div>
+              <div><div class="pcard-name">Form 4</div><div class="pcard-dim">20×12.5×21 cm</div></div>
+            </div>
+            <div class="pcard" id="pc-f4l" onclick="selectPrinter('f4l')">
+              <div class="pcard-dot"></div>
+              <div><div class="pcard-name">Form 4L</div><div class="pcard-dim">35.3×19.6×35 cm</div></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-lbl">材料選擇</div>
+            <select class="f-sel" id="mat-sel" onchange="onMatChange()">
+              <option value="">載入中…</option>
+            </select>
+            <div class="f-hint" id="mat-hint">—</div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-lbl">模型類型</div>
+            <div class="mtype-grid">
+              <button class="mtype-btn on" onclick="selectType(this,'exterior')">外觀件</button>
+              <button class="mtype-btn" onclick="selectType(this,'engineering')">工程件</button>
+              <button class="mtype-btn" onclick="selectType(this,'hollow')">中空件</button>
+              <button class="mtype-btn" onclick="selectType(this,'thin')">薄件</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-lbl">模型尺寸 (MM)</div>
+            <div class="dim-grid">
+              <div class="dim-wrap"><input class="dim-inp" id="dim-x" value="50" oninput="calcQuote()"><div class="dim-lbl">X</div></div>
+              <div class="dim-wrap"><input class="dim-inp" id="dim-y" value="30" oninput="calcQuote()"><div class="dim-lbl">Y</div></div>
+              <div class="dim-wrap"><input class="dim-inp" id="dim-z" value="40" oninput="calcQuote()"><div class="dim-lbl">Z</div></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-lbl">列印層厚</div>
+            <div class="layer-row">
+              <button class="layer-btn" onclick="selectLayer(this,0.025)">0.025</button>
+              <button class="layer-btn on" onclick="selectLayer(this,0.050)">0.050</button>
+              <button class="layer-btn" onclick="selectLayer(this,0.100)">0.100</button>
+            </div>
+            <div class="f-hint">精細 · 標準 · 快速</div>
+          </div>
+
+          <div class="sec">
+            <button class="calc-btn" onclick="autoOrient()">⚡ 自動擺放</button>
+          </div>
+        </div>
+
+        <!-- COST pinned to bottom -->
+        <div class="cost-panel">
+          <div class="cost-rows">
+            <div class="cost-row">
+              <span class="cost-lbl"><span class="cost-dot" style="background:var(--accent)"></span>材料用量</span>
+              <span class="cost-val" id="c-material">—</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-lbl"><span class="cost-dot" style="background:var(--warn)"></span>支撐材料 15%</span>
+              <span class="cost-val" id="c-support">—</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-lbl"><span class="cost-dot" style="background:var(--ok)"></span>列印時間</span>
+              <span class="cost-val" id="c-time">—</span>
+            </div>
+            <div class="cost-row">
+              <span class="cost-lbl"><span class="cost-dot" style="background:var(--ink-4)"></span>後處理</span>
+              <span class="cost-val" id="c-post">—</span>
+            </div>
+          </div>
+          <div class="total-strip">
+            <span class="total-lbl">估計總費用</span>
+            <span class="total-val" id="c-total">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER: 3D viewer -->
+      <div class="col-C">
+        <div class="viewer-toolbar">
+          <button class="view-tab on" onclick="setView('persp',this)">透視</button>
+          <button class="view-tab" onclick="setView('top',this)">頂視</button>
+          <button class="view-tab" onclick="setView('front',this)">前視</button>
+          <button class="view-tab" onclick="setView('side',this)">側視</button>
+          <div class="vtb-sep"></div>
+          <button class="vtb-btn" onclick="fitView()">□ 適合</button>
+          <button class="vtb-btn" onclick="resetView()">↺ 重設</button>
+          <div class="vtb-sep"></div>
+          <button class="vtb-auto" onclick="autoOrient()">⚡ 自動擺放</button>
+        </div>
+        <div class="viewer-canvas" id="viewer-canvas">
+          <canvas id="c3d"></canvas>
+        </div>
+        <div class="viewer-foot">
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            <span class="vf-item">體積 <span class="vf-val" id="v-vol">—</span></span>
+            <span class="vf-item">表面積 <span class="vf-val" id="v-area">—</span></span>
+            <span class="vf-item">列印時間 <span class="vf-val" id="v-time">—</span></span>
+          </div>
+          <div class="orient-pills" id="orient-pills" style="display:none">
+            <span class="o-pill" id="pill-angle">—</span>
+            <span class="o-pill" id="pill-rot">—</span>
+            <span class="o-pill" id="pill-support">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: results -->
+      <div class="col-R">
+        <div class="r-sec">
+          <div class="r-title">最佳擺放建議</div>
+          <div class="orient-grid">
+            <div class="o-card"><div class="o-val" id="r-angle">—</div><div class="o-lbl">建議角度</div></div>
+            <div class="o-card"><div class="o-val" id="r-xrot">—</div><div class="o-lbl">X 旋轉</div></div>
+            <div class="o-card"><div class="o-val" id="r-yrot">—</div><div class="o-lbl">Y 旋轉</div></div>
+            <div class="o-card"><div class="o-val" id="r-support">—</div><div class="o-lbl">支撐類型</div></div>
+          </div>
+        </div>
+        <div class="r-sec">
+          <div class="r-title">風險分析</div>
+          <div class="risk-grid">
+            <div class="risk-card risk-hi">
+              <div class="risk-t">⚠ 風險</div>
+              <div class="risk-items" id="r-risks">請先計算</div>
+            </div>
+            <div class="risk-card risk-lo">
+              <div class="risk-t">✓ 建議</div>
+              <div class="risk-items" id="r-tips">請先計算</div>
+            </div>
+          </div>
+        </div>
+        <div class="r-sec">
+          <div class="tip-box">
+            <div class="tip-title">AI 擺放說明</div>
+            <div id="ai-tips">
+              <div class="tip-item">輸入尺寸後點擊「自動擺放」</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS PAGE ══ -->
+    <div class="page" id="pg-settings">
+      <div class="settings-body">
+        <div class="settings-head">
+          <div class="settings-title">材料與單價設定</div>
+          <div class="settings-sub">新增、編輯或刪除材料及對應單價（NT$/L）· 自動同步至 Firestore</div>
+        </div>
+        <div class="sync-bar">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="sync-txt">連線中…</span>
+        </div>
+        <table class="mat-table">
+          <thead>
+            <tr>
+              <th>材料名稱</th>
+              <th>API 代碼</th>
+              <th style="width:115px">單價 (NT$/L)</th>
+              <th style="width:95px">密度 (g/cm³)</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="mat-tbody"></tbody>
+        </table>
+        <div class="add-row">
+          <input class="add-inp" id="add-name" placeholder="材料名稱（如 Clear V5）">
+          <input class="add-inp" id="add-code" placeholder="API 代碼（如 FLGPCL05）" style="max-width:160px;font-family:var(--font-mono)">
+          <input class="add-inp" id="add-price" placeholder="單價" style="max-width:90px;font-family:var(--font-mono)">
+          <input class="add-inp" id="add-density" placeholder="密度" style="max-width:80px;font-family:var(--font-mono)">
+          <button class="add-btn" onclick="addMaterial()">＋ 新增</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button class="save-btn" onclick="saveMaterials()">💾 儲存至 Firestore</button>
+        </div>
+        <div class="settings-note">
+          · 單價與密度更新後，按「儲存至 Firestore」即可跨裝置同步<br>
+          · 刪除材料不影響歷史消耗紀錄<br>
+          · 材料清單存於 Firestore：<code>settings/quote_materials</code>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- shell-main -->
+</div><!-- shell -->
+
+<!-- ── Firebase ── -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ══ Firebase 初始化 ══
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBhgfPGUgGsWr4VmOUeaEe_cC0RNSx8I7U",
+  authDomain:        "swtc-portal-6930c.firebaseapp.com",
+  projectId:         "swtc-portal-6930c",
+  storageBucket:     "swtc-portal-6930c.firebasestorage.app",
+  messagingSenderId: "447508396321",
+  appId:             "1:447508396321:web:ee8d1faaa0331590e5e660"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+// ══ 預設材料清單 ══
+const DEFAULT_MATERIALS = [
+  {name:'Clear V5',        code:'FLGPCL05', price:3800, density:1.13},
+  {name:'White V5',        code:'FLGPWH05', price:3800, density:1.16},
+  {name:'Grey V5',         code:'FLGPGR05', price:3800, density:1.16},
+  {name:'Black V5',        code:'FLGPBK05', price:3800, density:1.16},
+  {name:'Standard Black V4',code:'FLGPBK04',price:3500, density:1.10},
+  {name:'Tough 1500 V2',   code:'FLTO1502', price:4200, density:1.15},
+  {name:'Tough 2000 V2',   code:'FLTO2002', price:4200, density:1.21},
+  {name:'Rigid 4000',      code:'FLRG4001', price:5500, density:1.38},
+  {name:'Rigid 10K V1.1',  code:'FLRG1002', price:6800, density:1.55},
+  {name:'Flexible 80A V2', code:'FLFL8002', price:5200, density:1.22},
+  {name:'Elastic 50A V2',  code:'FLFLES02', price:5200, density:1.10},
+  {name:'High Temp V2',    code:'FLHTAM02', price:7500, density:1.27},
+  {name:'ESD Resin',       code:'FLESD001', price:8000, density:1.19},
+  {name:'Silicone 40A',    code:'FLSI4001', price:9000, density:1.15},
+  {name:'Fast Model',      code:'FLFAMD01', price:4000, density:1.14},
+  {name:'Precision Model', code:'FLPRMD01', price:4500, density:1.14},
+  {name:'Flame Retardant', code:'FLFRGR01', price:7000, density:1.32},
+];
+
+// ══ 狀態 ══
+let materials = [...DEFAULT_MATERIALS];
+let currentUser = null;
+let selectedPrinter = 'f4';
+let selectedType = 'exterior';
+let selectedLayer = 0.050;
+let orientResult = null;
+
+// ══ Firebase Auth ══
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    try {
+      const snap = await db.collection('users').doc(user.uid).get();
+      const data = snap.exists ? snap.data() : {};
+      currentUser = {
+        uid: user.uid,
+        email: user.email,
+        displayName: data.displayName || user.email.split('@')[0],
+        role: (data.permissions||[]).includes('admin') ? 'admin' : 'user'
+      };
+      document.getElementById('user-foot').innerHTML =
+        `${currentUser.displayName}<br><span style="color:var(--ink-2)">${new Date().toLocaleDateString('zh-TW')}</span>`;
+    } catch(e) {
+      document.getElementById('user-foot').textContent = user.email;
+    }
+  } else {
+    // 未登入 → 跳回主頁
+    window.location.href = '../index.html';
+  }
+  loadMaterials();
+});
+
+// ══ 載入材料（Firestore） ══
+async function loadMaterials() {
+  setSyncState('spin','連線中…');
+  try {
+    const doc = await db.collection('settings').doc('quote_materials').get();
+    if (doc.exists && doc.data().list && doc.data().list.length) {
+      materials = doc.data().list;
+      setSyncState('ok','已從 Firestore 載入');
+    } else {
+      // 第一次使用，寫入預設值
+      await db.collection('settings').doc('quote_materials').set({ list: DEFAULT_MATERIALS, _ts: firebase.firestore.FieldValue.serverTimestamp() });
+      setSyncState('ok','已寫入預設材料');
+    }
+  } catch(e) {
+    setSyncState('err','載入失敗，使用預設資料');
+    console.error(e);
+  }
+  syncMatSelect();
+  renderMatTable();
+  calcQuote();
+}
+
+// ══ 儲存材料（Firestore） ══
+async function saveMaterials() {
+  setSyncState('spin','儲存中…');
+  try {
+    await db.collection('settings').doc('quote_materials').set({
+      list: materials,
+      _ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setSyncState('ok','已儲存');
+    showToast('材料設定已同步至 Firestore', 'ok');
+    syncMatSelect();
+    calcQuote();
+  } catch(e) {
+    setSyncState('err','儲存失敗');
+    showToast('儲存失敗：' + e.message, 'err');
+  }
+}
+
+function setSyncState(state, txt) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot ' + state;
+  document.getElementById('sync-txt').textContent = txt;
+}
+
+// ══ 材料 select 同步 ══
+function syncMatSelect() {
+  const sel = document.getElementById('mat-sel');
+  const cur = sel.value;
+  sel.innerHTML = materials.map(m => `<option value="${m.code}">${m.name}</option>`).join('');
+  if (cur && materials.find(m=>m.code===cur)) sel.value = cur;
+  onMatChange();
+}
+
+function onMatChange() {
+  const code = document.getElementById('mat-sel').value;
+  const m = materials.find(x => x.code === code);
+  document.getElementById('mat-hint').textContent = m
+    ? `NT$${m.price.toLocaleString()}/L · ${m.density} g/cm³`
+    : '—';
+  calcQuote();
+}
+
+// ══ 設定頁表格 ══
+function renderMatTable() {
+  const tb = document.getElementById('mat-tbody');
+  tb.innerHTML = materials.map((m,i) => `
+    <tr>
+      <td><input class="ed-inp" value="${m.name}" oninput="materials[${i}].name=this.value"></td>
+      <td><span class="mono-cell">${m.code||'—'}</span></td>
+      <td><input class="ed-inp" value="${m.price}" style="width:90px;font-family:var(--font-mono)" oninput="materials[${i}].price=+this.value"></td>
+      <td><input class="ed-inp" value="${m.density}" style="width:72px;font-family:var(--font-mono)" oninput="materials[${i}].density=+this.value"></td>
+      <td><button class="act-btn" onclick="delMaterial(${i})" title="刪除">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function addMaterial() {
+  const name    = document.getElementById('add-name').value.trim();
+  const code    = document.getElementById('add-code').value.trim();
+  const price   = parseFloat(document.getElementById('add-price').value) || 3500;
+  const density = parseFloat(document.getElementById('add-density').value) || 1.10;
+  if (!name) { showToast('請填寫材料名稱','err'); return; }
+  materials.push({name, code, price, density});
+  ['add-name','add-code','add-price','add-density'].forEach(id => document.getElementById(id).value = '');
+  renderMatTable();
+  showToast('已新增，請記得儲存', 'ok');
+}
+
+function delMaterial(i) {
+  if (!confirm(`確定刪除「${materials[i].name}」？`)) return;
+  materials.splice(i, 1);
+  renderMatTable();
+  showToast('已刪除，請記得儲存', 'ok');
+}
+
+// ══ 頁面切換 ══
+function switchPage(p) {
+  document.getElementById('pg-quote').classList.toggle('on', p==='quote');
+  document.getElementById('pg-settings').classList.toggle('on', p==='settings');
+  document.getElementById('btn-quote').classList.toggle('active', p==='quote');
+  document.getElementById('btn-settings').classList.toggle('active', p==='settings');
+  if (p==='settings') renderMatTable();
+}
+
+// ══ Sidebar 導航 ══
+function goTo(page) {
+  const map = {
+    workboard: '../index.html',
+    booking:   'Booking/3DP-BK-full.html',
+    inventory: 'Booking/inventory-full.html',
+    issues:    '../index.html#issues',
+    admin:     '../index.html#admin',
+  };
+  if (map[page]) window.location.href = map[page];
+}
+
+// ══ 選擇機台 ══
+function selectPrinter(id) {
+  selectedPrinter = id;
+  document.getElementById('pc-f4').classList.toggle('on', id==='f4');
+  document.getElementById('pc-f4l').classList.toggle('on', id==='f4l');
+  calcQuote();
+}
+
+// ══ 選擇模型類型 ══
+function selectType(el, type) {
+  selectedType = type;
+  document.querySelectorAll('.mtype-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  calcQuote();
+}
+
+// ══ 選擇層厚 ══
+function selectLayer(el, val) {
+  selectedLayer = val;
+  document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  calcQuote();
+}
+
+// ══ 檔案上傳 ══
+function onFileChange(input) {
+  if (input.files.length) {
+    const name = input.files[0].name;
+    document.getElementById('file-name').textContent = name;
+    showToast('已載入：' + name, 'ok');
+    // 實際 STL 解析可在此加入 Three.js 解析器
+    drawBox();
+  }
+}
+
+// ══ 估價計算 ══
+function calcQuote() {
+  const x = parseFloat(document.getElementById('dim-x').value) || 0;
+  const y = parseFloat(document.getElementById('dim-y').value) || 0;
+  const z = parseFloat(document.getElementById('dim-z').value) || 0;
+  if (!x || !y || !z) return;
+
+  const code = document.getElementById('mat-sel').value;
+  const mat  = materials.find(m => m.code === code);
+  if (!mat) return;
+
+  // 體積估算（長方體 × 填充率，外觀件約 40%，工程件 60%，中空件 20%，薄件 30%）
+  const fillRate = {exterior:.40, engineering:.60, hollow:.20, thin:.30}[selectedType] || .40;
+  const volCm3   = (x/10) * (y/10) * (z/10) * fillRate;        // cm³
+  const supportVol = volCm3 * 0.15;                              // 支撐 15%
+  const totalVol   = volCm3 + supportVol;
+
+  // 材料費（NT$/L = NT$/1000cm³）
+  const pricePerCm3 = mat.price / 1000;
+  const matCost     = Math.round(totalVol * pricePerCm3);
+  const supportCost = Math.round(supportVol * pricePerCm3);
+  const postCost    = 90;
+
+  // 列印時間（層數 × 層曝光時間，SLA 約 12 秒/層）
+  const layerCount = Math.ceil((z / selectedLayer));
+  const printHr    = Math.round(layerCount * 12 / 3600 * 10) / 10;
+
+  const total = matCost + postCost;
+
+  // 更新 UI
+  document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
+  document.getElementById('c-support').textContent  = `NT$${supportCost.toLocaleString()}`;
+  document.getElementById('c-time').textContent     = `${printHr} hr`;
+  document.getElementById('c-post').textContent     = `NT$${postCost}`;
+  document.getElementById('c-total').textContent    = `NT$${total.toLocaleString()}`;
+  document.getElementById('v-vol').textContent      = `${volCm3.toFixed(1)} cm³`;
+  document.getElementById('v-area').textContent     = `${((x*y + y*z + x*z)*2/100).toFixed(1)} cm²`;
+  document.getElementById('v-time').textContent     = `~${printHr} hr`;
+}
+
+// ══ 自動擺放 ══
+function autoOrient() {
+  const typeMap = {
+    exterior:    {angle:38, xrot:15, yrot:0, support:'輕', risks:'平面吸附<br>截面突變<br>懸空過長',    tips:'避開外觀面<br>35°~45°最佳<br>無需排液孔'},
+    engineering: {angle:30, xrot:10, yrot:0, support:'中', risks:'精度偏移<br>截面過大<br>懸空孔位',   tips:'精度面朝上<br>20°~35°最佳<br>中密度支撐'},
+    hollow:      {angle:35, xrot:15, yrot:5, support:'輕', risks:'真空爆裂<br>排液不足<br>吸附力大',   tips:'排液孔朝下<br>至少開2孔<br>30°以上傾斜'},
+    thin:        {angle:50, xrot:20, yrot:0, support:'輕', risks:'翹曲變形<br>層間剝離<br>過大截面',    tips:'側立35°~60°<br>輕支撐多點<br>避免平放'},
+  };
+  const r = typeMap[selectedType] || typeMap.exterior;
+  orientResult = r;
+
+  document.getElementById('r-angle').textContent   = r.angle + '°';
+  document.getElementById('r-xrot').textContent    = r.xrot + '°';
+  document.getElementById('r-yrot').textContent    = r.yrot + '°';
+  document.getElementById('r-support').textContent = r.support;
+  document.getElementById('r-risks').innerHTML     = r.risks;
+  document.getElementById('r-tips').innerHTML      = r.tips;
+
+  // AI tips
+  const aiTips = {
+    exterior: ['外觀件優先品質，輕支撐多點避開外觀面','建議 '+r.angle+'° 斜放，降低 FEP 剝離力','X 軸加旋 '+r.xrot+'°，避免截面平行 FEP','支撐配置底部＋背面（非視覺面）'],
+    engineering: ['工程件優先精度，中密度支撐確保穩定','建議 '+r.angle+'° 斜放，兼顧精度與成功率','精度要求面朝上，避免支撐接觸','注意孔洞方向，垂直孔精度最佳'],
+    hollow: ['中空件必須開排液孔（至少 2 個）','建議排液孔朝下，確保樹脂完全流出','35° 斜放降低剝離面積，減少爆件風險','後處理需充分清洗確保無殘留樹脂'],
+    thin: ['薄件側立印製，防止翹曲變形','建議 '+r.angle+'° 側立，輕支撐多接觸點','避免平放，大面積貼 FEP 必定翹曲','層曝光時間可適當增加，增強層間附著'],
+  };
+  document.getElementById('ai-tips').innerHTML =
+    (aiTips[selectedType]||aiTips.exterior).map(t => `<div class="tip-item">${t}</div>`).join('');
+
+  // orient pills
+  document.getElementById('pill-angle').textContent   = r.angle + '°';
+  document.getElementById('pill-rot').textContent     = 'X+' + r.xrot + '°';
+  document.getElementById('pill-support').textContent = r.support + '支撐';
+  document.getElementById('orient-pills').style.display = 'flex';
+
+  calcQuote();
+  drawBox();
+  showToast('擺放建議已更新', 'ok');
+}
+
+// ══ 視角控制 ══
+function setView(v, el) {
+  document.querySelectorAll('.view-tab').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  drawBox();
+}
+function fitView() { drawBox(); }
+function resetView() { orientResult = null; drawBox(); }
+
+// ══ 3D 方塊繪製 ══
+const canvas = document.getElementById('c3d');
+const vc     = document.getElementById('viewer-canvas');
+
+function drawBox() {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2 - 10;
+
+  // 根據尺寸輸入調整比例
+  const dx = parseFloat(document.getElementById('dim-x').value) || 50;
+  const dy = parseFloat(document.getElementById('dim-y').value) || 30;
+  const dz = parseFloat(document.getElementById('dim-z').value) || 40;
+  const maxD = Math.max(dx,dy,dz,1);
+  const scale = Math.min(W, H) * 0.30 / maxD;
+
+  const w  = dx * scale;
+  const h  = dz * scale;
+  const ox = dy * scale * 0.5;
+  const oy = dy * scale * 0.2;
+
+  // 網格地板
+  ctx.save();
+  ctx.strokeStyle = '#e6e8ec';
+  ctx.lineWidth   = 0.5;
+  const gw = W * 0.75, gs = gw / 10;
+  const gy0 = cy + h/2, gox = ox * 0.7, goy = oy * 0.5;
+  for (let i=-6; i<=6; i++) {
+    const gx = cx + i*gs;
+    ctx.beginPath(); ctx.moveTo(gx-gox, gy0+goy); ctx.lineTo(gx+gox, gy0-goy); ctx.stroke();
+  }
+  for (let j=-3; j<=3; j++) {
+    ctx.beginPath();
+    ctx.moveTo(cx - gw/2 + j*gox/3, gy0 + j*goy/3);
+    ctx.lineTo(cx + gw/2 + j*gox/3, gy0 + j*goy/3);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 傾斜角偏移（自動擺放後顯示）
+  let tilt = 0;
+  if (orientResult) {
+    tilt = (orientResult.angle / 90) * h * 0.3;
+  }
+
+  const p = {
+    ftl:[cx-w/2,   cy-h/2-tilt], ftr:[cx+w/2,   cy-h/2],
+    fbl:[cx-w/2,   cy+h/2],      fbr:[cx+w/2,   cy+h/2+tilt],
+    btl:[cx-w/2+ox,cy-h/2-tilt-oy], btr:[cx+w/2+ox,cy-h/2-oy],
+    bbl:[cx-w/2+ox,cy+h/2-oy],      bbr:[cx+w/2+ox,cy+h/2+tilt-oy],
+  };
+
+  const face = (vs, fill, stroke, lw=1) => {
+    ctx.beginPath(); ctx.moveTo(...vs[0]);
+    vs.slice(1).forEach(v => ctx.lineTo(...v));
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke();
+  };
+
+  face([p.fbl,p.fbr,p.bbr,p.bbl], 'rgba(12,122,153,.07)', 'rgba(12,122,153,.22)');
+  face([p.fbr,p.ftr,p.btr,p.bbr], 'rgba(12,122,153,.12)', 'rgba(12,122,153,.22)');
+  face([p.ftl,p.ftr,p.fbr,p.fbl], 'rgba(12,122,153,.18)', 'rgba(12,122,153,.38)', 1.2);
+  face([p.btl,p.btr,p.ftr,p.ftl], 'rgba(12,122,153,.22)', 'rgba(12,122,153,.38)', 1.2);
+
+  // 平台
+  const pw = w * 1.6;
+  ctx.fillStyle = 'rgba(10,14,20,.05)';
+  ctx.strokeStyle = 'rgba(12,122,153,.28)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx-pw/2, cy+h/2+tilt);
+  ctx.lineTo(cx+pw/2, cy+h/2+tilt);
+  ctx.lineTo(cx+pw/2+ox, cy+h/2+tilt-oy);
+  ctx.lineTo(cx-pw/2+ox, cy+h/2+tilt-oy);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // 座標軸
+  const al = Math.min(W,H) * 0.1;
+  const ax = cx - w/2 - al*0.5, ay = cy + h/2 + tilt + 10;
+  [
+    [ax+al,   ay,       '#e74c3c', 'X'],
+    [ax,      ay-al,    '#27ae60', 'Y'],
+    [ax+al*.5,ay-al*.4, '#2980b9', 'Z'],
+  ].forEach(([ex,ey,c,t]) => {
+    ctx.strokeStyle = c; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.fillStyle = c;
+    ctx.font = `bold ${Math.max(9, al*.35)}px JetBrains Mono,monospace`;
+    ctx.fillText(t, ex+(ex>ax?3:-8), ey+(ey>ay?10:-3));
+  });
+}
+
+// ResizeObserver → canvas 自動撐滿
+new ResizeObserver(() => {
+  const r = vc.getBoundingClientRect();
+  canvas.width  = r.width;
+  canvas.height = r.height;
+  drawBox();
+}).observe(vc);
+setTimeout(() => {
+  const r = vc.getBoundingClientRect();
+  canvas.width  = r.width;
+  canvas.height = r.height;
+  drawBox();
+}, 80);
+
+// ══ Toast ══
+function showToast(msg, type='ok') {
+  const c  = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className   = 'toast-item ' + type;
+  el.textContent = (type==='ok'?'✓ ':'✕ ') + msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+</script>
+</body>
+</html>

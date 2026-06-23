@@ -539,49 +539,70 @@ function autoOrient(){
   if(!threeModel){showToast('請先上傳 STL','err');return;}
   const p = PRINTERS[selectedPrinter];
   const typeMap = {
-    exterior:    {angle:38,xrot:15,yrot:0,support:'輕'},
-    engineering: {angle:30,xrot:10,yrot:0,support:'中'},
-    hollow:      {angle:35,xrot:15,yrot:5,support:'輕'},
-    thin:        {angle:50,xrot:20,yrot:0,support:'輕'},
+    exterior:    {angle:38, xrot:15, yrot:0, support:'輕'},
+    engineering: {angle:30, xrot:10, yrot:0, support:'中'},
+    hollow:      {angle:35, xrot:15, yrot:5, support:'輕'},
+    thin:        {angle:50, xrot:20, yrot:0, support:'輕'},
   };
   const r = typeMap[selectedType]||typeMap.exterior;
 
-  // 計算旋轉後的包圍盒，若超出則嘗試縮小角度
+  // Step 1：重置，取得原始包圍盒三軸尺寸
   threeModel.rotation.set(0,0,0);
   threeModel.scale.set(1,1,1);
-
-  // 取得原始尺寸
+  threeModel.position.set(0,0,0);
   const bbox0 = new THREE.Box3().setFromObject(threeModel);
-  const size0 = bbox0.getSize(new THREE.Vector3());
+  const s = bbox0.getSize(new THREE.Vector3());
 
-  // 嘗試找到最大能放入框架的縮放比例
-  const fitScaleX = p.w / size0.x;
-  const fitScaleY = p.h / size0.y;
-  const fitScaleZ = p.d / size0.z;
-  const fitScale = Math.min(fitScaleX, fitScaleY, fitScaleZ, 1); // 最多縮至 1:1，不放大
+  // Step 2：試 6 種主軸朝向（不縮放），選旋轉後 AABB 最能塞進列印框的
+  const orientations = [
+    {rx:0,          rz:0,          w:s.x, h:s.y, d:s.z},
+    {rx:Math.PI/2,  rz:0,          w:s.x, h:s.z, d:s.y},
+    {rx:-Math.PI/2, rz:0,          w:s.x, h:s.z, d:s.y},
+    {rx:0,          rz:Math.PI/2,  w:s.y, h:s.x, d:s.z},
+    {rx:0,          rz:-Math.PI/2, w:s.y, h:s.x, d:s.z},
+    {rx:Math.PI/2,  rz:Math.PI/2,  w:s.z, h:s.x, d:s.y},
+  ];
+  // 選「超出量最小」的朝向（超出量 = 各軸超出部分總和）
+  let bestOrient = orientations[0], bestOverflow = Infinity;
+  for(const o of orientations){
+    const ox = Math.max(0, o.w - p.w);
+    const oy = Math.max(0, o.h - p.h);
+    const oz = Math.max(0, o.d - p.d);
+    const total = ox + oy + oz;
+    if(total < bestOverflow){ bestOverflow = total; bestOrient = o; }
+  }
 
-  threeModel.scale.setScalar(fitScale);
+  // Step 3：套用最佳初始朝向（scale 維持 1:1）
+  threeModel.scale.set(1, 1, 1);
+  threeModel.rotation.set(bestOrient.rx, 0, bestOrient.rz);
 
-  // 套用傾斜角
-  threeModel.rotation.x = r.angle * Math.PI / 180;
-  threeModel.rotation.z = r.xrot  * Math.PI / 180;
+  // Step 4：疊加 SLA 傾斜角
+  threeModel.rotation.x += r.angle * Math.PI / 180;
+  threeModel.rotation.z += r.xrot  * Math.PI / 180;
 
-  // 重新對齊底部
+  // Step 5：底部貼地 + XZ 置中（不縮放）
   const bbox1 = new THREE.Box3().setFromObject(threeModel);
-  threeModel.position.set(-((bbox1.max.x+bbox1.min.x)/2), -bbox1.min.y, -((bbox1.max.z+bbox1.min.z)/2));
+  threeModel.position.set(
+    -(bbox1.max.x + bbox1.min.x) / 2,
+    -bbox1.min.y,
+    -(bbox1.max.z + bbox1.min.z) / 2
+  );
 
   checkOverflow();
   calcQuote();
 
-  // 更新 pills
-  document.getElementById('pill-angle').textContent  = r.angle+'°';
-  document.getElementById('pill-rot').textContent    = 'X+'+r.xrot+'°';
-  document.getElementById('pill-support').textContent= r.support+'支撐';
-  document.getElementById('orient-pills').style.display='flex';
+  const actualAngle = Math.round((bestOrient.rx + r.angle * Math.PI/180) * 180 / Math.PI);
+  document.getElementById('pill-angle').textContent   = actualAngle + '°';
+  document.getElementById('pill-rot').textContent     = 'X+' + r.xrot + '°';
+  document.getElementById('pill-support').textContent = r.support + '支撐';
+  document.getElementById('orient-pills').style.display = 'flex';
 
-  // 右側擺放分析
   updateOrientResult(r);
-  showToast('擺放已優化至列印範圍內','ok');
+  // 告知是否在範圍內
+  const bbox2 = new THREE.Box3().setFromObject(threeModel);
+  const size2 = bbox2.getSize(new THREE.Vector3());
+  const fits = size2.x <= p.w && size2.y <= p.h && size2.z <= p.d;
+  showToast(fits ? '已放入最佳擺放位置' : '已找最佳方向，但尺寸超出列印範圍', fits ? 'ok' : 'err');
 }
 
 function updateOrientResult(r){

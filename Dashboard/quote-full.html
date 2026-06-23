@@ -246,15 +246,50 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--fo
             <div class="f-hint">精細 · 標準 · 快速</div>
           </div>
           <div class="sec">
-            <button class="calc-btn" onclick="autoOrient()">⚡ 自動擺放</button>
+            <div class="sec-lbl">擺放與計算</div>
+            <button class="calc-btn" onclick="autoOrient()" style="margin-bottom:6px">⚡ 自動擺放</button>
+            <button class="calc-btn" onclick="manualCalc()" style="background:var(--bg);color:var(--ink);border:1px solid var(--line)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5M8 17h3"/></svg>
+              手動擺放後計算
+            </button>
           </div>
         </div>
         <div class="cost-panel">
-          <div class="cost-rows">
-            <div class="cost-row"><span class="cost-lbl"><span class="cost-dot" style="background:var(--accent)"></span>材料用量</span><span class="cost-val" id="c-material">—</span></div>
-            <div class="cost-row"><span class="cost-lbl"><span class="cost-dot" style="background:var(--warn)"></span>支撐材料 15%</span><span class="cost-val" id="c-support">—</span></div>
-            <div class="cost-row"><span class="cost-lbl"><span class="cost-dot" style="background:var(--ok)"></span>列印時間</span><span class="cost-val" id="c-time">—</span></div>
-            <div class="cost-row"><span class="cost-lbl"><span class="cost-dot" style="background:var(--ink-4)"></span>後處理</span><span class="cost-val" id="c-post">—</span></div>
+          <div class="cost-rows" style="padding:8px 11px 5px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:9.5px;font-weight:600;font-family:var(--font-mono);color:var(--ink-4);text-transform:uppercase;letter-spacing:.07em">費用明細</span>
+              <span id="pfs-badge" style="display:none;font-size:9px;padding:1px 7px;border-radius:999px;background:var(--ok-soft);color:var(--ok);border:1px solid #b6d9c4;font-family:var(--font-mono)">✓ PreForm 精確</span>
+              <span id="formula-badge" style="font-size:9px;padding:1px 7px;border-radius:999px;background:var(--bg-panel);color:var(--ink-4);border:1px solid var(--line);font-family:var(--font-mono)">公式估算</span>
+            </div>
+            <!-- 本體材料 -->
+            <div style="background:var(--bg-soft);border-radius:5px;padding:7px 9px;margin-bottom:5px;border:1px solid var(--line-soft)">
+              <div style="font-size:10.5px;color:var(--ink-3);margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0"></span>本體材料
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font-size:11px;color:var(--ink-4);font-family:var(--font-mono)" id="c-mat-vol">— mL</span>
+                <span style="font-size:17px;font-weight:600;font-family:var(--font-mono);color:var(--ink)" id="c-material">—</span>
+              </div>
+            </div>
+            <!-- 支撐材料 -->
+            <div style="background:var(--bg-soft);border-radius:5px;padding:7px 9px;margin-bottom:5px;border:1px solid var(--line-soft)">
+              <div style="font-size:10.5px;color:var(--ink-3);margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--warn);display:inline-block;flex-shrink:0"></span>支撐材料
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <span style="font-size:11px;color:var(--ink-4);font-family:var(--font-mono)" id="c-sup-vol">— mL</span>
+                <span style="font-size:17px;font-weight:600;font-family:var(--font-mono);color:var(--ink)" id="c-support">—</span>
+              </div>
+            </div>
+            <!-- 列印時間 + 後處理 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--line-soft)">
+              <span style="font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--ok);display:inline-block"></span>列印時間</span>
+              <span style="font-size:13px;font-family:var(--font-mono);color:var(--ink-2);font-weight:600" id="c-time">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--line-soft)">
+              <span style="font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);display:inline-block"></span>後處理</span>
+              <span style="font-size:13px;font-family:var(--font-mono);color:var(--ink-2)" id="c-post">—</span>
+            </div>
           </div>
           <div class="total-strip"><span class="total-lbl">估計總費用</span><span class="total-val" id="c-total">—</span></div>
         </div>
@@ -574,18 +609,22 @@ function calcQuote(){
   const vol    = (x/10)*(y/10)*(z/10)*fillRate;
   const supVol = vol*0.15;
   const ppc    = mat.price/1000;
-  const matCost  = Math.round((vol+supVol)*ppc);
+  const matCost  = Math.round(vol*ppc);
   const supCost  = Math.round(supVol*ppc);
   const postCost = 90;
   const printHr  = Math.round(Math.ceil(z/selectedLayer)*12/3600*10)/10;
+  document.getElementById('c-mat-vol').textContent  = `${vol.toFixed(1)} mL`;
+  document.getElementById('c-sup-vol').textContent  = `${supVol.toFixed(1)} mL`;
   document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
   document.getElementById('c-support').textContent  = `NT$${supCost.toLocaleString()}`;
   document.getElementById('c-time').textContent     = `${printHr} hr`;
   document.getElementById('c-post').textContent     = `NT$${postCost}`;
-  document.getElementById('c-total').textContent    = `NT$${(matCost+postCost).toLocaleString()}`;
-  document.getElementById('v-vol').textContent      = `${vol.toFixed(1)} cm³`;
-  document.getElementById('v-area').textContent     = `${((x*y+y*z+x*z)*2/100).toFixed(1)} cm²`;
+  document.getElementById('c-total').textContent    = `NT$${(matCost+supCost+postCost).toLocaleString()}`;
+  document.getElementById('v-vol').textContent      = `${vol.toFixed(1)} mL`;
+  document.getElementById('v-sup').textContent      = `${supVol.toFixed(1)} mL`;
   document.getElementById('v-time').textContent     = `~${printHr} hr`;
+  document.getElementById('pfs-badge').style.display    = 'none';
+  document.getElementById('formula-badge').style.display = 'inline';
 }
 
 // 用 PFS 真實數字更新估價面板
@@ -599,14 +638,18 @@ function updateQuoteFromPFS(timeSec, volMl, supVolMl, mat){
   const mn = Math.floor((timeSec%3600)/60);
   const timeStr = hr>0 ? `${hr}h ${mn}m` : `${mn}m`;
 
+  document.getElementById('c-mat-vol').textContent  = `${(volMl-supVolMl).toFixed(1)} mL`;
+  document.getElementById('c-sup-vol').textContent  = `${supVolMl.toFixed(1)} mL`;
   document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
   document.getElementById('c-support').textContent  = `NT$${supCost.toLocaleString()}`;
   document.getElementById('c-time').textContent     = timeStr;
   document.getElementById('c-post').textContent     = `NT$${postCost}`;
   document.getElementById('c-total').textContent    = `NT$${total.toLocaleString()}`;
-  document.getElementById('v-vol').textContent   = `${(volMl-supVolMl).toFixed(1)} mL`;
-  document.getElementById('v-sup').textContent   = `${supVolMl.toFixed(1)} mL`;
-  document.getElementById('v-time').textContent  = timeStr;
+  document.getElementById('v-vol').textContent      = `${(volMl-supVolMl).toFixed(1)} mL`;
+  document.getElementById('v-sup').textContent      = `${supVolMl.toFixed(1)} mL`;
+  document.getElementById('v-time').textContent     = timeStr;
+  document.getElementById('pfs-badge').style.display     = 'inline';
+  document.getElementById('formula-badge').style.display = 'none';
   showToast(`PreForm 精確計算：${timeStr} · 本體${(volMl-supVolMl).toFixed(1)}mL · 支撐${supVolMl.toFixed(1)}mL`, 'ok');
 }
 
@@ -1262,7 +1305,51 @@ function resetView(){
 }
 
 // ══ Toast ══
-// ══ 懸垂分析視覺化 ══
+// ══ 手動擺放後計算 ══
+async function manualCalc(){
+  if(!threeModel || !threeModel.userData.isSTL){
+    showToast('請先上傳 STL','err'); return;
+  }
+  if(!pfsSceneId){
+    showToast('請先上傳 STL 並完成 PreFormServer 連線','err'); return;
+  }
+  const mat = materials.find(m=>m.code===document.getElementById('mat-sel').value);
+  if(!mat) return;
+  showToast('依目前擺放角度計算中…','ok');
+  document.getElementById('top-aux').textContent = '⏳ 手動擺放計算中…';
+  try {
+    const sid = pfsSceneId;
+    // 依目前 Three.js 旋轉角度更新 PFS 支撐
+    await pfsReq('POST',`/scene/${sid}/auto-support/`,{});
+    // 估算列印時間
+    const timeR = await pfsReq('POST',`/scene/${sid}/estimate-print-time/`,{});
+    const timeSec = timeR.data?.total_print_time_s || 0;
+    // 取得材料用量
+    const sceneR = await pfsReq('GET',`/scene/${sid}/`);
+    const totalVol = sceneR.data?.material_usage?.volume_ml || 0;
+    const unsupVol = sceneR.data?.material_usage?.unsupported_volume_ml || 0;
+    const supVol   = totalVol - unsupVol;
+    if(timeSec>0 || totalVol>0){
+      updateQuoteFromPFS(timeSec, totalVol, supVol, mat);
+      document.getElementById('top-aux').textContent =
+        `手動擺放 · ${Math.floor(timeSec/3600)}h ${Math.floor((timeSec%3600)/60)}m · PreForm 精確計算`;
+    }
+  } catch(ex){
+    showToast('計算失敗：'+ex.message,'err');
+  }
+}
+
+// ══ 啟動時自動連線 PreFormServer ══
+async function autoConnectPFS(){
+  try {
+    const r = await fetch(PFS+'/', {signal:AbortSignal.timeout(2000)});
+    if(r.ok){
+      pfsAvail = true;
+      document.getElementById('top-aux').textContent = '✓ PreFormServer 已連線 · 上傳 STL 開始精確估價';
+      showToast('PreFormServer 已連線','ok');
+    }
+  } catch { pfsAvail = false; }
+}
 let overhangMode = false;
 let originalMaterial = null;
 
@@ -1393,7 +1480,10 @@ function showToast(msg,type='ok'){
   c.appendChild(el); setTimeout(()=>el.remove(),3200);
 }
 
-window.addEventListener('DOMContentLoaded',()=>setTimeout(initThree,100));
+window.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(initThree,100);
+  setTimeout(autoConnectPFS, 500);
+});
 </script>
 </body>
 </html>

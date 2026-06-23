@@ -64,9 +64,7 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:v
 .sidebar-item-label{font-size:13px;font-weight:700;letter-spacing:-0.005em;line-height:1.1;white-space:nowrap}
 .sidebar-item-sub{font-size:9.5px;font-family:var(--font-mono);color:var(--ink-4);letter-spacing:0.08em;white-space:nowrap}
 .sidebar-foot{padding:14px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:var(--ink-4);display:flex;flex-direction:column;gap:3px}
-.sidebar-foot-date{color:var(--ink-2);font-feature-settings:'tnum'}
-.sb-divider{height:1px;background:var(--line);margin:8px 12px}
-.sb-admin-lbl{font-size:9.5px;color:var(--ink-4);font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px 2px}
+.sidebar-foot-name{color:var(--ink-2);font-weight:700}
 
 .shell-main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
 .shell-top{display:flex;align-items:center;gap:18px;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;min-height:48px}
@@ -218,18 +216,28 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
 .gantt-table-month thead th.today{background:var(--accent-soft);color:var(--accent)}
 .gantt-table-month thead th.weekend{background:var(--bg-panel)}
 .gantt-table-month .gp-head{position:sticky;left:0;background:var(--bg-soft);width:60px;min-width:60px;text-align:left;padding:4px 8px}
-.gantt-table-month .gp-name{position:sticky;left:0;background:var(--bg);font-weight:700;color:var(--ink-2);text-align:left;padding:4px 8px;white-space:nowrap}
+.gantt-table-month .gp-name{position:sticky;left:0;background:var(--bg);font-weight:700;color:var(--ink-2);text-align:left;padding:0 8px;white-space:nowrap;vertical-align:middle}
+.gantt-table-month .gp-ampm{position:sticky;left:0;font-size:10px;font-weight:600;text-align:right;padding:0 6px;white-space:nowrap;vertical-align:middle;width:32px;min-width:32px}
+.gantt-table-month .gp-ampm-am{background:#f0f7fe;color:#185fa5;border-right:2px solid #b5d4f4}
+.gantt-table-month .gp-ampm-pm{background:#fdf3ef;color:#993c1d;border-right:2px solid #f5c4b3}
 .gantt-table-month td.today-col{background:#f3fafd}
 .gantt-table-month td.weekend-col{background:var(--bg-panel)}
+.gantt-table-month tr.row-am td.today-col{background:#eaf5fd}
+.gantt-table-month tr.row-pm td.today-col{background:#fdf3ef}
 .gantt-table-month [data-day].col-hl{box-shadow:inset 0 0 0 1px var(--accent)}
-.gantt-cell-split{display:flex;flex-direction:column;height:56px}
-.gantt-table-month.detail .gantt-cell-split{height:156px}
-.gantt-half{flex:1}
-.gantt-half[onclick]{cursor:pointer}
-.gantt-half.conflict{box-shadow:inset 0 0 0 1px #e08a39}
-.gantt-half + .gantt-half{border-top:1px solid var(--bg)}
+/* AM 列 slot */
+.gantt-table-month tr.row-am td.gantt-slot{height:22px;padding:0;cursor:pointer;background:transparent;transition:background .1s}
+.gantt-table-month tr.row-am td.gantt-slot:hover{background:#b5d4f4 !important;outline:1.5px solid #185fa5;outline-offset:-1px;position:relative;z-index:2}
+/* PM 列 slot */
+.gantt-table-month tr.row-pm td.gantt-slot{height:22px;padding:0;cursor:pointer;background:transparent;transition:background .1s}
+.gantt-table-month tr.row-pm td.gantt-slot:hover{background:#f5c4b3 !important;outline:1.5px solid #d85a30;outline-offset:-1px;position:relative;z-index:2}
+/* booked cell 內容 */
+.gantt-slot-inner{display:flex;align-items:center;height:100%;padding:0 3px;overflow:hidden}
+.gantt-slot-inner.conflict{box-shadow:inset 0 0 0 1px #e08a39}
 .gantt-half-text{display:flex;flex-direction:column;justify-content:center;gap:1px;height:100%;padding:0 4px;font-weight:600;text-align:left;overflow:hidden}
 .gantt-half-text .l{display:block;font-size:9px;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* machine group divider */
+.gantt-table-month tr.row-am-first td,.gantt-table-month tr.row-am-first th{border-top:2px solid var(--line)}
 
 .gantt-preview{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-panel);font-size:11.5px;color:var(--ink-3);min-height:20px}
 .gantt-preview .ttl{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:12px}
@@ -373,21 +381,22 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
     <div class="sidebar-brand">
       <div class="shell-brand-mark"></div>
       <div>
-        <div class="shell-brand-title">台中設備工程</div>
+        <div class="shell-brand-title">3D 列印平台</div>
         <div class="shell-brand-sub">SWTC · PORTAL</div>
       </div>
     </div>
     <nav class="sidebar-nav">
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="layout-dashboard" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">工作看板</span><span class="sidebar-item-sub">WORK BOARD</span></div></a>
-      <a class="sidebar-item active" href="3DP-BK-full.html"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
-      <a class="sidebar-item" href="inventory-full.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">材料庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
       <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="circle-alert" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">異常與資源</span><span class="sidebar-item-sub">ISSUES</span></div></a>
-      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="user" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
+      <a class="sidebar-item active" href="3DP-BK-full.html"><span class="sidebar-item-icon"><i data-lucide="printer" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印機預約</span><span class="sidebar-item-sub">BOOKING</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="box" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">3D列印樣品</span><span class="sidebar-item-sub">SAMPLES</span></div></a>
+      <a class="sidebar-item" href="inventory-full.html"><span class="sidebar-item-icon"><i data-lucide="package" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">材料庫存管理</span><span class="sidebar-item-sub">INVENTORY</span></div></a>
+      <a class="sidebar-item" href="../index.html"><span class="sidebar-item-icon"><i data-lucide="settings" style="width:18px;height:18px"></i></span><div class="sidebar-item-text"><span class="sidebar-item-label">後台管理</span><span class="sidebar-item-sub">ADMIN</span></div></a>
     </nav>
     <div class="sidebar-foot">
-      <span style="color:var(--ink-2);font-weight:600" id="sidebar-user">—</span>
-      <span class="sidebar-foot-date" id="sidebar-date"></span>
-      <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit;">登出</button>
+      <span class="sidebar-foot-name" id="sidebar-user">—</span>
+      <span id="dateNow">—</span>
+      <button onclick="doSignOut()" style="margin-top:6px;background:none;border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--ink-3);font-family:inherit">登出</button>
     </div>
   </aside>
 
@@ -473,8 +482,17 @@ tbody tr.is-conflict:hover{background:#fbe9d9}
           <div class="sec-title">預約清單</div>
           <div class="sec-actions">
             <span class="muted" id="total-count">共 0 筆</span>
+            <button class="btn-ghost" id="setting-mode-btn" onclick="toggleListSettingMode()" style="display:flex;align-items:center;gap:5px"><i data-lucide="settings" style="width:13px;height:13px"></i> 進入設定模式</button>
             <button class="btn-ghost" onclick="exportExcel()"><i data-lucide="file-spreadsheet" style="width:13px;height:13px"></i> 匯出 Excel</button>
           </div>
+        </div>
+        <div id="list-lock-notice" style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:#fbf3dc;border-bottom:1px solid #f0d98a;font-size:12px;color:#7a5c0a">
+          <i data-lucide="lock" style="width:13px;height:13px;flex-shrink:0"></i>
+          <span>唯讀模式 — 點擊「進入設定模式」後可編輯及刪除預約</span>
+        </div>
+        <div id="list-edit-notice" style="display:none;align-items:center;gap:8px;padding:7px 14px;background:#e6f1ea;border-bottom:1px solid #9fd4af;font-size:12px;color:#1d5c35">
+          <i data-lucide="unlock" style="width:13px;height:13px;flex-shrink:0"></i>
+          <span>設定模式已啟用 — 可對各筆預約進行編輯或刪除</span>
         </div>
 
         <div class="outer-card">
@@ -602,6 +620,7 @@ function applySalesSettings(st){
 const STATUSES  = ['待確認','執行中','已完成','異常/取消'];
 const DONE_STATUSES = new Set(['已完成','異常/取消']);
 const GANTT_PRINTERS = ['Form4','Form4L','UR'];
+let listSettingMode = false;
 
 // 應用程式狀態
 let currentUser = null;
@@ -627,11 +646,9 @@ onAuthStateChanged(auth, async (user) => {
         };
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('sidebar-user').textContent = currentUser.displayName;
-        const _nd = new Date(); const _dateEl = document.getElementById('sidebar-date'); if(_dateEl) _dateEl.textContent = _nd.toLocaleDateString('zh-TW');
         applyRoleUI();
         await loadSettings();
         subscribeBookings();
-        subscribePrinterStatus();
         safeIcons();
     } else {
         currentUser = null;
@@ -665,10 +682,8 @@ window.toggleSidebar = function(open){
 };
 function updateClock(){
     const d = new Date();
-    const timeEl = document.getElementById('timeNow');
-    if(timeEl) timeEl.textContent = d.toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    const dateEl = document.getElementById('sidebar-date');
-    if(dateEl) dateEl.textContent = d.toLocaleDateString('zh-TW');
+    document.getElementById('timeNow').textContent = d.toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dateNow').textContent = d.toLocaleDateString('zh-TW');
 }
 updateClock();
 setInterval(updateClock, 60000);
@@ -773,13 +788,12 @@ const STATUS_CLASS = {
     '異常/取消':{cls:'col-red',   sel:'background:var(--danger-soft);color:var(--danger)'},
 };
 
-window.renderTable = renderTable;
-function renderTable() {
+window.renderTable = function() {
     if (!currentUser) return;
     const tbody = document.getElementById('table-body');
     populateFilterSelects();
     updateSortIndicators();
-    const canEdit = currentUser.role === 'admin' || currentUser.role === 'editor';
+    const canEdit = listSettingMode && (currentUser.role === 'admin' || currentUser.role === 'editor');
 
     if(!bookings.length){
         document.getElementById('total-count').textContent = '共 0 筆';
@@ -939,6 +953,17 @@ function renderPagination(total) {
 function startOfMonth(d) {
     return new Date(d.getFullYear(), d.getMonth(), 1);
 }
+window.toggleListSettingMode = function() {
+    if(!(currentUser && (currentUser.role==='admin'||currentUser.role==='editor'))) return;
+    listSettingMode = !listSettingMode;
+    document.getElementById('setting-mode-btn').innerHTML = listSettingMode
+        ? '<i data-lucide="settings" style="width:13px;height:13px"></i> 離開設定模式'
+        : '<i data-lucide="settings" style="width:13px;height:13px"></i> 進入設定模式';
+    document.getElementById('list-lock-notice').style.display = listSettingMode ? 'none' : 'flex';
+    document.getElementById('list-edit-notice').style.display = listSettingMode ? 'flex' : 'none';
+    renderTable();
+    safeIcons();
+};
 window.ganttThisMonth = function() { ganttMonthStart = startOfMonth(new Date()); renderGantt(); };
 window.ganttShiftMonth = function(n) {
     if(!ganttMonthStart) ganttMonthStart = startOfMonth(new Date());
@@ -996,12 +1021,15 @@ function buildGanttCellMap() {
     return map;
 }
 function ganttRenderHalf(items, canEdit) {
-    if(!items.length) return '<div class="gantt-half"></div>';
+    return ganttRenderSlot(items, canEdit);
+}
+function ganttRenderSlot(items, canEdit) {
+    if(!items.length) return '';
     const isConflict = items.length > 1;
     const b = items[0];
     const color = ganttStatusColor(b.status);
-    const titleText = items.map(x=>`${x.sales||''} · ${x.purpose||''} · ${x.engineer||''} · ${x.status}${x.slot==='ALL'?' · 全天':''}${x.duration?(' · '+x.duration):''}`).join(' ｜ ');
-    const cls = 'gantt-half' + (isConflict?' conflict':'');
+    const titleText = items.map(x=>`${x.sales||''} · ${x.purpose||''} · ${x.engineer||''} · ${x.status}${x.slot==='ALL'?' · 全天':''}${x.duration?(' · '+x.duration):''}`).join(' | ');
+    const cls = 'gantt-slot-inner' + (isConflict?' conflict':'');
     const click = canEdit ? ` onclick="openEditModal('${b.id}')"` : '';
     let inner = '';
     if(ganttDetailMode){
@@ -1012,7 +1040,7 @@ function ganttRenderHalf(items, canEdit) {
             `<span class="l">${b.engineer||'—'}</span>` +
             `</div>`;
     }
-    return `<div class="${cls}" style="background:${color}" title="${titleText}"${click}>${inner}</div>`;
+    return `<div class="${cls}" style="width:100%;height:100%;background:${color}" title="${titleText}"${click}>${inner}</div>`;
 }
 window.toggleGanttDetail = function(checked) {
     ganttDetailMode = checked;
@@ -1027,10 +1055,10 @@ function renderGantt() {
     document.getElementById('gantt-range').textContent = `${year}年${month+1}月`;
     const todayKey = fmtDateLocal(new Date());
     const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='editor');
-    const dayColWidth = ganttDetailMode ? 88 : 24;
+    const dayColWidth = ganttDetailMode ? 88 : 28;
     const cellMap = buildGanttCellMap();
 
-    let html = `<table class="gantt-table-month${ganttDetailMode?' detail':''}"><thead><tr><th class="gp-head">機台</th>`;
+    let html = `<table class="gantt-table-month${ganttDetailMode?' detail':''}"><thead><tr><th class="gp-head" colspan="2">機台</th>`;
     for(let day=1; day<=daysInMonth; day++){
         const d = new Date(year, month, day);
         const dayKey = fmtDateLocal(d);
@@ -1042,7 +1070,10 @@ function renderGantt() {
     html += '</tr></thead><tbody>';
 
     GANTT_PRINTERS.forEach(printer=>{
-        html += `<tr><td class="gp-name">${printer}</td>`;
+        // AM 列
+        html += `<tr class="row-am row-am-first">`;
+        html += `<td class="gp-name" rowspan="2">${printer}</td>`;
+        html += `<td class="gp-ampm gp-ampm-am">上午</td>`;
         for(let day=1; day<=daysInMonth; day++){
             const d = new Date(year, month, day);
             const dayKey = fmtDateLocal(d);
@@ -1050,8 +1081,22 @@ function renderGantt() {
             const isToday = dayKey===todayKey;
             const isWeekend = dow===0 || dow===6;
             const cell = (cellMap[printer] && cellMap[printer][dayKey]) || {AM:[], PM:[]};
-            const cellCls = `${isToday?'today-col':''} ${isWeekend?'weekend-col':''}`;
-            html += `<td data-day="${dayKey}" data-printer="${printer}" class="${cellCls}"><div class="gantt-cell-split">${ganttRenderHalf(cell.AM,canEdit)}${ganttRenderHalf(cell.PM,canEdit)}</div></td>`;
+            const cellCls = `gantt-slot ${isToday?'today-col':''} ${isWeekend?'weekend-col':''}`;
+            html += `<td data-day="${dayKey}" data-printer="${printer}" data-slot="AM" class="${cellCls}">${ganttRenderSlot(cell.AM, canEdit)}</td>`;
+        }
+        html += '</tr>';
+        // PM 列
+        html += `<tr class="row-pm">`;
+        html += `<td class="gp-ampm gp-ampm-pm">下午</td>`;
+        for(let day=1; day<=daysInMonth; day++){
+            const d = new Date(year, month, day);
+            const dayKey = fmtDateLocal(d);
+            const dow = d.getDay();
+            const isToday = dayKey===todayKey;
+            const isWeekend = dow===0 || dow===6;
+            const cell = (cellMap[printer] && cellMap[printer][dayKey]) || {AM:[], PM:[]};
+            const cellCls = `gantt-slot ${isToday?'today-col':''} ${isWeekend?'weekend-col':''}`;
+            html += `<td data-day="${dayKey}" data-printer="${printer}" data-slot="PM" class="${cellCls}">${ganttRenderSlot(cell.PM, canEdit)}</td>`;
         }
         html += '</tr>';
     });
@@ -1061,7 +1106,6 @@ function renderGantt() {
     bindGanttDblclick();
     safeIcons();
 }
-
 // 雙擊甘特格子 → 開啟新增預約彈窗
 function bindGanttDblclick() {
     const edit = currentUser && (currentUser.role==='admin' || currentUser.role==='editor');
@@ -1070,7 +1114,7 @@ function bindGanttDblclick() {
     if(!table) return;
     table.querySelectorAll('td[data-day][data-printer]').forEach(td=>{
         td.addEventListener('dblclick', ()=>{
-            openAddModal(td.dataset.printer, td.dataset.day);
+            openAddModal(td.dataset.printer, td.dataset.day, td.dataset.slot);
         });
         td.title = '雙擊新增預約';
         td.style.cursor = 'pointer';
@@ -1136,7 +1180,7 @@ window.setHasOrder = function(val){
 // 新增預約彈窗（雙擊甘特格子開啟）
 let addModalPrinter = null, addModalDate = null;
 
-window.openAddModal = function(printer, date){
+window.openAddModal = function(printer, date, slot){
     addModalPrinter = printer;
     addModalDate    = date;
     hasOrder = null;
@@ -1144,7 +1188,7 @@ window.openAddModal = function(printer, date){
     const label = `${printer} · ${d.getMonth()+1}/${d.getDate()}`;
     document.getElementById('add-modal-title').textContent = '新增預約 - ' + label;
     // 預設時段
-    document.getElementById('add-slot').value = 'AM';
+    document.getElementById('add-slot').value = slot || 'AM';
     document.getElementById('add-duration').value = '1D';
     document.getElementById('purpose-input').value = '';
     document.getElementById('purpose-input').disabled = true;
@@ -1503,6 +1547,7 @@ function renderStatusPanel(printers) {
     safeIcons();
 }
 
+subscribePrinterStatus();
 
 // ══════════════════════════════════════════════
 // ══ 8. Toast 與工具 ═══════════════════════════

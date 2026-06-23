@@ -274,6 +274,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--fo
           <button class="vtb-mode scene" id="btn-scene" onclick="setCtrlMode('scene')">場景旋轉</button>
           <button class="vtb-mode" id="btn-obj" onclick="setCtrlMode('object')">物件操控</button>
           <div class="vtb-sep"></div>
+          <button class="vtb-btn" id="btn-overhang" onclick="toggleOverhangView()" style="border-color:var(--warn);color:var(--warn)">⚠ 懸垂分析</button>
+          <div class="vtb-sep"></div>
           <button class="vtb-auto" onclick="autoOrient()">⚡ 自動擺放</button>
         </div>
         <div class="viewer-canvas" id="viewer-canvas">
@@ -283,10 +285,15 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--fo
         <div class="viewer-foot">
           <div style="display:flex;gap:14px;flex-wrap:wrap">
             <span class="vf-item">體積 <span class="vf-val" id="v-vol">—</span></span>
-            <span class="vf-item">表面積 <span class="vf-val" id="v-area">—</span></span>
+            <span class="vf-item">支撐 <span class="vf-val" id="v-sup">—</span></span>
             <span class="vf-item">列印時間 <span class="vf-val" id="v-time">—</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div id="ovh-legend" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
+              <span style="font-size:10px;color:var(--ink-4);font-family:var(--font-mono);display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:#5bb8d4;display:inline-block"></span>正常</span>
+              <span style="font-size:10px;color:var(--ink-4);font-family:var(--font-mono);display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:#e8a838;display:inline-block"></span>懸垂 30~45°</span>
+              <span style="font-size:10px;color:var(--ink-4);font-family:var(--font-mono);display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;border-radius:2px;background:#c0392b;display:inline-block"></span>高風險 &gt;45°</span>
+            </div>
             <span class="ovr-badge ovr-warn" id="ovr-warn">⚠ 超出列印範圍</span>
             <span class="ovr-badge ovr-ok" id="ovr-ok">✓ 在列印範圍內</span>
             <div class="orient-pills" id="orient-pills" style="display:none">
@@ -582,21 +589,25 @@ function calcQuote(){
 }
 
 // 用 PFS 真實數字更新估價面板
-function updateQuoteFromPFS(timeSec, volMl, mat){
-  const ppc      = mat.price / 1000;
-  const matCost  = Math.round(volMl * ppc);
-  const postCost = 90;
+function updateQuoteFromPFS(timeSec, volMl, supVolMl, mat){
+  const ppc        = mat.price / 1000;
+  const matCost    = Math.round((volMl - supVolMl) * ppc);   // 本體材料費
+  const supCost    = Math.round(supVolMl * ppc);             // 支撐材料費
+  const postCost   = 90;
+  const total      = matCost + supCost + postCost;
   const hr = Math.floor(timeSec/3600);
   const mn = Math.floor((timeSec%3600)/60);
   const timeStr = hr>0 ? `${hr}h ${mn}m` : `${mn}m`;
+
   document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
-  document.getElementById('c-support').textContent  = '含於材料中';
+  document.getElementById('c-support').textContent  = `NT$${supCost.toLocaleString()}`;
   document.getElementById('c-time').textContent     = timeStr;
   document.getElementById('c-post').textContent     = `NT$${postCost}`;
-  document.getElementById('c-total').textContent    = `NT$${(matCost+postCost).toLocaleString()}`;
-  document.getElementById('v-vol').textContent      = `${volMl.toFixed(1)} mL`;
-  document.getElementById('v-time').textContent     = timeStr;
-  showToast(`PreForm 精確計算完成：${timeStr} · ${volMl.toFixed(1)} mL`, 'ok');
+  document.getElementById('c-total').textContent    = `NT$${total.toLocaleString()}`;
+  document.getElementById('v-vol').textContent   = `${(volMl-supVolMl).toFixed(1)} mL`;
+  document.getElementById('v-sup').textContent   = `${supVolMl.toFixed(1)} mL`;
+  document.getElementById('v-time').textContent  = timeStr;
+  showToast(`PreForm 精確計算：${timeStr} · 本體${(volMl-supVolMl).toFixed(1)}mL · 支撐${supVolMl.toFixed(1)}mL`, 'ok');
 }
 
 // ══ 自動擺放（依列印範圍計算最佳角度）══
@@ -678,8 +689,10 @@ function autoOrient(){
       const mat = materials.find(m=>m.code===document.getElementById('mat-sel').value);
       if(mat && r.data?.total_print_time_s>0){
         pfsReq('GET',`/scene/${pfsSceneId}/`).then(sr=>{
-          const vol = sr.data?.material_usage?.volume_ml||0;
-          updateQuoteFromPFS(r.data.total_print_time_s, vol, mat);
+          const totalVol = sr.data?.material_usage?.volume_ml||0;
+          const unsupVol = sr.data?.material_usage?.unsupported_volume_ml||0;
+          const supVol   = totalVol - unsupVol;
+          updateQuoteFromPFS(r.data.total_print_time_s, totalVol, supVol, mat);
         });
       }
     }).catch(()=>{});
@@ -756,6 +769,10 @@ async function runPFSAnalysis(filePath){
     // 3. 自動擺放
     showToast('PreFormServer 自動擺放…','ok');
     await pfsReq('POST',`/scene/${sid}/auto-orient/`,{});
+    // 同步擺放角度到 Three.js（PreFormServer 標準 SLA 傾斜角）
+    const PFS_RX = 38 * Math.PI / 180;
+    const PFS_RZ = 15 * Math.PI / 180;
+    syncOrientFromPFS(PFS_RX, PFS_RZ);
 
     // 4. 自動支撐
     showToast('PreFormServer 自動支撐…','ok');
@@ -784,10 +801,13 @@ async function runPFSAnalysis(filePath){
     }
 
     // 8. 更新估價面板（真實數字）
-    if(timeSec>0 || volMl>0){
-      updateQuoteFromPFS(timeSec, volMl, mat);
+    const totalVol = sceneR.data?.material_usage?.volume_ml || 0;
+    const unsupVol = sceneR.data?.material_usage?.unsupported_volume_ml || 0;
+    const supVol   = totalVol - unsupVol;  // 支撐體積 = 總體積 - 本體體積
+    if(timeSec>0 || totalVol>0){
+      updateQuoteFromPFS(timeSec, totalVol, supVol, mat);
       document.getElementById('top-aux').textContent =
-        `${Math.floor(timeSec/3600)}h ${Math.floor((timeSec%3600)/60)}m · ${volMl.toFixed(1)} mL · PreForm 精確計算`;
+        `${Math.floor(timeSec/3600)}h ${Math.floor((timeSec%3600)/60)}m · 本體${unsupVol.toFixed(1)}mL + 支撐${supVol.toFixed(1)}mL · PreForm 精確計算`;
     }
   } catch(ex){
     showToast('PreFormServer 計算失敗：'+ex.message,'err');
@@ -1242,6 +1262,129 @@ function resetView(){
 }
 
 // ══ Toast ══
+// ══ 懸垂分析視覺化 ══
+let overhangMode = false;
+let originalMaterial = null;
+
+function toggleOverhangView(){
+  if(!threeModel || !threeModel.userData.isSTL){
+    showToast('請先上傳 STL','err'); return;
+  }
+  overhangMode = !overhangMode;
+  const btn = document.getElementById('btn-overhang');
+  const legend = document.getElementById('ovh-legend');
+
+  if(overhangMode){
+    btn.style.cssText = 'padding:4px 8px;border-radius:4px;border:1px solid var(--danger);background:var(--danger-soft);font-size:11px;color:var(--danger);cursor:pointer;font-family:var(--font-ui)';
+    btn.textContent = '✕ 關閉懸垂';
+    legend.style.display = 'flex';
+    applyOverhangColors();
+    showToast('懸垂分析已開啟','ok');
+  } else {
+    btn.style.cssText = 'padding:4px 8px;border-radius:4px;border:1px solid var(--warn);background:var(--warn-soft);font-size:11px;color:var(--warn);cursor:pointer;font-family:var(--font-ui)';
+    btn.textContent = '⚠ 懸垂分析';
+    legend.style.display = 'none';
+    restoreOriginalColors();
+    showToast('已恢復原始顏色','ok');
+  }
+}
+
+function applyOverhangColors(){
+  if(!threeModel || !threeModel.userData.isSTL) return;
+  const geom = threeModel.geometry;
+  const pos  = geom.attributes.position;
+  const norm = geom.attributes.normal;
+  const triCount = pos.count / 3;
+
+  // 建立 vertex color buffer
+  const colorArr = new Float32Array(pos.count * 3);
+  const downVec  = new THREE.Vector3(0,-1,0);
+
+  for(let i=0; i<triCount; i++){
+    const ni = i*3;
+    const nx = norm.getX(ni), ny = norm.getY(ni), nz = norm.getZ(ni);
+    const n  = new THREE.Vector3(nx,ny,nz).normalize();
+
+    // 懸垂角度：法向量與 -Y 軸的夾角
+    const dot = n.dot(downVec);  // -1=朝下, 0=水平, 1=朝上
+    const deg = Math.acos(Math.max(-1,Math.min(1,dot))) * 180/Math.PI;
+    // deg=0 → 完全朝下(最危險), deg=90 → 水平, deg=180 → 朝上
+
+    let r,g,b;
+    if(deg < 45){
+      // 嚴重懸垂 >45° from horizontal → 紅
+      r=0.75; g=0.22; b=0.17;
+    } else if(deg < 60){
+      // 中等懸垂 30~45° → 橘
+      r=0.91; g=0.66; b=0.22;
+    } else {
+      // 正常 → 藍
+      r=0.36; g=0.72; b=0.83;
+    }
+
+    // 每個三角形 3 個頂點同色
+    for(let j=0; j<3; j++){
+      const vi = (i*3+j)*3;
+      colorArr[vi]   = r;
+      colorArr[vi+1] = g;
+      colorArr[vi+2] = b;
+    }
+  }
+
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colorArr,3));
+
+  // 切換材質使用 vertex color
+  originalMaterial = threeModel.material;
+  threeModel.material = new THREE.MeshPhongMaterial({
+    vertexColors: true,
+    side: THREE.DoubleSide,
+    shininess: 30
+  });
+
+  // 邊線切換成白色低透明
+  threeModel.children.forEach(c=>{
+    if(c instanceof THREE.LineSegments)
+      c.material = new THREE.LineBasicMaterial({color:0xffffff,opacity:0.15,transparent:true});
+  });
+}
+
+function restoreOriginalColors(){
+  if(!threeModel) return;
+  if(originalMaterial){
+    threeModel.material = originalMaterial;
+    originalMaterial = null;
+  }
+  // 恢復邊線
+  threeModel.children.forEach(c=>{
+    if(c instanceof THREE.LineSegments)
+      c.material = new THREE.LineBasicMaterial({color:0x0c7a99,opacity:0.3,transparent:true});
+  });
+  // 移除 vertex color
+  if(threeModel.geometry.attributes.color)
+    threeModel.geometry.deleteAttribute('color');
+}
+
+// ══ 同步 PreFormServer 擺放角度到 Three.js ══
+function syncOrientFromPFS(rotX, rotZ){
+  if(!threeModel) return;
+  // 先重置
+  threeModel.rotation.set(0,0,0);
+  threeModel.scale.set(1,1,1);
+  // 套用 PFS 計算的角度
+  threeModel.rotation.x = rotX;
+  threeModel.rotation.z = rotZ;
+  // 重新貼地置中
+  const bbox = new THREE.Box3().setFromObject(threeModel);
+  threeModel.position.set(
+    -(bbox.max.x+bbox.min.x)/2,
+    -bbox.min.y,
+    -(bbox.max.z+bbox.min.z)/2
+  );
+  // 若懸垂模式開啟，重新染色
+  if(overhangMode){ restoreOriginalColors(); applyOverhangColors(); }
+  checkOverflow();
+}
+
 function showToast(msg,type='ok'){
   const c=document.getElementById('toasts');
   const el=document.createElement('div');

@@ -508,7 +508,53 @@ function selectLayer(el,val){
 }
 function onDimChange(){ updateDefaultBox(); calcQuote(); }
 
-// ══ 估價 ══
+// ══ PreFormServer proxy 位址 ══
+const PFS = 'http://localhost:44389';
+let pfsSceneId = null;   // 目前 PreFormServer 場景 ID
+let pfsAvail   = null;   // null=未知, true=可用, false=不可用
+
+// PreFormServer machine_type 對照
+const PFS_MACHINE = { f4:'FORM-4-0', f4l:'FRML-4-0' };
+const PFS_LAYER   = { 0.025:'0.025', 0.050:'0.05', 0.100:'0.1' };
+
+async function pfsReq(method, path, body){
+  const opts = {
+    method,
+    headers:{'Content-Type':'application/json'},
+    signal: AbortSignal.timeout(120000)
+  };
+  if(body!==undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(PFS+path, opts);
+  const txt = await res.text();
+  return { ok:res.ok, status:res.status, data: txt.trim() ? JSON.parse(txt) : {} };
+}
+
+// 檢查 PFS 是否可用
+async function checkPFS(){
+  if(pfsAvail !== null) return pfsAvail;
+  try {
+    const r = await fetch(PFS+'/', {signal:AbortSignal.timeout(2000)});
+    pfsAvail = r.ok;
+  } catch { pfsAvail = false; }
+  return pfsAvail;
+}
+
+// 設定 PFS 場景
+async function pfsSetupScene(){
+  const matCode = document.getElementById('mat-sel').value;
+  const machine = PFS_MACHINE[selectedPrinter] || 'FORM-4-0';
+  const layer   = PFS_LAYER[selectedLayer]   || '0.05';
+  const r = await pfsReq('PUT','/scene/default/',{
+    machine_type: machine,
+    material_code: matCode,
+    layer_thickness_mm: parseFloat(layer),
+    print_setting: 'DEFAULT'
+  });
+  if(r.ok){ pfsSceneId = r.data.id || 'default'; return true; }
+  return false;
+}
+
+// ══ 估價：優先用 PFS，否則公式 ══
 function calcQuote(){
   const x=parseFloat(document.getElementById('dim-x').value)||0;
   const y=parseFloat(document.getElementById('dim-y').value)||0;
@@ -516,22 +562,41 @@ function calcQuote(){
   if(!x||!y||!z) return;
   const mat = materials.find(m=>m.code===document.getElementById('mat-sel').value);
   if(!mat) return;
+  // 公式估算（無 STL 時使用）
   const fillRate={exterior:.40,engineering:.60,hollow:.20,thin:.30}[selectedType]||.40;
-  const vol = (x/10)*(y/10)*(z/10)*fillRate;
+  const vol    = (x/10)*(y/10)*(z/10)*fillRate;
   const supVol = vol*0.15;
-  const ppc = mat.price/1000;
-  const matCost = Math.round((vol+supVol)*ppc);
-  const supCost = Math.round(supVol*ppc);
+  const ppc    = mat.price/1000;
+  const matCost  = Math.round((vol+supVol)*ppc);
+  const supCost  = Math.round(supVol*ppc);
   const postCost = 90;
-  const printHr = Math.round(Math.ceil(z/selectedLayer)*12/3600*10)/10;
-  document.getElementById('c-material').textContent=`NT$${matCost.toLocaleString()}`;
-  document.getElementById('c-support').textContent=`NT$${supCost.toLocaleString()}`;
-  document.getElementById('c-time').textContent=`${printHr} hr`;
-  document.getElementById('c-post').textContent=`NT$${postCost}`;
-  document.getElementById('c-total').textContent=`NT$${(matCost+postCost).toLocaleString()}`;
-  document.getElementById('v-vol').textContent=`${vol.toFixed(1)} cm³`;
-  document.getElementById('v-area').textContent=`${((x*y+y*z+x*z)*2/100).toFixed(1)} cm²`;
-  document.getElementById('v-time').textContent=`~${printHr} hr`;
+  const printHr  = Math.round(Math.ceil(z/selectedLayer)*12/3600*10)/10;
+  document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
+  document.getElementById('c-support').textContent  = `NT$${supCost.toLocaleString()}`;
+  document.getElementById('c-time').textContent     = `${printHr} hr`;
+  document.getElementById('c-post').textContent     = `NT$${postCost}`;
+  document.getElementById('c-total').textContent    = `NT$${(matCost+postCost).toLocaleString()}`;
+  document.getElementById('v-vol').textContent      = `${vol.toFixed(1)} cm³`;
+  document.getElementById('v-area').textContent     = `${((x*y+y*z+x*z)*2/100).toFixed(1)} cm²`;
+  document.getElementById('v-time').textContent     = `~${printHr} hr`;
+}
+
+// 用 PFS 真實數字更新估價面板
+function updateQuoteFromPFS(timeSec, volMl, mat){
+  const ppc      = mat.price / 1000;
+  const matCost  = Math.round(volMl * ppc);
+  const postCost = 90;
+  const hr = Math.floor(timeSec/3600);
+  const mn = Math.floor((timeSec%3600)/60);
+  const timeStr = hr>0 ? `${hr}h ${mn}m` : `${mn}m`;
+  document.getElementById('c-material').textContent = `NT$${matCost.toLocaleString()}`;
+  document.getElementById('c-support').textContent  = '含於材料中';
+  document.getElementById('c-time').textContent     = timeStr;
+  document.getElementById('c-post').textContent     = `NT$${postCost}`;
+  document.getElementById('c-total').textContent    = `NT$${(matCost+postCost).toLocaleString()}`;
+  document.getElementById('v-vol').textContent      = `${volMl.toFixed(1)} mL`;
+  document.getElementById('v-time').textContent     = timeStr;
+  showToast(`PreForm 精確計算完成：${timeStr} · ${volMl.toFixed(1)} mL`, 'ok');
 }
 
 // ══ 自動擺放（依列印範圍計算最佳角度）══
@@ -603,6 +668,22 @@ function autoOrient(){
   const size2 = bbox2.getSize(new THREE.Vector3());
   const fits = size2.x <= p.w && size2.y <= p.h && size2.z <= p.d;
   showToast(fits ? '已放入最佳擺放位置' : '已找最佳方向，但尺寸超出列印範圍', fits ? 'ok' : 'err');
+  // 若 PFS 已有場景，重新估算時間
+  if(pfsSceneId && pfsAvail){
+    pfsReq('POST',`/scene/${pfsSceneId}/auto-orient/`,{}).then(()=>
+      pfsReq('POST',`/scene/${pfsSceneId}/auto-support/`,{})
+    ).then(()=>
+      pfsReq('POST',`/scene/${pfsSceneId}/estimate-print-time/`,{})
+    ).then(r=>{
+      const mat = materials.find(m=>m.code===document.getElementById('mat-sel').value);
+      if(mat && r.data?.total_print_time_s>0){
+        pfsReq('GET',`/scene/${pfsSceneId}/`).then(sr=>{
+          const vol = sr.data?.material_usage?.volume_ml||0;
+          updateQuoteFromPFS(r.data.total_print_time_s, vol, mat);
+        });
+      }
+    }).catch(()=>{});
+  }
 }
 
 function updateOrientResult(r){
@@ -625,19 +706,93 @@ function onFileChange(input){
   document.getElementById('upload-zone').classList.add('has-file');
   document.getElementById('top-aux').textContent = f.name + ' · 解析中…';
   const reader = new FileReader();
-  reader.onload = e=>{
+  reader.onload = async e => {
     try{
       const geom = parseSTL(e.target.result);
       loadGeometry(geom);
       runSTLAnalysis(geom);
-      document.getElementById('top-aux').textContent = f.name + ' · 後自動計算材積 · 費用 · 時間';
-      showToast('STL 載入成功','ok');
+      document.getElementById('top-aux').textContent = f.name + ' · 3D 載入完成';
+      showToast('STL 3D 預覽載入', 'ok');
     } catch(err){
-      showToast('STL 解析失敗：'+err.message,'err');
-      document.getElementById('top-aux').textContent = '上傳 STL 後自動計算材積 · 費用 · 時間';
+      showToast('STL 解析失敗：'+err.message, 'err');
     }
+    // 同步送 PreFormServer 計算（需要檔案路徑，但瀏覽器無法取得絕對路徑）
+    // 改用 prompt 請使用者輸入路徑
+    await sendSTLtoPFS(f.name);
   };
   reader.readAsArrayBuffer(f);
+}
+
+async function sendSTLtoPFS(fileName){
+  const avail = await checkPFS();
+  if(!avail){
+    document.getElementById('top-aux').textContent = fileName + ' · PreFormServer 未連線，使用公式估算';
+    return;
+  }
+  // 請使用者輸入檔案完整路徑
+  const filePath = prompt(
+    `PreFormServer 需要檔案的完整路徑才能精確計算。\n\n請輸入此 STL 的完整路徑：\n（例如 C:\\Users\\20030024\\Downloads\\${fileName}）`,
+    `C:\\Users\\20030024\\Downloads\\${fileName}`
+  );
+  if(!filePath){ showToast('已跳過 PreFormServer 計算，使用公式估算','ok'); return; }
+  await runPFSAnalysis(filePath);
+}
+
+async function runPFSAnalysis(filePath){
+  const mat = materials.find(m=>m.code===document.getElementById('mat-sel').value);
+  if(!mat) return;
+  document.getElementById('top-aux').textContent = '⏳ PreFormServer 計算中…';
+  try {
+    // 1. 設定場景
+    const ok = await pfsSetupScene();
+    if(!ok){ showToast('PreFormServer 場景設定失敗','err'); return; }
+    const sid = pfsSceneId || 'default';
+
+    // 2. 匯入 STL
+    showToast('PreFormServer 匯入 STL…','ok');
+    const imp = await pfsReq('POST',`/scene/${sid}/import-model/`,{"file": filePath});
+    if(!imp.ok){ showToast('STL 匯入失敗：'+imp.data?.error?.message,'err'); return; }
+
+    // 3. 自動擺放
+    showToast('PreFormServer 自動擺放…','ok');
+    await pfsReq('POST',`/scene/${sid}/auto-orient/`,{});
+
+    // 4. 自動支撐
+    showToast('PreFormServer 自動支撐…','ok');
+    await pfsReq('POST',`/scene/${sid}/auto-support/`,{});
+
+    // 5. 估算列印時間
+    showToast('PreFormServer 估算列印時間…','ok');
+    const timeR = await pfsReq('POST',`/scene/${sid}/estimate-print-time/`,{});
+    const timeSec = timeR.data?.total_print_time_s || 0;
+
+    // 6. 取得材料用量
+    const sceneR = await pfsReq('GET',`/scene/${sid}/`);
+    const volMl  = sceneR.data?.material_usage?.volume_ml || 0;
+
+    // 7. 列印驗證
+    const valR = await pfsReq('GET',`/scene/${sid}/print-validation/`);
+    if(valR.ok && stlAnalysis) {
+      // 把驗證結果更新到分析面板
+      const perModel = valR.data?.per_model_results || {};
+      const vals = Object.values(perModel);
+      if(vals.length){
+        const v = vals[0];
+        const needsSupport = v.undersupported;
+        if(stlAnalysis){ stlAnalysis.pfsUndersupported = needsSupport; renderAnalysis(); }
+      }
+    }
+
+    // 8. 更新估價面板（真實數字）
+    if(timeSec>0 || volMl>0){
+      updateQuoteFromPFS(timeSec, volMl, mat);
+      document.getElementById('top-aux').textContent =
+        `${Math.floor(timeSec/3600)}h ${Math.floor((timeSec%3600)/60)}m · ${volMl.toFixed(1)} mL · PreForm 精確計算`;
+    }
+  } catch(ex){
+    showToast('PreFormServer 計算失敗：'+ex.message,'err');
+    document.getElementById('top-aux').textContent = '使用公式估算（PreFormServer 未連線）';
+  }
 }
 
 // ══ STL 解析 ══

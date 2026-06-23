@@ -13,8 +13,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-22T22:36:49.421306-04:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "last_pinged": "2026-06-22T22:50:34.034197-04:00",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "dee3d0fa-05bb-40e0-9a26-d304e519d60c",
       "material": "Tough 2000 V2",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-18T07:23:16.115647-04:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "07563441-65cd-4dfa-80b2-ea0be5453db2",
       "material": "Nylon 12",
@@ -62,7 +62,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -95,8 +95,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-22T22:36:48.657437-04:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "last_pinged": "2026-06-22T22:50:26.703797-04:00",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "3ad5cfd9-784d-4775-a600-99f60545059f",
       "material": "Rigid 10K V1.1",
@@ -139,7 +139,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -173,7 +173,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-10T21:16:19.293790-04:00",
-    "updated_at": "2026-06-23T02:37:52Z",
+    "updated_at": "2026-06-23T02:51:24Z",
     "last_completed_print": {
       "guid": "cefb246b-7d66-4899-bf3e-4292e09c3974",
       "material": "Flex 50A V1",

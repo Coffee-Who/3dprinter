@@ -13,8 +13,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-28T21:33:43.860906-04:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "last_pinged": "2026-06-29T02:20:21.842821-04:00",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
       "guid": "dee3d0fa-05bb-40e0-9a26-d304e519d60c",
       "material": "Tough 2000 V2",
@@ -29,16 +29,16 @@
     "machine_type": "FORM-4-0",
     "status": "IDLE",
     "print_name": "",
-    "material": "FLGPGR05",
-    "material_level": 10.0,
+    "material": "FLRG1011",
+    "material_level": 50.0,
     "cartridges": [
       {
         "slot": "SINGLE",
-        "material": "FLGPGR05",
+        "material": "FLRG1011",
         "initial_ml": 1000.0,
-        "dispensed_ml": 900.0,
-        "remaining_ml": 100.0,
-        "remaining_pct": 10.0,
+        "dispensed_ml": 500.0,
+        "remaining_ml": 500.0,
+        "remaining_pct": 50.0,
         "is_empty": false
       }
     ],
@@ -47,14 +47,14 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-28T21:33:32.903353-04:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "last_pinged": "2026-06-29T02:20:06.239674-04:00",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
-      "guid": "6d14066d-9f1d-428e-9c29-b4f481d2223e",
-      "material": "Grey V5",
-      "volume_ml": 8.718601986919355,
+      "guid": "bae555a7-9721-43fe-9d4f-dfe650200b3b",
+      "material": "Rigid 10K V1.1",
+      "volume_ml": 129.9372234794301,
       "status": "FINISHED",
-      "finished": "2026-06-25T01:37:29.247000-04:00"
+      "finished": "2026-06-28T23:58:57.578000-04:00"
     }
   },
   {
@@ -71,8 +71,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-28T21:33:51.017631-04:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "last_pinged": "2026-06-29T02:20:17.188245-04:00",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -96,7 +96,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -139,7 +139,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -152,7 +152,7 @@
     "serial": "CreativeDragon",
     "alias": "FORM-3-2",
     "machine_type": "FORM-3-2",
-    "status": "UNKNOWN",
+    "status": "PRIMED",
     "print_name": "",
     "material": "FLELCL01",
     "material_level": 82.6,
@@ -172,8 +172,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-06-10T21:16:19.293790-04:00",
-    "updated_at": "2026-06-29T01:34:51Z",
+    "last_pinged": "2026-06-29T02:20:16.155617-04:00",
+    "updated_at": "2026-06-29T06:21:39Z",
     "last_completed_print": {
       "guid": "cefb246b-7d66-4899-bf3e-4292e09c3974",
       "material": "Flex 50A V1",

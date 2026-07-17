@@ -3,8 +3,8 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "UNKNOWN",
-    "print_name": "",
+    "status": "PRIMED",
+    "print_name": "實威-工程測試",
     "material": "FLTO2011",
     "material_level": 10.0,
     "cartridges": [
@@ -18,13 +18,13 @@
         "is_empty": false
       }
     ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-07-16T07:59:53.819059-04:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "progress": 3.3,
+    "layer_now": 11,
+    "layer_total": 334,
+    "volume_ml": 30.56047155027574,
+    "time_left": "44m",
+    "last_pinged": "2026-07-16T20:10:30.956704-04:00",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "b00c4a20-e9d0-4ee6-831b-88ecbe572483",
       "material": "Tough 2000 V1.1",
@@ -66,8 +66,8 @@
     "layer_total": 2323,
     "volume_ml": 696.0245421871872,
     "time_left": "2h 2m",
-    "last_pinged": "2026-07-16T19:10:47.648435-04:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "last_pinged": "2026-07-16T20:10:25.145783-04:00",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "01d17d7c-25bf-473b-8345-454ac6c1c381",
       "material": "Tough 2000 V2",
@@ -91,7 +91,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -158,7 +158,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -181,8 +181,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-16T19:10:49.198530-04:00",
-    "updated_at": "2026-07-16T23:11:54Z",
+    "last_pinged": "2026-07-16T20:10:21.476915-04:00",
+    "updated_at": "2026-07-17T00:11:25Z",
     "last_completed_print": {
       "guid": "cefb246b-7d66-4899-bf3e-4292e09c3974",
       "material": "Flex 50A V1",

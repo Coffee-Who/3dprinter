@@ -104,10 +104,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <div class="topbar">
   <div class="brand">文件產生器<small>3D PRINT · DOC GEN</small></div>
   <div class="subtabs">
-    <button id="tabPpt" class="on" onclick="setTab('ppt')">PPT 簡報輸入</button>
-    <button id="tabWord" onclick="setTab('word')">Word 確認單輸入</button>
+    <button id="tabWord" class="on" onclick="setTab('word')">Word 確認單輸入</button>
+    <button id="tabPpt" onclick="setTab('ppt')">PPT 簡報輸入</button>
   </div>
-  <button class="btn outline" onclick="syncToWord()" title="把 PPT 端的客戶、機型、時間與量測資料帶入 Word 端">⇄ 同步共用欄位 → Word</button>
+  <button class="btn outline" onclick="syncToPpt()" title="把 Word 端的客戶、機型、時間、照片與 CAD/誤差帶入 PPT 端">⇄ 套用到 PPT</button>
   <div class="right">
     <span class="hint mono" id="saveState">AUTO SAVE</span>
   </div>
@@ -116,8 +116,32 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <div class="wrap">
 <div class="main">
 
-  <!-- ============ PPT TAB ============ -->
-  <div id="pagePpt">
+  <!-- ============ WORD TAB ============ -->
+  <div id="pageWord">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">W1</span><span class="card-title">派工基本資料（主要輸入）</span></div>
+      <div class="wordform" id="wordForm"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">W2</span><span class="card-title">確認項目（是／否＋備註）</span></div>
+      <div id="checkList"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="pnum">W3</span><span class="card-title">完成圖片（底稿固定 3×3 共 9 格）＋ CAD 尺寸／誤差值</span>
+</div>
+      <div class="grid3" id="wordGroups"></div>
+      <div class="divline"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap">備註</span>
+        <input id="wordNote" style="flex:1" oninput="S.word.note=this.value;save()">
+      </div>
+      <div class="field-note">簽名欄（工程主管／業務／產品負責人／實施工程師）會自動加在文件最後，保留空白供手寫。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PPT TAB ============ -->
+  <div id="pagePpt" class="hidden">
 
     <div class="card dim" style="margin-bottom:14px">
       <div class="card-head" style="margin-bottom:0">
@@ -212,7 +236,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div class="card-head">
         <span class="pnum">P7＋</span><span class="card-title">尺寸量測結果</span>
         <span class="hint">每 3 組排一頁，自動增頁；是否通過依公差自動判定</span>
-        <span class="right"><button class="btn outline" onclick="addGroup()">＋ 加量測組</button></span>
+        <span class="right"><button class="btn outline" onclick="pptFromWord()">從 Word 帶入</button><button class="btn outline" onclick="addGroup()">＋ 加量測組</button></span>
       </div>
       <div id="groupPages"></div>
     </div>
@@ -224,39 +248,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     </div>
   </div>
 
-  <!-- ============ WORD TAB ============ -->
-  <div id="pageWord" class="hidden">
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-head"><span class="pnum">W1</span><span class="card-title">派工基本資料</span>
-        <span class="right"><button class="btn outline" onclick="syncToWord()">⇄ 從 PPT 帶入共用欄位</button></span></div>
-      <div class="wordform" id="wordForm"></div>
-    </div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-head"><span class="pnum">W2</span><span class="card-title">確認項目（是／否＋備註）</span></div>
-      <div id="checkList"></div>
-    </div>
-    <div class="card">
-      <div class="card-head"><span class="pnum">W3</span><span class="card-title">完成圖片（底稿固定 3×3 共 9 格）＋ CAD 尺寸／誤差值</span>
-        <span class="right">
-          <button class="btn outline" onclick="wordFromPpt()">從 PPT 量測帶入</button>
-        </span></div>
-      <div class="grid3" id="wordGroups"></div>
-      <div class="divline"></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span style="font-size:13px;color:var(--muted);white-space:nowrap">備註</span>
-        <input id="wordNote" style="flex:1" oninput="S.word.note=this.value;save()">
-      </div>
-      <div class="field-note">簽名欄（工程主管／業務／產品負責人／實施工程師）會自動加在文件最後，保留空白供手寫。</div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ SIDE ============ -->
+  <!-- ============ SIDE ============ -->
 <div class="side">
   <div class="card">
     <h4>產出</h4>
-    <button class="btn primary" onclick="genPptx(this)">產生 PPT（.pptx）</button>
-    <button class="btn outline" onclick="genDocx(this)">產生 Word（.docx）</button>
+    <button class="btn primary" onclick="genDocx(this)">產生 Word 確認單（.docm）</button>
+    <button class="btn outline" onclick="genPptx(this)">產生 PPT 簡報（.pptx）</button>
     <button class="btn" onclick="genBoth(this)">一鍵產生兩份</button>
     <div class="status" id="genStatus">檔名：<span class="mono" id="fnPreview"></span></div>
   </div>
@@ -598,31 +595,37 @@ function updateFn(){
   if(el) el.textContent=fmtDate(S.date)+'_'+(S.cover.company||'客戶公司全名')+'_材料特性與列印尺寸確認';
 }
 
-/* ================= sync ================= */
-function syncToWord(){
+/* ================= sync : Word -> PPT ================= */
+function parseDateLoose(s){
+  const m=/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/.exec((s||'').trim());
+  if(!m) return null;
+  return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
+}
+function syncToPpt(){
   const w=S.word;
-  if(S.cover.company) w.client=S.cover.company;
-  const m=(S.ev.machine||'').trim();
-  if(m){ const sp=m.indexOf(' '); if(sp>0){ w.brand=m.slice(0,sp); w.model=m.slice(sp+1); } else w.brand=m; }
-  if(S.ev.timeH||S.ev.timeM) w.printTime=(S.ev.timeH?S.ev.timeH+'h ':'')+(S.ev.timeM?S.ev.timeM+'min':'');
-  if(S.date) w.doneDate=S.date;
-  const acc=S.ev.accuracy;
-  if(acc&&w.checks[0]&&!w.checks[0].note) w.checks[0].note='公差 '+acc;
-  wordFromPpt(true);
-  save(); renderWordForm(); renderChecks(); renderWordGroups();
-  setTab('word'); toast('已同步共用欄位到 Word');
+  if(w.client) S.cover.company=w.client;
+  const mach=[w.brand,w.model].filter(Boolean).join(' ').trim();
+  if(mach){ S.ev.machine=mach; }
+  const th=/(\d+)\s*[hH時]/.exec(w.printTime||''), tm=/(\d+)\s*(m|M|min|分)/.exec(w.printTime||'');
+  if(th) S.ev.timeH=th[1];
+  if(tm) S.ev.timeM=tm[1];
+  const dd=parseDateLoose(w.doneDate); if(dd) S.date=dd;
+  pptFromWord(true);
+  renderAll(); applyMachine(); save();
+  setTab('ppt'); toast('已套用 Word 輸入到 PPT');
 }
-function wordFromPpt(silent){
-  const gs=S.groups.filter(g=>g.cad||g.meas||g.photo);
-  if(gs.length){
-    S.word.groups=gs.map(g=>({photo:g.photo,cad:g.cad,err:calcErr(g.cad,g.meas)}));
-    while(S.word.groups.length<9) S.word.groups.push({photo:null,cad:'',err:''});
-    if(gs.length>9) toast('量測超過 9 組，Word 只帶入前 9 組');
-    S.word.groups=S.word.groups.slice(0,9);
+function pptFromWord(silent){
+  const src=S.word.groups.filter(g=>g.photo||g.cad||g.err);
+  if(src.length){
+    S.groups=src.map(g=>{
+      const c=parseFloat(g.cad), e=parseFloat(g.err);
+      let meas='';
+      if(!isNaN(c)&&!isNaN(e)) meas=String(Math.round((c+e)*1000)/1000);
+      return {photo:g.photo,tol:S.ev.accuracy||'',cad:g.cad,meas:meas,passMode:'auto'};
+    });
   }
-  if(!silent){ save(); renderWordGroups(); toast('已帶入 PPT 量測資料'); }
+  if(!silent){ save(); renderGroups(); toast('已帶入 Word 照片與 CAD/誤差'); }
 }
-
 /* ================= storage ================= */
 let _saveT=null;
 function save(){
@@ -740,11 +743,12 @@ async function genDocx(btn){
   }catch(e){ console.error(e); toast('Word 產生失敗：'+e.message); }
   btn&&(btn.disabled=false);
 }
-async function genBoth(btn){ await genPptx(btn); await genDocx(btn); }
+async function genBoth(btn){ await genDocx(btn); await genPptx(btn); }
 
 /* ================= boot ================= */
 loadDraft();
 renderAll();
+setTab('word');
 renderProfiles();
 updateFn();
 </script>

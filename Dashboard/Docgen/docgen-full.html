@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文件產生器 · 3D列印簡報與確認單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#fafbfc; --panel:#ffffff; --border:#e6e8ec; --border2:#cbd0d8;
+  --ink:#0a0e14; --muted:#5a6270; --faint:#8a93a3;
+  --accent:#0c7a99; --accent-soft:#e6f1f6;
+  --green:#1d6f43; --green-soft:#e6f1ea;
+  --red:#c0392b; --red-soft:#fbe7e3;
+  --cell:#fffdf5; --cell-bd:#c79b2a;
+  --navy:#123a5f; --gold:#f2c230;
+  --sans:'Noto Sans TC',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;
+  background-image:radial-gradient(circle,#dfe3e8 1px,transparent 1px);background-size:22px 22px}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13px;color:var(--ink);
+  border:1px solid var(--border);background:var(--cell);border-radius:6px;padding:6px 9px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.topbar{position:sticky;top:0;z-index:50;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;padding:10px 18px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px}
+.brand small{display:block;font-family:var(--mono);font-size:9px;color:var(--faint);letter-spacing:.12em;font-weight:400}
+.subtabs{display:inline-flex;border:1px solid var(--border);border-radius:7px;padding:2px;gap:2px;background:var(--panel)}
+.subtabs button{border:0;background:transparent;color:var(--muted);font-size:13px;padding:5px 16px;border-radius:5px}
+.subtabs button.on{background:var(--ink);color:#fff;font-weight:500}
+.btn{border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:7px;padding:6px 12px;font-size:12.5px}
+.btn:hover{border-color:var(--border2);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.outline{border-color:var(--accent);color:var(--accent)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 18px 60px;display:grid;grid-template-columns:minmax(0,1fr) 264px;gap:16px;align-items:start}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{background:var(--panel);border:.5px solid var(--border);border-radius:10px;padding:14px 16px}
+.card.dim{background:var(--bg)}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.pnum{font-family:var(--mono);font-size:11px;color:var(--accent)}
+.card.dim .pnum{color:var(--faint)}
+.card-title{font-size:14px;font-weight:500}
+.hint{font-size:11.5px;color:var(--faint)}
+.right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent);width:15px;height:15px}
+.slide{border:1px solid var(--border2);border-radius:7px;overflow:hidden}
+.slide-title{background:var(--navy);color:#fff;font-size:14px;font-weight:500;padding:8px 13px}
+.slide-title .gold{color:var(--gold)}
+.slide-title input{background:#fffdf5;border:1px solid var(--cell-bd);border-radius:4px;font-size:13px;padding:1px 7px;width:150px}
+.tbl{display:grid;background:var(--ink);gap:1px;border-top:1px solid var(--ink);font-size:13px}
+.tbl .h{background:#f0f1f4;padding:7px 10px;color:#3b4250;display:flex;align-items:center}
+.tbl .v{background:var(--cell);padding:5px 8px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.tbl .v input,.tbl .v select{border-color:#e2ddc8;background:#fff}
+.tbl .v input{width:100%;min-width:0}
+.tbl .v input.num{width:90px}
+.chip{border:1px solid var(--border);border-radius:999px;padding:2px 11px;font-size:12px;color:var(--muted);background:#fff;user-select:none}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:500}
+.chip.small{font-size:11.5px;padding:1px 9px}
+.drop{border:1.5px dashed var(--accent);border-radius:7px;color:var(--accent);font-size:12px;text-align:center;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;cursor:pointer;min-height:84px;padding:6px;background:#fff;position:relative;overflow:hidden}
+.drop:hover{background:var(--accent-soft)}
+.drop.filled{border-style:solid;border-color:var(--border2);color:var(--faint)}
+.drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}
+.drop .rm{position:absolute;top:4px;right:4px;background:rgba(10,14,20,.72);color:#fff;border:0;border-radius:4px;font-size:11px;padding:2px 7px;z-index:2}
+.drop .lbl{position:relative;z-index:1;pointer-events:none}
+.matrow{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.matgrid{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:8px}
+.grouprow{border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff}
+.side{display:flex;flex-direction:column;gap:12px;position:sticky;top:64px}
+.side .card{padding:13px 14px}
+.side h4{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.1em;font-weight:500;margin-bottom:10px}
+.side .btn{width:100%;text-align:center;margin-bottom:7px}
+.filerow{display:flex;gap:6px;flex-wrap:wrap}
+.filerow .btn{width:auto;flex:1;margin-bottom:0;font-size:11.5px;padding:5px 8px}
+.status{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:6px}
+.status b{color:var(--green);font-weight:500}
+.status .err{color:var(--red)}
+.wordform{display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:1px;background:var(--ink);border:1px solid var(--ink);border-radius:0;font-size:13px}
+.field-note{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.6}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pass-yes{color:var(--green);font-weight:600}
+.pass-no{color:var(--red);font-weight:600}
+.mono{font-family:var(--mono)}
+.divline{border-top:1px solid var(--border);margin:10px 0}
+.hidden{display:none!important}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:9px 18px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">文件產生器<small>3D PRINT · DOC GEN</small></div>
+  <div class="subtabs">
+    <button id="tabPpt" class="on" onclick="setTab('ppt')">PPT 簡報輸入</button>
+    <button id="tabWord" onclick="setTab('word')">Word 確認單輸入</button>
+  </div>
+  <button class="btn outline" onclick="syncToWord()" title="把 PPT 端的客戶、機型、時間與量測資料帶入 Word 端">⇄ 同步共用欄位 → Word</button>
+  <div class="right">
+    <span class="hint mono" id="saveState">AUTO SAVE</span>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="main">
+
+  <!-- ============ PPT TAB ============ -->
+  <div id="pagePpt">
+
+    <div class="card dim" style="margin-bottom:14px">
+      <div class="card-head" style="margin-bottom:0">
+        <span class="pnum">P1</span><span class="card-title" style="color:var(--muted)">說明頁（內部注意事項）</span>
+        <span class="right"><label class="toggle"><input type="checkbox" id="incIntro" onchange="S.includeIntro=this.checked;save()">輸出此頁</label></span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">P2</span><span class="card-title">封面</span></div>
+      <div class="slide">
+        <div style="background:#131c2e;padding:22px 26px;display:flex;flex-direction:column;gap:10px">
+          <input id="coverCompany" placeholder="客戶公司全名" style="max-width:420px;font-size:16px;font-weight:500"
+            oninput="S.cover.company=this.value;save()">
+          <div style="color:#9aa3b2;font-size:13px">材料特性與列印尺寸確認</div>
+          <div style="display:flex;gap:8px;align-items:center;color:#9aa3b2;font-size:13px;flex-wrap:wrap">
+            模型製作者_<input id="coverMaker" placeholder="中文（英文）" style="width:180px"
+              oninput="S.cover.maker=this.value;save()">
+            <input id="coverDate" type="date" style="width:150px" onchange="S.date=this.value;save()" title="用於檔名">
+            <span class="hint" style="color:#6b7686">（日期用於檔名）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card dim" style="margin-bottom:14px">
+      <div class="card-head" style="margin-bottom:0">
+        <span class="pnum">P3–P4</span><span class="card-title" style="color:var(--muted)">導入目標（現狀痛點表・簡化流程）— 底稿原樣沿用</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <span class="pnum">P5</span><span class="card-title">材料物性頁</span>
+        <span class="hint">第 1 筆若不換圖，沿用範本 White V5 圖片</span>
+        <span class="right"><button class="btn outline" onclick="addMaterial()">＋ 加一頁材料</button></span>
+      </div>
+      <div id="matList"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">P6</span><span class="card-title">評估標準／時間／材料用量</span>
+        <span class="hint">選機型自動帶入精度標準與量測公差</span></div>
+      <div class="slide">
+        <div class="slide-title">3D列印-列印確認-<span class="gold">評估標準/時間/材料用量說明</span></div>
+        <div class="tbl" style="grid-template-columns:118px 1fr 190px">
+          <div class="h">評估機型</div>
+          <div class="v"><input id="evMachine" list="machineList" placeholder="品牌＋設備名稱，例：Formlabs Form4"
+            oninput="S.ev.machine=this.value;applyMachine();save()"></div>
+          <div class="v" style="grid-row:span 6;padding:8px">
+            <div class="drop" id="dropShot" style="width:100%;height:100%;min-height:200px" onclick="pickImg('shot')">
+              <span class="lbl">PreForm／Eiger<br>樣件截圖<br><span style="font-size:10.5px">點擊或拖曳上傳</span></span>
+            </div>
+          </div>
+          <div class="h">列印材料</div>
+          <div class="v"><input id="evMaterial" placeholder="正確材料名稱，例：Clear Resin V5"
+            oninput="S.ev.material=this.value;save()"></div>
+          <div class="h">模型呈現重點</div>
+          <div class="v" id="hlChips"></div>
+          <div class="h">如何測試樣件精度</div>
+          <div class="v" id="testChips"></div>
+          <div class="h">表面處理</div>
+          <div class="v" id="surfChips"></div>
+          <div class="h">精度標準</div>
+          <div class="v"><input id="evAccuracy" placeholder="例：±0.05 mm" oninput="S.ev.accuracy=this.value;save()"></div>
+        </div>
+        <div class="tbl" style="grid-template-columns:118px 1fr 64px 1fr 64px 190px">
+          <div class="h">列印層數</div>
+          <div class="v" style="grid-column:span 4"><input class="num" id="evLayers" placeholder="數字" oninput="S.ev.layers=this.value;save()"></div>
+          <div class="v" style="background:#f0f1f4"></div>
+          <div class="h">列印層厚</div>
+          <div class="v" style="grid-column:span 3"><input class="num" id="evThick" placeholder="數字" oninput="S.ev.thickness=this.value;save()"></div>
+          <div class="h" style="justify-content:center">mm</div>
+          <div class="v" style="background:#f0f1f4"></div>
+          <div class="h">材料用量</div>
+          <div class="v" style="grid-column:span 3"><input class="num" id="evUsage" placeholder="數字" oninput="S.ev.usage=this.value;save()"></div>
+          <div class="v"><select id="evUnit" onchange="S.ev.usageUnit=this.value;save()" style="width:70px">
+            <option>ml</option><option>g</option><option>cc</option></select></div>
+          <div class="v" style="background:#f0f1f4"></div>
+          <div class="h">列印時間</div>
+          <div class="v"><input class="num" id="evTimeH" placeholder="數字" oninput="S.ev.timeH=this.value;syncPrintTime();save()"></div>
+          <div class="h" style="justify-content:center">h</div>
+          <div class="v"><input class="num" id="evTimeM" placeholder="數字" oninput="S.ev.timeM=this.value;syncPrintTime();save()"></div>
+          <div class="h" style="justify-content:center">min</div>
+          <div class="v" style="background:#f0f1f4"></div>
+        </div>
+      </div>
+      <datalist id="machineList"></datalist>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <span class="pnum">P7＋</span><span class="card-title">尺寸量測結果</span>
+        <span class="hint">每 3 組排一頁，自動增頁；是否通過依公差自動判定</span>
+        <span class="right"><button class="btn outline" onclick="addGroup()">＋ 加量測組</button></span>
+      </div>
+      <div id="groupPages"></div>
+    </div>
+
+    <div class="card dim">
+      <div class="card-head" style="margin-bottom:0">
+        <span class="pnum">P9</span><span class="card-title" style="color:var(--muted)">結尾頁（公司聯絡資訊）— 底稿原樣沿用</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WORD TAB ============ -->
+  <div id="pageWord" class="hidden">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">W1</span><span class="card-title">派工基本資料</span>
+        <span class="right"><button class="btn outline" onclick="syncToWord()">⇄ 從 PPT 帶入共用欄位</button></span></div>
+      <div class="wordform" id="wordForm"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><span class="pnum">W2</span><span class="card-title">確認項目（是／否＋備註）</span></div>
+      <div id="checkList"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="pnum">W3</span><span class="card-title">完成圖片（至少三個視角）＋ CAD 尺寸／誤差值</span>
+        <span class="right">
+          <button class="btn outline" onclick="wordFromPpt()">從 PPT 量測帶入</button>
+          <button class="btn outline" onclick="addWordGroup()">＋ 加一格</button>
+        </span></div>
+      <div class="grid3" id="wordGroups"></div>
+      <div class="divline"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap">備註</span>
+        <input id="wordNote" style="flex:1" oninput="S.word.note=this.value;save()">
+      </div>
+      <div class="field-note">簽名欄（工程主管／業務／產品負責人／實施工程師）會自動加在文件最後，保留空白供手寫。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SIDE ============ -->
+<div class="side">
+  <div class="card">
+    <h4>產出</h4>
+    <button class="btn primary" onclick="genPptx(this)">產生 PPT（.pptx）</button>
+    <button class="btn outline" onclick="genDocx(this)">產生 Word（.docx）</button>
+    <button class="btn" onclick="genBoth(this)">一鍵產生兩份</button>
+    <div class="status" id="genStatus">檔名：<span class="mono" id="fnPreview"></span></div>
+  </div>
+  <div class="card">
+    <h4>設定檔管理（跨電腦）</h4>
+    <div style="display:flex;gap:6px;margin-bottom:7px">
+      <input id="profName" placeholder="設定檔名稱" style="flex:1;min-width:0">
+      <button class="btn dark" style="width:auto;margin:0" onclick="saveProfile()">儲存</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:7px">
+      <select id="profSel" style="flex:1;min-width:0"></select>
+      <button class="btn" style="width:auto;margin:0" onclick="loadProfile()">載入</button>
+      <button class="btn" style="width:auto;margin:0" onclick="delProfile()" title="刪除選取設定檔">✕</button>
+    </div>
+    <div class="filerow">
+      <button class="btn" onclick="exportJson()">匯出 JSON</button>
+      <button class="btn" onclick="document.getElementById('impFile').click()">匯入 JSON</button>
+      <input type="file" id="impFile" accept=".json" class="hidden" onchange="importJson(this)">
+    </div>
+    <div class="status">草稿自動儲存於此瀏覽器；換電腦請匯出 JSON 帶著走。</div>
+  </div>
+  <div class="card">
+    <h4>操作提示</h4>
+    <div class="status">
+      照片可點擊選檔或直接拖曳；也可複製圖片後在頁面上 Ctrl+V 貼上（貼到最近點過的上傳框）。<br>
+      範本檔 <span class="mono">template.pptx</span> 需與本頁放在同一資料夾。
+    </div>
+  </div>
+</div>
+</div>
+
+<input type="file" id="imgPick" accept="image/*" class="hidden">
+<div id="toast"></div>
+
+<script>
+/* ================= state ================= */
+const MACHINES = {
+  'Formlabs Form4':'±0.05 mm',
+  'Formlabs Form4L':'±0.05 mm',
+  'Formlabs Form3+':'±0.05 mm',
+  'Formlabs Fuse1+ 30W':'±0.3 mm',
+  'Markforged X7':'±0.2 mm',
+  'Markforged Onyx One':'±0.2 mm',
+  'Markforged Mark Two':'±0.2 mm'
+};
+const HL_OPTS=['材料性能','外觀細節','尺寸精度'];
+const TEST_OPTS=['無','通過裝配檢測','客戶提供裝配零件','提供2D與3D圖面'];
+const SURF_OPTS=['表面打磨','噴砂處理','表面噴光油或噴漆','拆件黏接'];
+const EXEC_OPTS=['評估機器','代工','教育訓練','其他'];
+
+function blankState(){
+  return {
+    includeIntro:false,
+    date:new Date().toISOString().slice(0,10),
+    cover:{company:'',maker:''},
+    materials:[{name:'White V5',img1:null,img2:null}],
+    ev:{machine:'',material:'',hl:[],hlOther:'',test:[],testOther:'',surf:[],surfOther:'',
+        accuracy:'',layers:'',thickness:'',usage:'',usageUnit:'ml',timeH:'',timeM:'',shot:null},
+    groups:[newGroup()],
+    word:{client:'',ef:'',efDate:'',brand:'',model:'',execType:'評估機器',sales:'',
+      printTime:'',qty:'',doneDate:'',postTime:'',
+      checks:[{name:'重點尺寸確認檢查',pass:'是',note:''},
+              {name:'外觀破損檢查',pass:'是',note:''},
+              {name:'裝配檢查',pass:'是',note:''}],
+      groups:[{photo:null,cad:'',err:''},{photo:null,cad:'',err:''},{photo:null,cad:'',err:''}],
+      note:''}
+  };
+}
+function newGroup(){ return {photo:null,tol:'',cad:'',meas:'',passMode:'auto'}; }
+let S = blankState();
+let lastDrop = null; /* target key for paste */
+
+/* ================= helpers ================= */
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(d){ return (d||'').replace(/-/g,''); }
+function parseTol(t){ const m=/([\d.]+)/.exec(t||''); return m?parseFloat(m[1]):null; }
+function calcPass(g){
+  if(g.passMode&&g.passMode!=='auto') return g.passMode;
+  const tol=parseTol(g.tol), c=parseFloat(g.cad), m=parseFloat(g.meas);
+  if(tol==null||isNaN(c)||isNaN(m)) return '';
+  return Math.abs(m-c)<=tol+1e-9 ? '是':'否';
+}
+function calcErr(cad,meas){
+  const c=parseFloat(cad), m=parseFloat(meas);
+  if(isNaN(c)||isNaN(m)) return '';
+  const d=m-c; const s=(Math.round(d*1000)/1000).toString();
+  return (d>0?'+':'')+s;
+}
+async function fileToImg(file){
+  if(!file||!file.type||file.type.indexOf('image')!==0){ toast('請選擇圖片檔'); return null; }
+  const url=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); });
+  const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+  const MAX=1600; let w=im.naturalWidth,h=im.naturalHeight,out=url,ext=/png/.test(file.type)?'png':'jpg';
+  if(w>MAX||h>MAX||file.size>900*1024){
+    const s=Math.min(MAX/w,MAX/h,1); w=Math.round(w*s); h=Math.round(h*s);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(im,0,0,w,h);
+    out=cv.toDataURL('image/jpeg',0.85); ext='jpg';
+  }
+  return {dataUrl:out,w,h,ext};
+}
+function imgToBytes(img){
+  if(!img) return null;
+  const b64=img.dataUrl.split(',')[1];
+  const bin=atob(b64); const u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  return {bytes:u,ext:img.ext,w:img.w,h:img.h};
+}
+/* generic image slot binding: pickImg(key) with key like 'shot' | 'mat:0:img1' | 'grp:2' | 'wg:1' */
+function slotGet(key){
+  const p=key.split(':');
+  if(p[0]==='shot') return S.ev.shot;
+  if(p[0]==='mat') return S.materials[+p[1]] ? S.materials[+p[1]][p[2]] : null;
+  if(p[0]==='grp') return S.groups[+p[1]] ? S.groups[+p[1]].photo : null;
+  if(p[0]==='wg')  return S.word.groups[+p[1]] ? S.word.groups[+p[1]].photo : null;
+  return null;
+}
+function slotSet(key,val){
+  const p=key.split(':');
+  if(p[0]==='shot') S.ev.shot=val;
+  else if(p[0]==='mat'&&S.materials[+p[1]]) S.materials[+p[1]][p[2]]=val;
+  else if(p[0]==='grp'&&S.groups[+p[1]]) S.groups[+p[1]].photo=val;
+  else if(p[0]==='wg'&&S.word.groups[+p[1]]) S.word.groups[+p[1]].photo=val;
+  save(); renderImages();
+}
+function pickImg(key){
+  lastDrop=key;
+  const inp=document.getElementById('imgPick');
+  inp.onchange=async()=>{ if(inp.files[0]){ const im=await fileToImg(inp.files[0]); if(im) slotSet(key,im); } inp.value=''; };
+  inp.click();
+}
+document.addEventListener('paste',async e=>{
+  if(!lastDrop) return;
+  const it=[...(e.clipboardData.items||[])].find(i=>i.type.indexOf('image')===0);
+  if(it){ const im=await fileToImg(it.getAsFile()); if(im){ slotSet(lastDrop,im); toast('已貼上圖片'); } }
+});
+function bindDrop(el,key){
+  el.addEventListener('dragover',e=>{e.preventDefault(); el.style.background='var(--accent-soft)';});
+  el.addEventListener('dragleave',()=>{el.style.background='';});
+  el.addEventListener('drop',async e=>{
+    e.preventDefault(); el.style.background='';
+    lastDrop=key;
+    const f=e.dataTransfer.files[0];
+    if(f){ const im=await fileToImg(f); if(im) slotSet(key,im); }
+  });
+  el.addEventListener('click',()=>{ lastDrop=key; });
+}
+function renderDropContent(el,key,labelHtml){
+  const img=slotGet(key);
+  if(img){
+    el.classList.add('filled');
+    el.innerHTML='<img src="'+img.dataUrl+'" alt=""><button class="rm" onclick="event.stopPropagation();slotSet(\''+key+'\',null)">移除</button>';
+  } else {
+    el.classList.remove('filled');
+    el.innerHTML='<span class="lbl">'+labelHtml+'</span>';
+  }
+}
+
+/* ================= renders ================= */
+function setTab(t){
+  S.tab=t;
+  document.getElementById('pagePpt').classList.toggle('hidden',t!=='ppt');
+  document.getElementById('pageWord').classList.toggle('hidden',t!=='word');
+  document.getElementById('tabPpt').classList.toggle('on',t==='ppt');
+  document.getElementById('tabWord').classList.toggle('on',t!=='ppt');
+}
+function chipRow(container, opts, sel, otherVal, onChip, onOther, otherPh){
+  let h=opts.map((o,i)=>'<span class="chip'+(sel.indexOf(o)>=0?' on':'')+'" onclick="'+onChip+'('+i+')">'+esc(o)+'</span>').join('');
+  h+='<span class="chip'+(otherVal?' on':'')+'">其他</span><input placeholder="'+(otherPh||'其他請簡述')+'" value="'+esc(otherVal)+'" style="width:150px" oninput="'+onOther+'(this.value)">';
+  container.innerHTML=h;
+}
+function tgHl(i){ tg(S.ev.hl,HL_OPTS[i]); renderChips(); save(); }
+function tgTest(i){ tg(S.ev.test,TEST_OPTS[i]); renderChips(); save(); }
+function tgSurf(i){ tg(S.ev.surf,SURF_OPTS[i]); renderChips(); save(); }
+function tg(arr,v){ const i=arr.indexOf(v); if(i>=0)arr.splice(i,1); else arr.push(v); }
+function setHlOther(v){ S.ev.hlOther=v; save(); }
+function setTestOther(v){ S.ev.testOther=v; save(); }
+function setSurfOther(v){ S.ev.surfOther=v; save(); }
+function renderChips(){
+  chipRow(document.getElementById('hlChips'),HL_OPTS,S.ev.hl,S.ev.hlOther,'tgHl','setHlOther');
+  chipRow(document.getElementById('testChips'),TEST_OPTS,S.ev.test,S.ev.testOther,'tgTest','setTestOther');
+  chipRow(document.getElementById('surfChips'),SURF_OPTS,S.ev.surf,S.ev.surfOther,'tgSurf','setSurfOther');
+}
+function applyMachine(){
+  const acc=MACHINES[S.ev.machine];
+  if(acc){
+    S.ev.accuracy=acc;
+    document.getElementById('evAccuracy').value=acc;
+    S.groups.forEach(g=>{ if(!g.tolManual) g.tol=acc; });
+    renderGroups();
+  }
+}
+function syncPrintTime(){ /* nothing extra; word sync uses ev values */ }
+
+function addMaterial(){ S.materials.push({name:'',img1:null,img2:null}); save(); renderMaterials(); }
+function rmMaterial(i){ S.materials.splice(i,1); if(!S.materials.length)S.materials.push({name:'White V5',img1:null,img2:null}); save(); renderMaterials(); }
+function renderMaterials(){
+  const c=document.getElementById('matList');
+  c.innerHTML=S.materials.map((m,i)=>`
+   <div class="matrow">
+     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+       <span class="mono" style="font-size:11px;color:var(--faint)">材料 ${i+1}</span>
+       <div class="slide" style="flex:1;min-width:240px"><div class="slide-title" style="font-size:12.5px;padding:5px 10px">3D列印-材料物性-<input value="${esc(m.name)}" placeholder="材料名稱" oninput="S.materials[${i}].name=this.value;save()"><span class="gold">材料說明</span></div></div>
+       ${S.materials.length>1?`<button class="btn" onclick="rmMaterial(${i})">刪除此頁</button>`:''}
+     </div>
+     <div class="matgrid">
+       <div class="drop" data-key="mat:${i}:img1" style="min-height:110px"></div>
+       <div class="drop" data-key="mat:${i}:img2" style="min-height:110px"></div>
+     </div>
+   </div>`).join('');
+  renderImages();
+}
+function addGroup(){ const g=newGroup(); g.tol=S.ev.accuracy||''; S.groups.push(g); save(); renderGroups(); }
+function rmGroup(i){ S.groups.splice(i,1); if(!S.groups.length)S.groups.push(newGroup()); save(); renderGroups(); }
+function upG(i,k,v){ S.groups[i][k]=v; if(k==='tol')S.groups[i].tolManual=true; save(); renderGroupCalc(i); }
+function renderGroupCalc(i){
+  const g=S.groups[i]; const p=calcPass(g);
+  const el=document.getElementById('gpass'+i);
+  if(el){ el.textContent=p||'—'; el.className=p==='是'?'pass-yes':(p==='否'?'pass-no':''); }
+}
+function renderGroups(){
+  const c=document.getElementById('groupPages');
+  const pages=[]; for(let i=0;i<S.groups.length;i+=3) pages.push(S.groups.slice(i,i+3));
+  c.innerHTML=pages.map((pg,pi)=>`
+   <div class="slide" style="margin-bottom:10px">
+    <div class="slide-title" style="font-size:12.5px">3D列印-列印確認-<span class="gold">尺寸量測結果說明</span><span style="float:right;font-size:10.5px;color:#9db4c9">第 ${pi+1} 頁</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;background:#fff">
+     ${[0,1,2].map(k=>{
+        const gi=pi*3+k; const g=S.groups[gi];
+        if(!g) return '<div style="border:1px dashed var(--border);border-radius:7px;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:12px">（空）</div>';
+        return `<div class="grouprow">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span class="mono" style="font-size:11px;color:var(--faint)">#${gi+1}</span>
+            <button class="btn" style="padding:1px 8px;font-size:11px" onclick="rmGroup(${gi})">✕</button>
+          </div>
+          <div class="drop" data-key="grp:${gi}" style="min-height:86px;margin-bottom:6px"></div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:12px">
+            <label>RP規範公差 <input value="${esc(g.tol)}" placeholder="±0.05 mm" style="width:100%" oninput="upG(${gi},'tol',this.value)"></label>
+            <div style="display:flex;gap:5px"><label style="flex:1">CAD <input value="${esc(g.cad)}" style="width:100%" oninput="upG(${gi},'cad',this.value)"></label>
+            <label style="flex:1">量測 <input value="${esc(g.meas)}" style="width:100%" oninput="upG(${gi},'meas',this.value)"></label></div>
+            <div style="display:flex;align-items:center;gap:6px">是否通過：<span id="gpass${gi}"></span>
+              <select style="margin-left:auto;font-size:11.5px" onchange="upG(${gi},'passMode',this.value)">
+                <option value="auto"${g.passMode==='auto'?' selected':''}>自動</option>
+                <option value="是"${g.passMode==='是'?' selected':''}>是</option>
+                <option value="否"${g.passMode==='否'?' selected':''}>否</option>
+              </select></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+   </div>`).join('');
+  S.groups.forEach((g,i)=>renderGroupCalc(i));
+  renderImages();
+}
+const WORD_FIELDS=[
+ ['client','客戶名稱'],['ef','EasyFlow單號'],
+ ['efDate','EasyFlow申請日期'],['brand','機器廠牌'],
+ ['model','機器型號'],['execType','執行類別'],
+ ['sales','申請業務人員'],['printTime','列印時間'],
+ ['qty','數量'],['doneDate','完成日期'],
+ ['postTime','後處理時間'],['_','']
+];
+function renderWordForm(){
+  const c=document.getElementById('wordForm');
+  c.innerHTML=WORD_FIELDS.map(([k,lb])=>{
+    if(k==='_') return '<div class="h"></div><div class="v"></div>';
+    if(k==='execType'){
+      return '<div class="h">'+lb+'</div><div class="v">'+EXEC_OPTS.map(o=>'<span class="chip small'+(S.word.execType===o?' on':'')+'" onclick="S.word.execType=\''+o+'\';save();renderWordForm()">'+o+'</span>').join('')+'</div>';
+    }
+    return '<div class="h">'+lb+'</div><div class="v"><input value="'+esc(S.word[k])+'" oninput="S.word.'+k+'=this.value;save()"></div>';
+  }).join('');
+}
+function renderChecks(){
+  const c=document.getElementById('checkList');
+  c.innerHTML=S.word.checks.map((ck,i)=>`
+    <div style="display:grid;grid-template-columns:180px 110px 1fr;gap:8px;margin-bottom:7px;align-items:center">
+      <input value="${esc(ck.name)}" oninput="S.word.checks[${i}].name=this.value;save()">
+      <select onchange="S.word.checks[${i}].pass=this.value;save()">
+        <option${ck.pass==='是'?' selected':''}>是</option>
+        <option${ck.pass==='否'?' selected':''}>否</option>
+      </select>
+      <input value="${esc(ck.note)}" placeholder="備註" oninput="S.word.checks[${i}].note=this.value;save()">
+    </div>`).join('');
+}
+function addWordGroup(){ S.word.groups.push({photo:null,cad:'',err:''}); save(); renderWordGroups(); }
+function rmWordGroup(i){ S.word.groups.splice(i,1); save(); renderWordGroups(); }
+function renderWordGroups(){
+  const c=document.getElementById('wordGroups');
+  c.innerHTML=S.word.groups.map((g,i)=>`
+    <div class="grouprow">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span class="mono" style="font-size:11px;color:var(--faint)">視角/量測 ${i+1}</span>
+        <button class="btn" style="padding:1px 8px;font-size:11px" onclick="rmWordGroup(${i})">✕</button>
+      </div>
+      <div class="drop" data-key="wg:${i}" style="min-height:86px;margin-bottom:6px"></div>
+      <label style="font-size:12px;display:block;margin-bottom:4px">CAD尺寸 (mm) <input value="${esc(g.cad)}" style="width:100%" oninput="S.word.groups[${i}].cad=this.value;save()"></label>
+      <label style="font-size:12px;display:block">誤差值 (mm) <input value="${esc(g.err)}" style="width:100%" oninput="S.word.groups[${i}].err=this.value;save()"></label>
+    </div>`).join('');
+  renderImages();
+}
+function renderImages(){
+  document.querySelectorAll('.drop[data-key]').forEach(el=>{
+    const key=el.dataset.key;
+    let lbl='<span style="font-size:15px">🖼️</span><br>點擊／拖曳／Ctrl+V 上傳';
+    if(key.indexOf('mat')===0) lbl=(key.slice(-4)==='img1'?'樣品照片':'物性表圖片')+'<br><span style="font-size:10.5px">點擊／拖曳／Ctrl+V</span>';
+    if(key.indexOf('grp')===0) lbl='量測照片<br><span style="font-size:10.5px">點擊／拖曳／Ctrl+V</span>';
+    if(key.indexOf('wg')===0) lbl='完成照片<br><span style="font-size:10.5px">點擊／拖曳／Ctrl+V</span>';
+    renderDropContent(el,key,lbl);
+    if(!el._bound){ el._bound=true; bindDrop(el,key); el.addEventListener('click',()=>pickImg(key)); }
+  });
+  const shot=document.getElementById('dropShot');
+  renderDropContent(shot,'shot','PreForm／Eiger 樣件截圖<br><span style="font-size:10.5px">點擊／拖曳／Ctrl+V 上傳</span>');
+  if(!shot._bound){ shot._bound=true; bindDrop(shot,'shot'); }
+  updateFn();
+}
+function renderAll(){
+  document.getElementById('incIntro').checked=!!S.includeIntro;
+  document.getElementById('coverCompany').value=S.cover.company;
+  document.getElementById('coverMaker').value=S.cover.maker;
+  document.getElementById('coverDate').value=S.date;
+  const dl=document.getElementById('machineList');
+  dl.innerHTML=Object.keys(MACHINES).map(m=>'<option value="'+m+'">').join('');
+  ['evMachine','evMaterial','evAccuracy','evLayers','evThick','evUsage','evTimeH','evTimeM'].forEach(id=>{
+    const map={evMachine:'machine',evMaterial:'material',evAccuracy:'accuracy',evLayers:'layers',
+      evThick:'thickness',evUsage:'usage',evTimeH:'timeH',evTimeM:'timeM'};
+    document.getElementById(id).value=S.ev[map[id]]||'';
+  });
+  document.getElementById('evUnit').value=S.ev.usageUnit||'ml';
+  document.getElementById('wordNote').value=S.word.note||'';
+  renderChips(); renderMaterials(); renderGroups();
+  renderWordForm(); renderChecks(); renderWordGroups();
+}
+function updateFn(){
+  const el=document.getElementById('fnPreview');
+  if(el) el.textContent=fmtDate(S.date)+'_'+(S.cover.company||'客戶公司全名')+'_材料特性與列印尺寸確認';
+}
+
+/* ================= sync ================= */
+function syncToWord(){
+  const w=S.word;
+  if(S.cover.company) w.client=S.cover.company;
+  const m=(S.ev.machine||'').trim();
+  if(m){ const sp=m.indexOf(' '); if(sp>0){ w.brand=m.slice(0,sp); w.model=m.slice(sp+1); } else w.brand=m; }
+  if(S.ev.timeH||S.ev.timeM) w.printTime=(S.ev.timeH?S.ev.timeH+'h ':'')+(S.ev.timeM?S.ev.timeM+'min':'');
+  if(S.date) w.doneDate=S.date;
+  const acc=S.ev.accuracy;
+  if(acc&&w.checks[0]&&!w.checks[0].note) w.checks[0].note='公差 '+acc;
+  wordFromPpt(true);
+  save(); renderWordForm(); renderChecks(); renderWordGroups();
+  setTab('word'); toast('已同步共用欄位到 Word');
+}
+function wordFromPpt(silent){
+  const gs=S.groups.filter(g=>g.cad||g.meas||g.photo);
+  if(gs.length){
+    S.word.groups=gs.map(g=>({photo:g.photo,cad:g.cad,err:calcErr(g.cad,g.meas)}));
+    while(S.word.groups.length<3) S.word.groups.push({photo:null,cad:'',err:''});
+  }
+  if(!silent){ save(); renderWordGroups(); toast('已帶入 PPT 量測資料'); }
+}
+
+/* ================= storage ================= */
+let _saveT=null;
+function save(){
+  updateFn();
+  clearTimeout(_saveT);
+  _saveT=setTimeout(()=>{
+    try{ localStorage.setItem('dg_draft',JSON.stringify(S)); flag('AUTO SAVE ✓'); }
+    catch(e){ try{ const c=JSON.parse(JSON.stringify(S)); stripImgs(c);
+        localStorage.setItem('dg_draft',JSON.stringify(c)); flag('已存文字（圖片過大未存）'); }
+      catch(e2){ flag('無法自動儲存'); } }
+  },500);
+}
+function stripImgs(o){
+  o.ev.shot=null; o.materials.forEach(m=>{m.img1=null;m.img2=null;});
+  o.groups.forEach(g=>g.photo=null); o.word.groups.forEach(g=>g.photo=null);
+}
+function flag(t){ const e=document.getElementById('saveState'); e.textContent=t;
+  clearTimeout(e._h); e._h=setTimeout(()=>e.textContent='AUTO SAVE',1800); }
+function loadDraft(){
+  try{ const d=localStorage.getItem('dg_draft'); if(d){ S=Object.assign(blankState(),JSON.parse(d)); } }catch(e){}
+}
+function profKey(){ return 'dg_profiles'; }
+function getProfiles(){ try{ return JSON.parse(localStorage.getItem(profKey())||'{}'); }catch(e){ return {}; } }
+function renderProfiles(){
+  const sel=document.getElementById('profSel'); const ps=getProfiles();
+  sel.innerHTML='<option value="">— 選擇設定檔 —</option>'+Object.keys(ps).map(n=>'<option>'+esc(n)+'</option>').join('');
+}
+function saveProfile(){
+  const n=document.getElementById('profName').value.trim();
+  if(!n){ toast('請輸入設定檔名稱'); return; }
+  const ps=getProfiles();
+  try{ ps[n]=S; localStorage.setItem(profKey(),JSON.stringify(ps)); }
+  catch(e){ const c=JSON.parse(JSON.stringify(S)); stripImgs(c); ps[n]=c;
+    try{ localStorage.setItem(profKey(),JSON.stringify(ps)); toast('圖片過大，設定檔僅存文字'); }catch(e2){ toast('儲存失敗：容量不足'); return; } }
+  renderProfiles(); toast('已儲存設定檔「'+n+'」');
+}
+function loadProfile(){
+  const n=document.getElementById('profSel').value; if(!n) return;
+  const ps=getProfiles(); if(ps[n]){ S=Object.assign(blankState(),ps[n]); renderAll(); save(); toast('已載入「'+n+'」'); }
+}
+function delProfile(){
+  const n=document.getElementById('profSel').value; if(!n) return;
+  if(!confirm('刪除設定檔「'+n+'」？')) return;
+  const ps=getProfiles(); delete ps[n]; localStorage.setItem(profKey(),JSON.stringify(ps)); renderProfiles();
+}
+function exportJson(){
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+  dl(blob, fmtDate(S.date)+'_'+(S.cover.company||'docgen')+'_設定.json');
+}
+function importJson(inp){
+  const f=inp.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{ try{ S=Object.assign(blankState(),JSON.parse(fr.result)); renderAll(); save(); toast('已匯入設定'); }
+    catch(e){ toast('JSON 格式錯誤'); } inp.value=''; };
+  fr.readAsText(f);
+}
+function dl(blob,name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+}
+
+/* ================= generate ================= */
+let tplBuf=null;
+async function getTemplate(){
+  if(tplBuf) return tplBuf;
+  const st=document.getElementById('genStatus');
+  try{
+    const r=await fetch('template.pptx');
+    if(!r.ok) throw new Error(r.status);
+    tplBuf=await r.arrayBuffer();
+    return tplBuf;
+  }catch(e){
+    st.innerHTML='<span class="err">讀不到 template.pptx — 請確認範本檔與本頁放在同一資料夾（GitHub Pages 需先 push）。</span>';
+    throw e;
+  }
+}
+function pptData(){
+  const join=(arr,other)=>{ const a=arr.slice(); if(other)a.push(other); return a.join('、'); };
+  return {
+    includeIntro:!!S.includeIntro,
+    cover:{company:S.cover.company,maker:S.cover.maker},
+    materials:S.materials.map(m=>({name:m.name||'材料',img1:imgToBytes(m.img1),img2:imgToBytes(m.img2)})),
+    eval:{machine:S.ev.machine,material:S.ev.material,
+      highlights:join(S.ev.hl,S.ev.hlOther), test:join(S.ev.test,S.ev.testOther),
+      surface:join(S.ev.surf,S.ev.surfOther), accuracy:S.ev.accuracy,
+      layers:S.ev.layers,thickness:S.ev.thickness,usage:S.ev.usage,usageUnit:S.ev.usageUnit,
+      timeH:S.ev.timeH,timeM:S.ev.timeM,shot:imgToBytes(S.ev.shot)},
+    groups:S.groups.map(g=>({photo:imgToBytes(g.photo),tol:g.tol,cad:g.cad,meas:g.meas,pass:calcPass(g)}))
+  };
+}
+async function genPptx(btn){
+  btn&&(btn.disabled=true);
+  try{
+    const buf=await getTemplate();
+    const blob=await dgBuildPptx(buf,pptData());
+    dl(blob, fmtDate(S.date)+'_'+(S.cover.company||'客戶公司全名')+'_材料特性與列印尺寸確認.pptx');
+    toast('PPT 已產生');
+  }catch(e){ console.error(e); toast('PPT 產生失敗：'+e.message); }
+  btn&&(btn.disabled=false);
+}
+async function genDocx(btn){
+  btn&&(btn.disabled=true);
+  try{
+    const w=S.word;
+    const blob=await dgBuildDocx({
+      client:w.client,ef:w.ef,efDate:w.efDate,brand:w.brand,model:w.model,execType:w.execType,
+      sales:w.sales,printTime:w.printTime,qty:w.qty,doneDate:w.doneDate,postTime:w.postTime,
+      checks:w.checks, note:w.note,
+      groups:w.groups.filter(g=>g.photo||g.cad||g.err).map(g=>({photo:imgToBytes(g.photo),cad:g.cad,err:g.err}))
+    });
+    dl(blob, fmtDate(S.date)+'_'+(w.client||S.cover.company||'客戶')+'_3D列印服務確認單.docx');
+    toast('Word 已產生');
+  }catch(e){ console.error(e); toast('Word 產生失敗：'+e.message); }
+  btn&&(btn.disabled=false);
+}
+async function genBoth(btn){ await genPptx(btn); await genDocx(btn); }
+
+/* ================= boot ================= */
+loadDraft();
+renderAll();
+renderProfiles();
+updateFn();
+</script>
+<script>
+/* ===== DocGen Engine : PPTX template edit + DOCX build (JSZip) ===== */
+const DG_NS = {
+  a:  'http://schemas.openxmlformats.org/drawingml/2006/main',
+  p:  'http://schemas.openxmlformats.org/presentationml/2006/main',
+  r:  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  rel:'http://schemas.openxmlformats.org/package/2006/relationships',
+  ct: 'http://schemas.openxmlformats.org/package/2006/content-types'
+};
+function dgParse(s){ return new DOMParser().parseFromString(s,'application/xml'); }
+function dgSer(d){ return new XMLSerializer().serializeToString(d); }
+function dgEls(node,ns,name){ const l=node.getElementsByTagNameNS(ns,name); const a=[]; for(let i=0;i<l.length;i++)a.push(l[i]); return a; }
+function dgCellText(tc){ return dgEls(tc,DG_NS.a,'t').map(t=>t.textContent).join(''); }
+function dgFirst(node,ns,name){ const l=node.getElementsByTagNameNS(ns,name); return l.length?l[0]:null; }
+function dgChild(node,ns,name){ for(let c=node.firstChild;c;c=c.nextSibling){ if(c.nodeType===1&&c.localName===name&&c.namespaceURI===ns) return c; } return null; }
+function dgChildren(node,ns,name){ const out=[]; for(let c=node.firstChild;c;c=c.nextSibling){ if(c.nodeType===1&&c.localName===name&&c.namespaceURI===ns) out.push(c);} return out; }
+
+/* clone an a:endParaRPr as a:rPr */
+function dgEndToRPr(doc, endPr){
+  const rPr = doc.createElementNS(DG_NS.a,'a:rPr');
+  if(endPr){
+    for(let i=0;i<endPr.attributes.length;i++){ const at=endPr.attributes[i]; if(at.name.indexOf('xmlns')!==0) rPr.setAttribute(at.name,at.value); }
+    for(let c=endPr.firstChild;c;c=c.nextSibling){ if(c.nodeType===1) rPr.appendChild(c.cloneNode(true)); }
+  }
+  return rPr;
+}
+/* rewrite all text inside a table cell, preserving first paragraph/run formatting */
+function dgRewriteCell(doc, tc, text){
+  const tx = dgFirst(tc,DG_NS.a,'txBody'); if(!tx) return;
+  const ps = dgChildren(tx,DG_NS.a,'p');
+  let pPrTpl=null, rPrTpl=null;
+  if(ps.length){
+    const pPr=dgChild(ps[0],DG_NS.a,'pPr'); if(pPr) pPrTpl=pPr.cloneNode(true);
+    const runs=dgEls(tc,DG_NS.a,'r');
+    for(const r of runs){ const rp=dgChild(r,DG_NS.a,'rPr'); if(rp){ rPrTpl=rp.cloneNode(true); break; } }
+    if(!rPrTpl){ const ep=dgFirst(tc,DG_NS.a,'endParaRPr'); rPrTpl=dgEndToRPr(doc,ep); }
+  }
+  ps.forEach(p=>tx.removeChild(p));
+  const lines=String(text==null?'':text).split('\n');
+  lines.forEach(line=>{
+    const p=doc.createElementNS(DG_NS.a,'a:p');
+    if(pPrTpl) p.appendChild(pPrTpl.cloneNode(true));
+    const r=doc.createElementNS(DG_NS.a,'a:r');
+    if(rPrTpl) r.appendChild(rPrTpl.cloneNode(true));
+    const t=doc.createElementNS(DG_NS.a,'a:t'); t.textContent=line;
+    r.appendChild(t); p.appendChild(r); tx.appendChild(p);
+  });
+}
+function dgFindCells(doc, prefix){
+  return dgEls(doc,DG_NS.a,'tc').filter(tc=>dgCellText(tc).indexOf(prefix)===0);
+}
+/* replace a consecutive run-text sequence with newText (first run gets text, rest cleared) */
+function dgReplaceRunSeq(doc, seq, newText){
+  const ts=dgEls(doc,DG_NS.a,'t');
+  for(let i=0;i+seq.length<=ts.length;i++){
+    let ok=true;
+    for(let j=0;j<seq.length;j++){ if(ts[i+j].textContent!==seq[j]){ ok=false; break; } }
+    if(ok){ ts[i].textContent=newText; for(let j=1;j<seq.length;j++) ts[i+j].textContent=''; return true; }
+  }
+  return false;
+}
+/* table geometry helpers */
+function dgTableInfo(doc){
+  const gf=dgFirst(doc,DG_NS.p,'graphicFrame');
+  const xf=dgFirst(gf,DG_NS.a,'off'); const ex=dgFirst(gf,DG_NS.a,'ext');
+  const tbl=dgFirst(gf,DG_NS.a,'tbl');
+  const cols=dgEls(tbl,DG_NS.a,'gridCol').map(c=>parseInt(c.getAttribute('w'),10));
+  const rows=dgChildren(dgFirst(tbl,DG_NS.a,'tbl')||tbl,DG_NS.a,'tr').map(tr=>({h:parseInt(tr.getAttribute('h'),10),el:tr}));
+  return { x:parseInt(xf.getAttribute('x'),10), y:parseInt(xf.getAttribute('y'),10),
+           cx:parseInt(ex.getAttribute('cx'),10), cy:parseInt(ex.getAttribute('cy'),10), cols, rows, tbl };
+}
+function dgFit(box, w, h, pad){
+  pad=pad||120000;
+  const bw=box.cx-pad*2, bh=box.cy-pad*2;
+  const s=Math.min(bw/w, bh/h);
+  const cw=Math.round(w*s), ch=Math.round(h*s);
+  return { x:Math.round(box.x+(box.cx-cw)/2), y:Math.round(box.y+(box.cy-ch)/2), cx:cw, cy:ch };
+}
+let dgPicId=9000;
+function dgAddPic(doc, rid, rect){
+  const spTree=dgFirst(doc,DG_NS.p,'spTree');
+  const id=++dgPicId;
+  const xml='<p:pic xmlns:p="'+DG_NS.p+'" xmlns:a="'+DG_NS.a+'" xmlns:r="'+DG_NS.r+'">'
+    +'<p:nvPicPr><p:cNvPr id="'+id+'" name="dgpic'+id+'"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>'
+    +'<p:blipFill><a:blip r:embed="'+rid+'"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+    +'<p:spPr><a:xfrm><a:off x="'+rect.x+'" y="'+rect.y+'"/><a:ext cx="'+rect.cx+'" cy="'+rect.cy+'"/></a:xfrm>'
+    +'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>';
+  const frag=dgParse(xml).documentElement;
+  spTree.appendChild(doc.importNode(frag,true));
+}
+function dgNextRid(relsDoc){
+  let mx=0;
+  dgEls(relsDoc,DG_NS.rel,'Relationship').forEach(r=>{
+    const m=/^rId(\d+)$/.exec(r.getAttribute('Id')); if(m) mx=Math.max(mx,parseInt(m[1],10));
+  });
+  return 'rId'+(mx+1);
+}
+function dgAddRel(relsDoc, rid, type, target){
+  const rel=relsDoc.createElementNS(DG_NS.rel,'Relationship');
+  rel.setAttribute('Id',rid); rel.setAttribute('Type',type); rel.setAttribute('Target',target);
+  relsDoc.documentElement.appendChild(rel);
+}
+const DG_IMG_TYPE='http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
+const DG_SLIDE_TYPE='http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide';
+
+let dgMediaN=0;
+function dgAddMedia(zip, img){ /* img:{bytes(Uint8Array),ext} */
+  const name='ppt/media/imageDG'+(++dgMediaN)+'.'+img.ext;
+  zip.file(name,img.bytes);
+  return '../media/'+name.split('/').pop();
+}
+function dgEnsureDefault(ctDoc, ext, mime){
+  const defs=dgEls(ctDoc,DG_NS.ct,'Default');
+  if(!defs.some(d=>d.getAttribute('Extension')===ext)){
+    const d=ctDoc.createElementNS(DG_NS.ct,'Default');
+    d.setAttribute('Extension',ext); d.setAttribute('ContentType',mime);
+    ctDoc.documentElement.insertBefore(d, ctDoc.documentElement.firstChild);
+  }
+}
+function dgAddOverride(ctDoc, part, type){
+  const o=ctDoc.createElementNS(DG_NS.ct,'Override');
+  o.setAttribute('PartName',part); o.setAttribute('ContentType',type);
+  ctDoc.documentElement.appendChild(o);
+}
+function dgRemoveOverride(ctDoc, part){
+  dgEls(ctDoc,DG_NS.ct,'Override').forEach(o=>{ if(o.getAttribute('PartName')===part) o.parentNode.removeChild(o); });
+}
+function dgRemoveSlide(zip, presDoc, presRelsDoc, ctDoc, slideFile, notesFile){
+  let rid=null;
+  dgEls(presRelsDoc,DG_NS.rel,'Relationship').forEach(r=>{
+    if(r.getAttribute('Target')==='slides/'+slideFile){ rid=r.getAttribute('Id'); r.parentNode.removeChild(r); }
+  });
+  if(rid){
+    dgEls(presDoc,DG_NS.p,'sldId').forEach(s=>{ if(s.getAttributeNS(DG_NS.r,'id')===rid) s.parentNode.removeChild(s); });
+  }
+  zip.remove('ppt/slides/'+slideFile);
+  zip.remove('ppt/slides/_rels/'+slideFile+'.rels');
+  dgRemoveOverride(ctDoc,'/ppt/slides/'+slideFile);
+  if(notesFile){
+    zip.remove('ppt/notesSlides/'+notesFile);
+    zip.remove('ppt/notesSlides/_rels/'+notesFile+'.rels');
+    dgRemoveOverride(ctDoc,'/ppt/notesSlides/'+notesFile);
+  }
+}
+function dgInsertSlideAfter(presDoc, presRelsDoc, ctDoc, afterFile, newFile){
+  const rid=dgNextRid(presRelsDoc);
+  dgAddRel(presRelsDoc, rid, DG_SLIDE_TYPE, 'slides/'+newFile);
+  let afterRid=null;
+  dgEls(presRelsDoc,DG_NS.rel,'Relationship').forEach(r=>{ if(r.getAttribute('Target')==='slides/'+afterFile) afterRid=r.getAttribute('Id'); });
+  const lst=dgFirst(presDoc,DG_NS.p,'sldIdLst');
+  const ids=dgChildren(lst,DG_NS.p,'sldId');
+  let maxId=0; ids.forEach(s=>maxId=Math.max(maxId,parseInt(s.getAttribute('id'),10)));
+  const el=presDoc.createElementNS(DG_NS.p,'p:sldId');
+  el.setAttribute('id',String(maxId+1));
+  el.setAttributeNS(DG_NS.r,'r:id',rid);
+  let anchor=null;
+  ids.forEach(s=>{ if(s.getAttributeNS(DG_NS.r,'id')===afterRid) anchor=s; });
+  if(anchor && anchor.nextSibling) lst.insertBefore(el,anchor.nextSibling);
+  else lst.appendChild(el);
+  dgAddOverride(ctDoc,'/ppt/slides/'+newFile,'application/vnd.openxmlformats-officedocument.presentationml.slide+xml');
+  return rid;
+}
+/* retarget an image relationship + refit its picture frame */
+function dgSwapImage(slideDoc, relsDoc, rid, target, imgW, imgH){
+  dgEls(relsDoc,DG_NS.rel,'Relationship').forEach(r=>{ if(r.getAttribute('Id')===rid) r.setAttribute('Target',target); });
+  dgEls(slideDoc,DG_NS.p,'pic').forEach(pic=>{
+    const blip=dgFirst(pic,DG_NS.a,'blip');
+    if(blip && blip.getAttributeNS(DG_NS.r,'embed')===rid){
+      const off=dgFirst(pic,DG_NS.a,'off'), ext=dgFirst(pic,DG_NS.a,'ext');
+      const box={ x:parseInt(off.getAttribute('x'),10), y:parseInt(off.getAttribute('y'),10),
+                  cx:parseInt(ext.getAttribute('cx'),10), cy:parseInt(ext.getAttribute('cy'),10) };
+      const fit=dgFit(box,imgW,imgH,0);
+      off.setAttribute('x',fit.x); off.setAttribute('y',fit.y);
+      ext.setAttribute('cx',fit.cx); ext.setAttribute('cy',fit.cy);
+    }
+  });
+}
+function dgStripNotesRel(relsDoc){
+  dgEls(relsDoc,DG_NS.rel,'Relationship').forEach(r=>{
+    if(/notesSlide/.test(r.getAttribute('Type'))) r.parentNode.removeChild(r);
+  });
+}
+/* ---- fill an evaluation slide (slide6 layout) ---- */
+function dgFillEval(doc, relsDoc, zip, ev){
+  const put=(pref,val)=>{ const c=dgFindCells(doc,pref); if(c.length) dgRewriteCell(doc,c[0],val); };
+  put('*輸入品牌', ev.machine||'');
+  put('*輸入正確的材料名稱', ev.material||'');
+  put('*材料性能', ev.highlights||'');
+  put('*無/', ev.test||'');
+  put('*表面打磨', ev.surface||'');
+  put('*請參考備忘稿', ev.accuracy||'');
+  const nums=dgFindCells(doc,'*直接輸入阿拉伯數字');
+  const vals=[ev.layers||'', ev.thickness||'', ev.usage||'', ev.timeH||'', ev.timeM||''];
+  nums.forEach((tc,i)=>{ if(i<vals.length) dgRewriteCell(doc,tc,vals[i]); });
+  dgEls(doc,DG_NS.a,'tc').forEach(tc=>{ if(dgCellText(tc)==='ml/g/cc') dgRewriteCell(doc,tc,ev.usageUnit||'ml'); });
+  const shot=dgFindCells(doc,'請放入PreForm');
+  if(shot.length) dgRewriteCell(doc,shot[0],'');
+  if(ev.shot){
+    const ti=dgTableInfo(doc);
+    let cx=0; for(let i=0;i<5;i++) cx+=ti.cols[i];
+    const box={ x:ti.x+cx, y:ti.y, cx:ti.cols[5], cy:ti.cy };
+    const target=dgAddMedia(zip, ev.shot);
+    const rid=dgNextRid(relsDoc);
+    dgAddRel(relsDoc,rid,DG_IMG_TYPE,target);
+    dgAddPic(doc,rid,dgFit(box,ev.shot.w,ev.shot.h));
+  }
+}
+/* ---- fill a measurement slide (slide7 layout) with up to 3 groups ---- */
+function dgFillMeasure(doc, relsDoc, zip, groups){
+  const ti=dgTableInfo(doc);
+  const photoCells=dgFindCells(doc,'量測照片');
+  const tolCells=dgFindCells(doc,'請填入該設備之精度標準');
+  const passCells=dgFindCells(doc,'請輸入是或否');
+  let cadRow=null, meaRow=null;
+  ti.rows.forEach(r=>{
+    const tcs=dgChildren(r.el,DG_NS.a,'tc');
+    if(tcs.length && dgCellText(tcs[0])==='CAD尺寸') cadRow=tcs;
+    if(tcs.length && dgCellText(tcs[0])==='量測尺寸') meaRow=tcs;
+  });
+  for(let i=0;i<3;i++){
+    const g=groups[i]||null;
+    if(photoCells[i]) dgRewriteCell(doc,photoCells[i],'');
+    if(tolCells[i]) dgRewriteCell(doc,tolCells[i], g?(g.tol||''):'');
+    if(passCells[i]) dgRewriteCell(doc,passCells[i], g?(g.pass||''):'');
+    if(cadRow&&cadRow[1+2*i]) dgRewriteCell(doc,cadRow[1+2*i], g?(g.cad||''):'');
+    if(meaRow&&meaRow[1+2*i]) dgRewriteCell(doc,meaRow[1+2*i], g?(g.meas||''):'');
+    if(g&&g.photo){
+      let px=ti.x+ti.cols[0];
+      for(let k=0;k<i;k++) px+=ti.cols[1+2*k]+ti.cols[2+2*k];
+      const box={ x:px, y:ti.y, cx:ti.cols[1+2*i]+ti.cols[2+2*i], cy:ti.rows[0].h };
+      const target=dgAddMedia(zip,g.photo);
+      const rid=dgNextRid(relsDoc);
+      dgAddRel(relsDoc,rid,DG_IMG_TYPE,target);
+      dgAddPic(doc,rid,dgFit(box,g.photo.w,g.photo.h));
+    }
+  }
+}
+/* ===== main PPTX build =====
+data = {
+ includeIntro:bool,
+ cover:{company,maker},
+ materials:[{name,img1:{bytes,ext,w,h}|null,img2:...}],
+ eval:{machine,material,highlights,test,surface,accuracy,layers,thickness,usage,usageUnit,timeH,timeM,shot|null},
+ groups:[{photo|null,tol,cad,meas,pass}]
+} */
+async function dgBuildPptx(templateBuf, data){
+  dgPicId=9000; dgMediaN=0;
+  const zip=await JSZip.loadAsync(templateBuf);
+  const read=async p=>zip.file(p).async('string');
+  const ctDoc=dgParse(await read('[Content_Types].xml'));
+  dgEnsureDefault(ctDoc,'png','image/png');
+  dgEnsureDefault(ctDoc,'jpeg','image/jpeg');
+  dgEnsureDefault(ctDoc,'jpg','image/jpeg');
+  const presDoc=dgParse(await read('ppt/presentation.xml'));
+  const presRelsDoc=dgParse(await read('ppt/_rels/presentation.xml.rels'));
+
+  /* cover (slide2) */
+  const s2=dgParse(await read('ppt/slides/slide2.xml'));
+  dgReplaceRunSeq(s2,['客戶公司全名'], data.cover.company||'客戶公司全名');
+  if(!dgReplaceRunSeq(s2,['模型製作者','_','中文','(','英文',')'],'模型製作者_'+(data.cover.maker||'')))
+    dgReplaceRunSeq(s2,['模型製作者'],'模型製作者_'+(data.cover.maker||''));
+  zip.file('ppt/slides/slide2.xml',dgSer(s2));
+
+  /* materials: slide5 in place + duplicates */
+  const s5Raw=await read('ppt/slides/slide5.xml');
+  const s5RelsRaw=await read('ppt/slides/_rels/slide5.xml.rels');
+  const mats=(data.materials&&data.materials.length)?data.materials:[{name:'White V5',img1:null,img2:null}];
+  for(let i=0;i<mats.length;i++){
+    const m=mats[i];
+    const doc=dgParse(s5Raw);
+    const rels=dgParse(s5RelsRaw);
+    const ts=dgEls(doc,DG_NS.a,'t');
+    ts.forEach(t=>{ if(t.textContent==='White V5') t.textContent=m.name||'材料'; });
+    let file='slide5.xml';
+    if(i>0){
+      file='slideDGM'+i+'.xml';
+      dgStripNotesRel(rels);
+      dgInsertSlideAfter(presDoc,presRelsDoc,ctDoc,'slide5.xml',file);
+    }
+    if(m.img1){ dgSwapImage(doc,rels,'rId3',dgAddMedia(zip,m.img1),m.img1.w,m.img1.h); }
+    else if(i>0){ /* duplicates keep template pictures */ }
+    if(m.img2){ dgSwapImage(doc,rels,'rId4',dgAddMedia(zip,m.img2),m.img2.w,m.img2.h); }
+    zip.file('ppt/slides/'+file,dgSer(doc));
+    zip.file('ppt/slides/_rels/'+file+'.rels',dgSer(rels));
+  }
+
+  /* evaluation slide6 */
+  const s6=dgParse(await read('ppt/slides/slide6.xml'));
+  const s6Rels=dgParse(await read('ppt/slides/_rels/slide6.xml.rels'));
+  dgFillEval(s6,s6Rels,zip,data.eval||{});
+  zip.file('ppt/slides/slide6.xml',dgSer(s6));
+  zip.file('ppt/slides/_rels/slide6.xml.rels',dgSer(s6Rels));
+
+  /* measurements: chunks of 3 → slide7, slide8, duplicates */
+  const gAll=(data.groups||[]).filter(g=>g&&(g.cad||g.meas||g.photo||g.pass));
+  const chunks=[]; for(let i=0;i<gAll.length;i+=3) chunks.push(gAll.slice(i,i+3));
+  if(!chunks.length) chunks.push([]);
+  const s7Raw=await read('ppt/slides/slide7.xml');
+  const s7RelsRaw=await read('ppt/slides/_rels/slide7.xml.rels');
+  /* chunk 0 -> slide7 */
+  { const doc=dgParse(s7Raw), rels=dgParse(s7RelsRaw);
+    dgFillMeasure(doc,rels,zip,chunks[0]);
+    zip.file('ppt/slides/slide7.xml',dgSer(doc));
+    zip.file('ppt/slides/_rels/slide7.xml.rels',dgSer(rels)); }
+  if(chunks.length>=2){
+    const doc=dgParse(await read('ppt/slides/slide8.xml'));
+    const rels=dgParse(await read('ppt/slides/_rels/slide8.xml.rels'));
+    dgFillMeasure(doc,rels,zip,chunks[1]);
+    zip.file('ppt/slides/slide8.xml',dgSer(doc));
+    zip.file('ppt/slides/_rels/slide8.xml.rels',dgSer(rels));
+  } else {
+    dgRemoveSlide(zip,presDoc,presRelsDoc,ctDoc,'slide8.xml','notesSlide6.xml');
+  }
+  let lastQ='slide8.xml';
+  if(chunks.length<2) lastQ='slide7.xml';
+  for(let c=2;c<chunks.length;c++){
+    const file='slideDGQ'+c+'.xml';
+    const doc=dgParse(s7Raw), rels=dgParse(s7RelsRaw);
+    dgStripNotesRel(rels);
+    dgFillMeasure(doc,rels,zip,chunks[c]);
+    dgInsertSlideAfter(presDoc,presRelsDoc,ctDoc,lastQ,file);
+    zip.file('ppt/slides/'+file,dgSer(doc));
+    zip.file('ppt/slides/_rels/'+file+'.rels',dgSer(rels));
+    lastQ=file;
+  }
+
+  /* intro slide */
+  if(!data.includeIntro) dgRemoveSlide(zip,presDoc,presRelsDoc,ctDoc,'slide1.xml','notesSlide1.xml');
+
+  zip.file('[Content_Types].xml',dgSer(ctDoc));
+  zip.file('ppt/presentation.xml',dgSer(presDoc));
+  zip.file('ppt/_rels/presentation.xml.rels',dgSer(presRelsDoc));
+  return zip.generateAsync({type:(typeof Blob!=='undefined')?'blob':'nodebuffer',
+    mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+}
+
+/* ===== DOCX builder (from scratch) =====
+data = {
+ client,ef,efDate,brand,model,execType,sales,printTime,qty,doneDate,postTime,
+ checks:[{name,pass:'是'|'否',note}],
+ groups:[{photo|null,cad,err}],  // err = signed string
+ note
+} */
+function dgXmlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dwP(text,opt){
+  opt=opt||{};
+  const rpr='<w:rPr><w:rFonts w:ascii="微軟正黑體" w:eastAsia="微軟正黑體" w:hAnsi="微軟正黑體"/>'
+    +(opt.b?'<w:b/>':'')+'<w:sz w:val="'+(opt.sz||22)+'"/><w:szCs w:val="'+(opt.sz||22)+'"/>'
+    +(opt.color?'<w:color w:val="'+opt.color+'"/>':'')+'</w:rPr>';
+  const ppr='<w:pPr>'+(opt.align?'<w:jc w:val="'+opt.align+'"/>':'')
+    +(opt.spacing!==false?'<w:spacing w:after="60" w:line="276" w:lineRule="auto"/>':'')+'</w:pPr>';
+  const lines=String(text==null?'':text).split('\n');
+  let runs='';
+  lines.forEach((ln,i)=>{ if(i>0)runs+='<w:r>'+rpr+'<w:br/></w:r>'; runs+='<w:r>'+rpr+'<w:t xml:space="preserve">'+dgXmlEsc(ln)+'</w:t></w:r>'; });
+  return '<w:p>'+ppr+runs+'</w:p>';
+}
+function dwImgP(rid,cx,cy,id){
+  return '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing>'
+   +'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/>'
+   +'<wp:docPr id="'+id+'" name="pic'+id+'"/>'
+   +'<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+   +'<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+   +'<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+   +'<pic:nvPicPr><pic:cNvPr id="'+id+'" name="pic'+id+'"/><pic:cNvPicPr/></pic:nvPicPr>'
+   +'<pic:blipFill><a:blip r:embed="'+rid+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+   +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm>'
+   +'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+   +'</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+}
+function dwTc(content,opt){
+  opt=opt||{};
+  return '<w:tc><w:tcPr><w:tcW w:w="'+(opt.w||0)+'" w:type="'+(opt.w?'dxa':'auto')+'"/>'
+   +(opt.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+opt.shd+'"/>':'')
+   +(opt.span?'<w:gridSpan w:val="'+opt.span+'"/>':'')
+   +'<w:vAlign w:val="center"/></w:tcPr>'+content+'</w:tc>';
+}
+function dwTbl(gridCols, rowsXml){
+  const grid=gridCols.map(w=>'<w:gridCol w:w="'+w+'"/>').join('');
+  const b='<w:tblBorders>'+['top','left','bottom','right','insideH','insideV']
+    .map(s=>'<w:'+s+' w:val="single" w:sz="6" w:space="0" w:color="000000"/>').join('')+'</w:tblBorders>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="'+gridCols.reduce((a,b)=>a+b,0)+'" w:type="dxa"/>'+b
+   +'<w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+grid+'</w:tblGrid>'+rowsXml+'</w:tbl>';
+}
+async function dgBuildDocx(d){
+  const zip=new JSZip();
+  const CT='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+   +'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+   +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+   +'<Default Extension="xml" ContentType="application/xml"/>'
+   +'<Default Extension="png" ContentType="image/png"/>'
+   +'<Default Extension="jpeg" ContentType="image/jpeg"/>'
+   +'<Default Extension="jpg" ContentType="image/jpeg"/>'
+   +'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+   +'</Types>';
+  zip.file('[Content_Types].xml',CT);
+  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+   +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+   +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  let relsX='', imgN=0;
+  const addImg=(img)=>{ imgN++; const name='media/imgDG'+imgN+'.'+img.ext;
+    zip.file('word/'+name,img.bytes);
+    const rid='rIdImg'+imgN;
+    relsX+='<Relationship Id="'+rid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="'+name+'"/>';
+    return rid; };
+
+  const L=(t)=>dwTc(dwP(t,{b:true,sz:20}),{shd:'EFEFEF',w:1500});
+  const V=(t)=>dwTc(dwP(t,{sz:20}),{w:3730});
+  let body='';
+  body+=dwP('3D列印服務確認單',{b:true,sz:36,align:'center'});
+  body+=dwP('派工執行',{sz:20,align:'right',color:'808080'});
+  body+=dwTbl([1500,3730,1500,3730],
+    '<w:tr>'+L('客戶名稱')+V(d.client)+L('EasyFlow單號')+V(d.ef)+'</w:tr>'
+   +'<w:tr>'+L('EasyFlow申請日期')+V(d.efDate)+L('機器廠牌')+V(d.brand)+'</w:tr>'
+   +'<w:tr>'+L('機器型號')+V(d.model)+L('執行類別')+V(d.execType)+'</w:tr>'
+   +'<w:tr>'+L('申請業務人員')+V(d.sales)+L('列印時間')+V(d.printTime)+'</w:tr>'
+   +'<w:tr>'+L('數　　量')+V(d.qty)+L('完成日期')+V(d.doneDate)+'</w:tr>'
+   +'<w:tr>'+L('後處理時間')+V(d.postTime)+L('')+V('')+'</w:tr>');
+  body+=dwP('',{sz:8});
+  const ck=(d.checks||[]);
+  let ckRows='<w:tr>'+dwTc(dwP('確認項目',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:2600})
+    +dwTc(dwP('是',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:800})
+    +dwTc(dwP('否',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:800})
+    +dwTc(dwP('備註',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:6260})+'</w:tr>';
+  ck.forEach(c=>{
+    ckRows+='<w:tr>'+dwTc(dwP(c.name,{sz:20}),{w:2600})
+     +dwTc(dwP(c.pass==='是'?'V':'',{sz:20,align:'center'}),{w:800})
+     +dwTc(dwP(c.pass==='否'?'V':'',{sz:20,align:'center'}),{w:800})
+     +dwTc(dwP(c.note||'',{sz:18}),{w:6260})+'</w:tr>';
+  });
+  body+=dwTbl([2600,800,800,6260],ckRows);
+  body+=dwP('',{sz:8});
+  body+=dwP('完成圖片（至少三個視角）',{b:true,sz:22});
+  const gs=(d.groups||[]);
+  const colW=3480, boxCx=Math.round(2.35*914400), boxCy=Math.round(1.9*914400);
+  let gi=0, picId=100;
+  const chunks=[]; for(let i=0;i<Math.max(gs.length,3);i+=3) chunks.push([gs[i]||null,gs[i+1]||null,gs[i+2]||null]);
+  let gRows='';
+  chunks.forEach(ch=>{
+    let r1='',r2='';
+    ch.forEach(g=>{
+      if(g&&g.photo){
+        const s=Math.min(boxCx/g.photo.w, boxCy/g.photo.h);
+        r1+=dwTc(dwImgP(addImg(g.photo),Math.round(g.photo.w*s),Math.round(g.photo.h*s),++picId),{w:colW});
+      } else r1+=dwTc(dwP(g?'（未附照片）':'',{sz:18,align:'center',color:'999999'}),{w:colW});
+      if(g) r2+=dwTc(dwP('CAD尺寸：'+(g.cad||'　')+' mm\n誤差值：'+(g.err||'　')+' mm',{sz:20}),{w:colW});
+      else r2+=dwTc(dwP(''),{w:colW});
+    });
+    gRows+='<w:tr>'+r1+'</w:tr><w:tr>'+r2+'</w:tr>';
+  });
+  body+=dwTbl([colW,colW,colW],gRows);
+  if(d.note) body+=dwP('備註：'+d.note,{sz:20});
+  body+=dwP('',{sz:8});
+  let sg='<w:tr>'+['工程主管簽名','業務簽名','產品負責人簽名','實施工程師簽名']
+    .map(t=>dwTc(dwP(t,{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:2615})).join('')+'</w:tr>';
+  sg+='<w:tr>'+[0,1,2,3].map(()=>dwTc(dwP('\n\n',{sz:20}),{w:2615})).join('')+'</w:tr>';
+  body+=dwTbl([2615,2615,2615,2615],sg);
+
+  const docXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+   +'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+   +' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+   +' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'
+   +'<w:body>'+body
+   +'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>'
+   +'</w:body></w:document>';
+  zip.file('word/document.xml',docXml);
+  zip.file('word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+   +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relsX+'</Relationships>');
+  return zip.generateAsync({type:(typeof Blob!=='undefined')?'blob':'nodebuffer',
+    mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+
+</script>
+</body>
+</html>

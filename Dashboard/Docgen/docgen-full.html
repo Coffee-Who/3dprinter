@@ -84,7 +84,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .status{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:6px}
 .status b{color:var(--green);font-weight:500}
 .status .err{color:var(--red)}
-.wordform{display:grid;grid-template-columns:110px 1fr 110px 1fr;gap:1px;background:var(--ink);border:1px solid var(--ink);border-radius:0;font-size:13px}
+.wordform{display:grid;grid-template-columns:108px 1fr 108px 1fr 118px 1fr;gap:1px;background:var(--ink);border:1px solid var(--ink);font-size:13px}
+.wordform .h{background:#f0f1f4;padding:7px 9px;color:#3b4250;display:flex;align-items:center;justify-content:center;text-align:center}
+.wordform .v{background:var(--cell);padding:5px 8px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+.wordform .v input{width:100%;min-width:0;border-color:#e2ddc8;background:#fff}
 .field-note{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.6}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pass-yes{color:var(--green);font-weight:600}
@@ -233,7 +236,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div id="checkList"></div>
     </div>
     <div class="card">
-      <div class="card-head"><span class="pnum">W3</span><span class="card-title">完成圖片（至少三個視角）＋ CAD 尺寸／誤差值</span>
+      <div class="card-head"><span class="pnum">W3</span><span class="card-title">完成圖片（3×3 共 9 格）＋ CAD 尺寸／誤差值</span>
         <span class="right">
           <button class="btn outline" onclick="wordFromPpt()">從 PPT 量測帶入</button>
           <button class="btn outline" onclick="addWordGroup()">＋ 加一格</button>
@@ -316,10 +319,10 @@ function blankState(){
     groups:[newGroup()],
     word:{client:'',ef:'',efDate:'',brand:'',model:'',execType:'評估機器',sales:'',
       printTime:'',qty:'',doneDate:'',postTime:'',
-      checks:[{name:'重點尺寸確認檢查',pass:'是',note:''},
+      checks:[{name:'重點尺寸確認檢查',pass:'是',note:'3Dsystem 公差 0.025mm/in\nMarkforged 公差 0.25mm'},
               {name:'外觀破損檢查',pass:'是',note:''},
               {name:'裝配檢查',pass:'是',note:''}],
-      groups:[{photo:null,cad:'',err:''},{photo:null,cad:'',err:''},{photo:null,cad:'',err:''}],
+      groups:Array.from({length:9},()=>({photo:null,cad:'',err:''})),
       note:''}
   };
 }
@@ -511,35 +514,36 @@ function renderGroups(){
   S.groups.forEach((g,i)=>renderGroupCalc(i));
   renderImages();
 }
-const WORD_FIELDS=[
- ['client','客戶名稱'],['ef','EasyFlow單號'],
- ['efDate','EasyFlow申請日期'],['brand','機器廠牌'],
- ['model','機器型號'],['execType','執行類別'],
- ['sales','申請業務人員'],['printTime','列印時間'],
- ['qty','數量'],['doneDate','完成日期'],
- ['postTime','後處理時間'],['_','']
-];
+function wfIn(k,ph){ return '<div class="v"><input value="'+esc(S.word[k])+'"'+(ph?' placeholder="'+ph+'"':'')+' oninput="S.word.'+k+'=this.value;save()"></div>'; }
 function renderWordForm(){
   const c=document.getElementById('wordForm');
-  c.innerHTML=WORD_FIELDS.map(([k,lb])=>{
-    if(k==='_') return '<div class="h"></div><div class="v"></div>';
-    if(k==='execType'){
-      return '<div class="h">'+lb+'</div><div class="v">'+EXEC_OPTS.map(o=>'<span class="chip small'+(S.word.execType===o?' on':'')+'" onclick="S.word.execType=\''+o+'\';save();renderWordForm()">'+o+'</span>').join('')+'</div>';
-    }
-    return '<div class="h">'+lb+'</div><div class="v"><input value="'+esc(S.word[k])+'" oninput="S.word.'+k+'=this.value;save()"></div>';
-  }).join('');
+  let h='';
+  h+='<div class="h">客戶名稱</div><div class="v" style="grid-column:span 3"><input value="'+esc(S.word.client)+'" oninput="S.word.client=this.value;save()"></div>';
+  h+='<div class="h">EasyFlow單號</div>'+wfIn('ef');
+  h+='<div class="h">機器廠牌</div>'+wfIn('brand','Formlabs');
+  h+='<div class="h">列印時間</div>'+wfIn('printTime','5h 30min');
+  h+='<div class="h">EasyFlow申請日期</div>'+wfIn('efDate');
+  h+='<div class="h">機器型號</div>'+wfIn('model','Form4');
+  h+='<div class="h">數　　量</div>'+wfIn('qty');
+  h+='<div class="h">完成日期</div>'+wfIn('doneDate');
+  h+='<div class="h">執行類別</div><div class="v">'+EXEC_OPTS.map(o=>'<span class="chip small'+(S.word.execType===o?' on':'')+'" onclick="S.word.execType=\''+o+'\';save();renderWordForm()">'+o+'</span>').join('')+'</div>';
+  h+='<div class="h">後處理時間</div>'+wfIn('postTime');
+  h+='<div class="h">申請業務人員</div>'+wfIn('sales');
+  c.innerHTML=h;
 }
+function ckPass(i,v){ S.word.checks[i].pass=v; save(); renderChecks(); }
 function renderChecks(){
   const c=document.getElementById('checkList');
-  c.innerHTML=S.word.checks.map((ck,i)=>`
-    <div style="display:grid;grid-template-columns:180px 110px 1fr;gap:8px;margin-bottom:7px;align-items:center">
-      <input value="${esc(ck.name)}" oninput="S.word.checks[${i}].name=this.value;save()">
-      <select onchange="S.word.checks[${i}].pass=this.value;save()">
-        <option${ck.pass==='是'?' selected':''}>是</option>
-        <option${ck.pass==='否'?' selected':''}>否</option>
-      </select>
-      <input value="${esc(ck.note)}" placeholder="備註" oninput="S.word.checks[${i}].note=this.value;save()">
-    </div>`).join('');
+  let h='<div class="tbl" style="grid-template-columns:170px 66px 66px 1fr">';
+  h+='<div class="h" style="justify-content:center">確認項目</div><div class="h" style="justify-content:center">是</div><div class="h" style="justify-content:center">否</div><div class="h" style="justify-content:center">備註</div>';
+  S.word.checks.forEach((ck,i)=>{
+    h+='<div class="v"><input value="'+esc(ck.name)+'" oninput="S.word.checks['+i+'].name=this.value;save()"></div>';
+    h+='<div class="v" style="justify-content:center;cursor:pointer" onclick="ckPass('+i+',\'是\')"><span class="'+(ck.pass==='是'?'pass-yes':'')+'" style="font-size:15px">'+(ck.pass==='是'?'V':'　')+'</span></div>';
+    h+='<div class="v" style="justify-content:center;cursor:pointer" onclick="ckPass('+i+',\'否\')"><span class="'+(ck.pass==='否'?'pass-no':'')+'" style="font-size:15px">'+(ck.pass==='否'?'V':'　')+'</span></div>';
+    h+='<div class="v"><textarea rows="2" style="width:100%;resize:vertical" oninput="S.word.checks['+i+'].note=this.value;save()">'+esc(ck.note)+'</textarea></div>';
+  });
+  h+='</div><div class="field-note">點「是／否」欄切換 V 勾；備註可多行。</div>';
+  c.innerHTML=h;
 }
 function addWordGroup(){ S.word.groups.push({photo:null,cad:'',err:''}); save(); renderWordGroups(); }
 function rmWordGroup(i){ S.word.groups.splice(i,1); save(); renderWordGroups(); }
@@ -548,7 +552,7 @@ function renderWordGroups(){
   c.innerHTML=S.word.groups.map((g,i)=>`
     <div class="grouprow">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="mono" style="font-size:11px;color:var(--faint)">視角/量測 ${i+1}</span>
+        <span class="mono" style="font-size:11px;color:var(--faint)">格 ${i+1}</span>
         <button class="btn" style="padding:1px 8px;font-size:11px" onclick="rmWordGroup(${i})">✕</button>
       </div>
       <div class="drop" data-key="wg:${i}" style="min-height:86px;margin-bottom:6px"></div>
@@ -612,7 +616,7 @@ function wordFromPpt(silent){
   const gs=S.groups.filter(g=>g.cad||g.meas||g.photo);
   if(gs.length){
     S.word.groups=gs.map(g=>({photo:g.photo,cad:g.cad,err:calcErr(g.cad,g.meas)}));
-    while(S.word.groups.length<3) S.word.groups.push({photo:null,cad:'',err:''});
+    while(S.word.groups.length<9) S.word.groups.push({photo:null,cad:'',err:''});
   }
   if(!silent){ save(); renderWordGroups(); toast('已帶入 PPT 量測資料'); }
 }
@@ -1146,57 +1150,74 @@ async function dgBuildDocx(d){
     relsX+='<Relationship Id="'+rid+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="'+name+'"/>';
     return rid; };
 
-  const L=(t)=>dwTc(dwP(t,{b:true,sz:20}),{shd:'EFEFEF',w:1500});
-  const V=(t)=>dwTc(dwP(t,{sz:20}),{w:3730});
+  const L=(t,w)=>dwTc(dwP(t,{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:w||1560});
+  const V=(t,w,span)=>dwTc(dwP(t,{sz:20}),{w:w||1930,span:span});
   let body='';
   body+=dwP('3D列印服務確認單',{b:true,sz:36,align:'center'});
-  body+=dwP('派工執行',{sz:20,align:'right',color:'808080'});
-  body+=dwTbl([1500,3730,1500,3730],
-    '<w:tr>'+L('客戶名稱')+V(d.client)+L('EasyFlow單號')+V(d.ef)+'</w:tr>'
-   +'<w:tr>'+L('EasyFlow申請日期')+V(d.efDate)+L('機器廠牌')+V(d.brand)+'</w:tr>'
-   +'<w:tr>'+L('機器型號')+V(d.model)+L('執行類別')+V(d.execType)+'</w:tr>'
-   +'<w:tr>'+L('申請業務人員')+V(d.sales)+L('列印時間')+V(d.printTime)+'</w:tr>'
-   +'<w:tr>'+L('數　　量')+V(d.qty)+L('完成日期')+V(d.doneDate)+'</w:tr>'
-   +'<w:tr>'+L('後處理時間')+V(d.postTime)+L('')+V('')+'</w:tr>');
+  body+=dwP('派工執行',{sz:20,align:'right',color:'2E74B5'});
+  /* 基本資料表：6欄 [標籤|值|標籤|值|標籤|值] */
+  const G6=[1560,1930,1560,1930,1560,1930];
+  body+=dwTbl(G6,
+    '<w:tr>'+L('客戶名稱')+V(d.client,0,3)+L('EasyFlow單號')+V(d.ef)+'</w:tr>'
+   +'<w:tr>'+L('機器廠牌')+V(d.brand)+L('列印時間')+V(d.printTime)+L('EasyFlow申請日期')+V(d.efDate)+'</w:tr>'
+   +'<w:tr>'+L('機器型號')+V(d.model)+L('數　　量')+V(d.qty)+L('完成日期')+V(d.doneDate)+'</w:tr>'
+   +'<w:tr>'+L('執行類別')+V(d.execType)+L('後處理時間')+V(d.postTime)+L('申請業務人員')+V(d.sales)+'</w:tr>');
   body+=dwP('',{sz:8});
+  /* 確認項目表：確認項目 | 是否通過(是|否) | 備註 */
   const ck=(d.checks||[]);
-  let ckRows='<w:tr>'+dwTc(dwP('確認項目',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:2600})
+  const GC=[2600,800,800,6270];
+  let ckRows='<w:tr>'
+    +'<w:tc><w:tcPr><w:tcW w:w="2600" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EFEFEF"/><w:vMerge w:val="restart"/><w:vAlign w:val="center"/></w:tcPr>'+dwP('確認項目',{b:true,sz:20,align:'center'})+'</w:tc>'
+    +dwTc(dwP('是否通過',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:1600,span:2})
+    +'<w:tc><w:tcPr><w:tcW w:w="6270" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EFEFEF"/><w:vMerge w:val="restart"/><w:vAlign w:val="center"/></w:tcPr>'+dwP('備註',{b:true,sz:20,align:'center'})+'</w:tc>'
+    +'</w:tr>'
+    +'<w:tr>'
+    +'<w:tc><w:tcPr><w:tcW w:w="2600" w:type="dxa"/><w:vMerge/><w:vAlign w:val="center"/></w:tcPr><w:p/></w:tc>'
     +dwTc(dwP('是',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:800})
     +dwTc(dwP('否',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:800})
-    +dwTc(dwP('備註',{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:6260})+'</w:tr>';
+    +'<w:tc><w:tcPr><w:tcW w:w="6270" w:type="dxa"/><w:vMerge/><w:vAlign w:val="center"/></w:tcPr><w:p/></w:tc>'
+    +'</w:tr>';
   ck.forEach(c=>{
     ckRows+='<w:tr>'+dwTc(dwP(c.name,{sz:20}),{w:2600})
      +dwTc(dwP(c.pass==='是'?'V':'',{sz:20,align:'center'}),{w:800})
      +dwTc(dwP(c.pass==='否'?'V':'',{sz:20,align:'center'}),{w:800})
-     +dwTc(dwP(c.note||'',{sz:18}),{w:6260})+'</w:tr>';
+     +dwTc(dwP(c.note||'',{sz:18}),{w:6270})+'</w:tr>';
   });
-  body+=dwTbl([2600,800,800,6260],ckRows);
+  body+=dwTbl(GC,ckRows);
   body+=dwP('',{sz:8});
-  body+=dwP('完成圖片（至少三個視角）',{b:true,sz:22});
+  /* 完成圖片：3欄 x N列（預設3列=9格），每格=照片+CAD尺寸+誤差值 */
   const gs=(d.groups||[]);
-  const colW=3480, boxCx=Math.round(2.35*914400), boxCy=Math.round(1.9*914400);
-  let gi=0, picId=100;
-  const chunks=[]; for(let i=0;i<Math.max(gs.length,3);i+=3) chunks.push([gs[i]||null,gs[i+1]||null,gs[i+2]||null]);
+  const colW=3490, boxCx=Math.round(2.3*914400), boxCy=Math.round(1.75*914400);
+  let picId=100;
+  const rows=[]; const total=Math.max(9,Math.ceil(gs.length/3)*3);
+  for(let i=0;i<total;i+=3) rows.push([gs[i]||null,gs[i+1]||null,gs[i+2]||null]);
+  const GP=[1000,2490,1000,2490,1000,2490];
   let gRows='';
-  chunks.forEach(ch=>{
-    let r1='',r2='';
+  rows.forEach(ch=>{
+    let r1='',r2='',r3='';
     ch.forEach(g=>{
       if(g&&g.photo){
-        const s=Math.min(boxCx/g.photo.w, boxCy/g.photo.h);
-        r1+=dwTc(dwImgP(addImg(g.photo),Math.round(g.photo.w*s),Math.round(g.photo.h*s),++picId),{w:colW});
-      } else r1+=dwTc(dwP(g?'（未附照片）':'',{sz:18,align:'center',color:'999999'}),{w:colW});
-      if(g) r2+=dwTc(dwP('CAD尺寸：'+(g.cad||'　')+' mm\n誤差值：'+(g.err||'　')+' mm',{sz:20}),{w:colW});
-      else r2+=dwTc(dwP(''),{w:colW});
+        const sc=Math.min(boxCx/g.photo.w, boxCy/g.photo.h);
+        r1+=dwTc(dwImgP(addImg(g.photo),Math.round(g.photo.w*sc),Math.round(g.photo.h*sc),++picId),{w:colW,span:2});
+      } else r1+='<w:tc><w:tcPr><w:tcW w:w="'+colW+'" w:type="dxa"/><w:gridSpan w:val="2"/><w:vAlign w:val="center"/></w:tcPr>'+dwP('\n\n\n',{sz:20})+'</w:tc>';
+      r2+=dwTc(dwP('CAD尺寸:',{sz:18,align:'center'}),{shd:'F5F5F5',w:1000})
+         +dwTc(dwP((g&&g.cad?g.cad:'　')+' mm',{sz:18}),{w:2490});
+      r3+=dwTc(dwP('誤差值:',{sz:18,align:'center'}),{shd:'F5F5F5',w:1000})
+         +dwTc(dwP((g&&g.err?g.err:'　')+' mm',{sz:18}),{w:2490});
     });
-    gRows+='<w:tr>'+r1+'</w:tr><w:tr>'+r2+'</w:tr>';
+    gRows+='<w:tr>'+r1+'</w:tr><w:tr>'+r2+'</w:tr><w:tr>'+r3+'</w:tr>';
   });
-  body+=dwTbl([colW,colW,colW],gRows);
+  body+='<w:tbl><w:tblPr><w:tblW w:w="10470" w:type="dxa"/>'
+   +'<w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(x=>'<w:'+x+' w:val="single" w:sz="6" w:space="0" w:color="000000"/>').join('')+'</w:tblBorders>'
+   +'<w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>'+GP.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>'
+   +'<w:tr><w:tc><w:tcPr><w:tcW w:w="10470" w:type="dxa"/><w:gridSpan w:val="6"/><w:shd w:val="clear" w:color="auto" w:fill="EFEFEF"/></w:tcPr>'+dwP('完成圖片(至少三個視角)',{b:true,sz:20})+'</w:tc></w:tr>'
+   +gRows+'</w:tbl>';
   if(d.note) body+=dwP('備註：'+d.note,{sz:20});
   body+=dwP('',{sz:8});
   let sg='<w:tr>'+['工程主管簽名','業務簽名','產品負責人簽名','實施工程師簽名']
-    .map(t=>dwTc(dwP(t,{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:2615})).join('')+'</w:tr>';
-  sg+='<w:tr>'+[0,1,2,3].map(()=>dwTc(dwP('\n\n',{sz:20}),{w:2615})).join('')+'</w:tr>';
-  body+=dwTbl([2615,2615,2615,2615],sg);
+    .map(t=>dwTc(dwP(t,{b:true,sz:20,align:'center'}),{shd:'EFEFEF',w:2617})).join('')+'</w:tr>';
+  sg+='<w:tr>'+[0,1,2,3].map(()=>dwTc(dwP('\n\n',{sz:20}),{w:2617})).join('')+'</w:tr>';
+  body+=dwTbl([2617,2617,2617,2617],sg);
 
   const docXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
    +'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'

@@ -3,7 +3,7 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "IDLE",
+    "status": "UNKNOWN",
     "print_name": "",
     "material": "FLGPGR05",
     "material_level": 50.0,
@@ -23,8 +23,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-23T00:28:51.148596-04:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "last_pinged": "2026-07-23T01:59:52.468456-04:00",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
       "guid": "1aeaf31a-6325-4648-93ed-34dee7f59439",
       "material": "Grey V5",
@@ -48,7 +48,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,7 +72,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -114,8 +114,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-23T00:28:48.975527-04:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "last_pinged": "2026-07-23T03:05:18.884577-04:00",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
       "guid": "4dbe7b23-57d0-4b9b-9050-e8bb38412208",
       "material": "Rigid 10K V1.1",
@@ -158,7 +158,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -174,15 +174,15 @@
     "status": "IDLE",
     "print_name": "",
     "material": "FLELCL01",
-    "material_level": 79.8,
+    "material_level": 77.1,
     "cartridges": [
       {
         "slot": "SINGLE",
         "material": "FLELCL01",
         "initial_ml": 1000.0,
-        "dispensed_ml": 201.5,
-        "remaining_ml": 798.5,
-        "remaining_pct": 79.8,
+        "dispensed_ml": 229.0,
+        "remaining_ml": 771.0,
+        "remaining_pct": 77.1,
         "is_empty": false
       }
     ],
@@ -191,14 +191,14 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-23T00:28:49.189747-04:00",
-    "updated_at": "2026-07-23T04:30:04Z",
+    "last_pinged": "2026-07-23T03:05:24.362319-04:00",
+    "updated_at": "2026-07-23T07:06:38Z",
     "last_completed_print": {
-      "guid": "d907d10e-82ca-4df7-bdbb-ae60393013c2",
+      "guid": "579050b3-73f0-4ebb-8b69-0c959594b7fe",
       "material": "Flex 50A V1",
       "volume_ml": 23.71514157304221,
       "status": "FINISHED",
-      "finished": "2026-07-22T23:56:49-04:00"
+      "finished": "2026-07-23T02:50:29-04:00"
     }
   }
 ]

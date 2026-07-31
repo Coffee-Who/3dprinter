@@ -3,7 +3,7 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "UNKNOWN",
+    "status": "IDLE",
     "print_name": "",
     "material": "FLTO2011",
     "material_level": 0.0,
@@ -23,8 +23,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-31T09:59:50.119523-04:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "last_pinged": "2026-07-31T19:35:23.040762-04:00",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
       "guid": "233e5f27-f558-4c8b-ad06-dfa60424e7a1",
       "material": "Tough 2000 V1.1",
@@ -48,7 +48,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,7 +72,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -85,27 +85,27 @@
     "serial": "Form4L-AdroitSauropod",
     "alias": "AdroitSauropod",
     "machine_type": "FRML-4-0",
-    "status": "UNKNOWN",
+    "status": "CHECK_PRINTER",
     "print_name": "",
     "material": "FLRG1011",
-    "material_level": 0.0,
+    "material_level": 10.0,
     "cartridges": [
       {
         "slot": "FRONT",
         "material": "FLRG1011",
         "initial_ml": 1000.0,
-        "dispensed_ml": 1000.0,
-        "remaining_ml": 0.0,
-        "remaining_pct": 0.0,
+        "dispensed_ml": 900.0,
+        "remaining_ml": 100.0,
+        "remaining_pct": 10.0,
         "is_empty": false
       },
       {
         "slot": "BACK",
         "material": "FLRG1011",
         "initial_ml": 1000.0,
-        "dispensed_ml": 600.0,
-        "remaining_ml": 400.0,
-        "remaining_pct": 40.0,
+        "dispensed_ml": 900.0,
+        "remaining_ml": 100.0,
+        "remaining_pct": 10.0,
         "is_empty": false
       }
     ],
@@ -114,14 +114,14 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-31T09:59:51.274535-04:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "last_pinged": "2026-07-31T19:35:17.033357-04:00",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
-      "guid": "4ee93896-ef6b-4206-88d0-382ebb5d3fea",
+      "guid": "c8e6de33-1b4c-414f-aa5d-cfeb0e0cb4c9",
       "material": "Rigid 10K V1.1",
-      "volume_ml": 342.6612698124277,
+      "volume_ml": 342.661255215433,
       "status": "FINISHED",
-      "finished": "2026-07-23T19:04:11.222000-04:00"
+      "finished": "2026-07-31T19:22:31.546000-04:00"
     }
   },
   {
@@ -158,7 +158,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -171,7 +171,7 @@
     "serial": "CreativeDragon",
     "alias": "FORM-3-2",
     "machine_type": "FORM-3-2",
-    "status": "UNKNOWN",
+    "status": "IDLE",
     "print_name": "",
     "material": "FLELCL01",
     "material_level": 77.1,
@@ -191,8 +191,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-07-31T09:29:41.413800-04:00",
-    "updated_at": "2026-07-31T22:36:00Z",
+    "last_pinged": "2026-07-31T19:35:18.811846-04:00",
+    "updated_at": "2026-07-31T23:36:39Z",
     "last_completed_print": {
       "guid": "579050b3-73f0-4ebb-8b69-0c959594b7fe",
       "material": "Flex 50A V1",

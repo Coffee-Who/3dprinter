@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -80,8 +80,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-04T07:49:25.039556-04:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "last_pinged": "2026-08-04T09:26:21.743033-04:00",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "c8e6de33-1b4c-414f-aa5d-cfeb0e0cb4c9",
       "material": "Rigid 10K V1.1",
@@ -124,7 +124,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -157,8 +157,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-04T07:49:16.286219-04:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "last_pinged": "2026-08-04T09:26:10.672512-04:00",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "579050b3-73f0-4ebb-8b69-0c959594b7fe",
       "material": "Flex 50A V1",
@@ -174,25 +174,25 @@
     "status": "PRINTING",
     "print_name": "實威國際-工程測試",
     "material": "FLGPGR05",
-    "material_level": 80.0,
+    "material_level": 70.0,
     "cartridges": [
       {
         "slot": "SINGLE",
         "material": "FLGPGR05",
         "initial_ml": 1000.0,
-        "dispensed_ml": 200.0,
-        "remaining_ml": 800.0,
-        "remaining_pct": 80.0,
+        "dispensed_ml": 300.0,
+        "remaining_ml": 700.0,
+        "remaining_pct": 70.0,
         "is_empty": false
       }
     ],
-    "progress": 8.9,
-    "layer_now": 152,
+    "progress": 15.2,
+    "layer_now": 261,
     "layer_total": 1712,
     "volume_ml": 226.89400586046202,
-    "time_left": "5h 24m",
-    "last_pinged": "2026-08-04T07:49:30.605240-04:00",
-    "updated_at": "2026-08-04T11:50:46Z",
+    "time_left": "3h 52m",
+    "last_pinged": "2026-08-04T09:26:20.306630-04:00",
+    "updated_at": "2026-08-04T13:27:38Z",
     "last_completed_print": {
       "guid": "63bc8d21-ec4e-4efa-827c-16ba28064283",
       "material": "Grey V5",

@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -51,7 +51,7 @@
     "serial": "Form4L-AdroitSauropod",
     "alias": "AdroitSauropod",
     "machine_type": "FRML-4-0",
-    "status": "UNKNOWN",
+    "status": "PRIMED",
     "print_name": "",
     "material": "FLRG1011",
     "material_level": 0.0,
@@ -80,8 +80,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-06T10:00:00.471411-04:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "last_pinged": "2026-08-06T20:27:27.067727-04:00",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
       "guid": "c8e6de33-1b4c-414f-aa5d-cfeb0e0cb4c9",
       "material": "Rigid 10K V1.1",
@@ -124,7 +124,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -137,7 +137,7 @@
     "serial": "CreativeDragon",
     "alias": "FORM-3-2",
     "machine_type": "FORM-3-2",
-    "status": "UNKNOWN",
+    "status": "IDLE",
     "print_name": "",
     "material": "FLELCL01",
     "material_level": 77.1,
@@ -157,8 +157,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-06T09:29:42.279277-04:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "last_pinged": "2026-08-06T20:27:25.827222-04:00",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
       "guid": "579050b3-73f0-4ebb-8b69-0c959594b7fe",
       "material": "Flex 50A V1",
@@ -171,7 +171,7 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "UNKNOWN",
+    "status": "IDLE",
     "print_name": "",
     "material": "FLRG1011",
     "material_level": 10.0,
@@ -191,14 +191,14 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-06T09:59:55.438534-04:00",
-    "updated_at": "2026-08-06T15:27:13Z",
+    "last_pinged": "2026-08-06T20:27:32.025488-04:00",
+    "updated_at": "2026-08-07T00:28:34Z",
     "last_completed_print": {
-      "guid": "6df99a04-bbc6-4bbe-8a2f-36bedb6e9fa5",
+      "guid": "ce1829f5-11e0-4f3f-8872-ec1e66906055",
       "material": "Rigid 10K V1.1",
-      "volume_ml": 162.60185556070095,
+      "volume_ml": 122.62145433751233,
       "status": "FINISHED",
-      "finished": "2026-08-05T15:00:08.807000-04:00"
+      "finished": "2026-08-06T12:50:07.495000-04:00"
     }
   }
 ]

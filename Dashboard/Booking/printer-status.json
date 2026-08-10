@@ -1,5 +1,48 @@
 [
   {
+    "serial": "Form4L-AdroitSauropod",
+    "alias": "AdroitSauropod",
+    "machine_type": "FRML-4-0",
+    "status": "CHECK_PRINTER",
+    "print_name": "博大-代工-202607160001",
+    "material": "FLRG1011",
+    "material_level": 100.0,
+    "cartridges": [
+      {
+        "slot": "FRONT",
+        "material": "FLRG1011",
+        "initial_ml": 1000.0,
+        "dispensed_ml": 0,
+        "remaining_ml": 1000.0,
+        "remaining_pct": 100.0,
+        "is_empty": false
+      },
+      {
+        "slot": "BACK",
+        "material": "FLRG1011",
+        "initial_ml": 1000.0,
+        "dispensed_ml": 1000.0,
+        "remaining_ml": 0.0,
+        "remaining_pct": 0.0,
+        "is_empty": false
+      }
+    ],
+    "progress": 0.9,
+    "layer_now": 12,
+    "layer_total": 1395,
+    "volume_ml": 345.1520104354938,
+    "time_left": "8h 40m",
+    "last_pinged": "2026-08-10T02:55:52.804662-04:00",
+    "updated_at": "2026-08-10T06:57:13Z",
+    "last_completed_print": {
+      "guid": "2e7d6ee4-2624-49b5-b6fe-cfe3e2f128ea",
+      "material": "Rigid 10K V1.1",
+      "volume_ml": 345.1520104354938,
+      "status": "FINISHED",
+      "finished": "2026-08-10T02:00:25.279850-04:00"
+    }
+  },
+  {
     "serial": "TealMoa",
     "alias": "FS30-1-0",
     "machine_type": "FS30-1-0",
@@ -14,7 +57,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-08-10T05:43:41Z",
+    "updated_at": "2026-08-10T06:57:13Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,56 +81,13 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-08-10T05:43:41Z",
+    "updated_at": "2026-08-10T06:57:13Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
       "volume_ml": 29.775076053211762,
       "status": "FINISHED",
       "finished": "2025-07-30T03:39:45-04:00"
-    }
-  },
-  {
-    "serial": "Form4L-AdroitSauropod",
-    "alias": "AdroitSauropod",
-    "machine_type": "FRML-4-0",
-    "status": "PRIMED",
-    "print_name": "博大-代工-202607160001",
-    "material": "FLRG1011",
-    "material_level": 0.0,
-    "cartridges": [
-      {
-        "slot": "FRONT",
-        "material": "FLRG1011",
-        "initial_ml": 1000.0,
-        "dispensed_ml": 1000.0,
-        "remaining_ml": 0.0,
-        "remaining_pct": 0.0,
-        "is_empty": false
-      },
-      {
-        "slot": "BACK",
-        "material": "FLRG1011",
-        "initial_ml": 1000.0,
-        "dispensed_ml": 1000.0,
-        "remaining_ml": 0.0,
-        "remaining_pct": 0.0,
-        "is_empty": false
-      }
-    ],
-    "progress": 0.0,
-    "layer_now": 0,
-    "layer_total": 1395,
-    "volume_ml": 345.1520104354938,
-    "time_left": "9h 31m",
-    "last_pinged": "2026-08-10T01:42:13.581369-04:00",
-    "updated_at": "2026-08-10T05:43:41Z",
-    "last_completed_print": {
-      "guid": "2e7d6ee4-2624-49b5-b6fe-cfe3e2f128ea",
-      "material": "Rigid 10K V1.1",
-      "volume_ml": 345.1520104354938,
-      "status": "FINISHED",
-      "finished": "1969-12-31T19:00:00.001000-05:00"
     }
   },
   {
@@ -124,7 +124,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-08-10T05:43:41Z",
+    "updated_at": "2026-08-10T06:57:13Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -157,8 +157,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-10T01:42:26.289360-04:00",
-    "updated_at": "2026-08-10T05:43:41Z",
+    "last_pinged": "2026-08-10T02:56:06.875776-04:00",
+    "updated_at": "2026-08-10T06:57:13Z",
     "last_completed_print": {
       "guid": "579050b3-73f0-4ebb-8b69-0c959594b7fe",
       "material": "Flex 50A V1",
@@ -171,28 +171,28 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "IDLE",
-    "print_name": "",
-    "material": "FLRG1011",
-    "material_level": 80.0,
+    "status": "PRINTING",
+    "print_name": "順傳精密科技股份有限公司-評估-202607170001",
+    "material": "FLHTAM02",
+    "material_level": 30.0,
     "cartridges": [
       {
         "slot": "SINGLE",
-        "material": "FLRG1011",
+        "material": "FLHTAM02",
         "initial_ml": 1000.0,
-        "dispensed_ml": 200.0,
-        "remaining_ml": 800.0,
-        "remaining_pct": 80.0,
+        "dispensed_ml": 700.0,
+        "remaining_ml": 300.0,
+        "remaining_pct": 30.0,
         "is_empty": false
       }
     ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-08-10T01:42:30.035739-04:00",
-    "updated_at": "2026-08-10T05:43:41Z",
+    "progress": 0.7,
+    "layer_now": 13,
+    "layer_total": 1990,
+    "volume_ml": 289.0860024192835,
+    "time_left": "6h 41m",
+    "last_pinged": "2026-08-10T02:55:55.380488-04:00",
+    "updated_at": "2026-08-10T06:57:13Z",
     "last_completed_print": {
       "guid": "8245231a-e406-4981-8e63-023d343a63f5",
       "material": "Rigid 10K V1.1",

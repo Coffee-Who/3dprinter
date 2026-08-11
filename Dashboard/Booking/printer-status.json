@@ -32,8 +32,8 @@
     "layer_total": 1395,
     "volume_ml": 345.1520104354938,
     "time_left": "7h 39m",
-    "last_pinged": "2026-08-11T04:27:49.482168-04:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "last_pinged": "2026-08-11T05:30:11.340521-04:00",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
       "guid": "16b6b33c-599f-4374-9a35-79a757b3b6ed",
       "material": "Rigid 10K V1.1",
@@ -57,7 +57,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -70,7 +70,7 @@
     "serial": "BoldSturgeon",
     "alias": "FRML-3-0",
     "machine_type": "FRML-3-0",
-    "status": "IDLE",
+    "status": "UNKNOWN",
     "print_name": "",
     "material": "",
     "material_level": null,
@@ -81,7 +81,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -94,8 +94,8 @@
     "serial": "Form4L-JasperGosling",
     "alias": "JasperGosling",
     "machine_type": "FRML-4-0",
-    "status": "PRIMED",
-    "print_name": "20260205",
+    "status": "UNKNOWN",
+    "print_name": "",
     "material": "FLGPGR05",
     "material_level": 0.0,
     "cartridges": [
@@ -118,13 +118,13 @@
         "is_empty": false
       }
     ],
-    "progress": 68.8,
-    "layer_now": 174,
-    "layer_total": 253,
-    "volume_ml": 8.0674144218189,
-    "time_left": "7m",
+    "progress": 0,
+    "layer_now": 0,
+    "layer_total": 0,
+    "volume_ml": null,
+    "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -157,8 +157,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-11T04:28:09.332839-04:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "last_pinged": "2026-08-11T05:30:06.880105-04:00",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
       "guid": "45e0e951-789c-477a-84e8-993d4b3be2d5",
       "material": "Flex 50A V1",
@@ -171,8 +171,8 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "PRINTING",
-    "print_name": "實威-工程測試",
+    "status": "IDLE",
+    "print_name": "",
     "material": "FLGPGR05",
     "material_level": 30.0,
     "cartridges": [
@@ -186,19 +186,19 @@
         "is_empty": false
       }
     ],
-    "progress": 41.1,
-    "layer_now": 86,
-    "layer_total": 209,
-    "volume_ml": 6.223235567636044,
-    "time_left": "13m",
-    "last_pinged": "2026-08-11T04:27:53.830682-04:00",
-    "updated_at": "2026-08-11T08:29:46Z",
+    "progress": 0,
+    "layer_now": 0,
+    "layer_total": 0,
+    "volume_ml": null,
+    "time_left": "-",
+    "last_pinged": "2026-08-11T05:30:00.195344-04:00",
+    "updated_at": "2026-08-11T09:31:49Z",
     "last_completed_print": {
-      "guid": "33702612-ecb8-451d-9e1f-6349955a6be7",
+      "guid": "1021d58b-beb9-4161-a631-592c932565bb",
       "material": "Grey V5",
-      "volume_ml": 45.70687945256899,
+      "volume_ml": 6.223235567636044,
       "status": "FINISHED",
-      "finished": "2026-08-11T02:28:35.472000-04:00"
+      "finished": "2026-08-11T04:42:36.406000-04:00"
     }
   }
 ]

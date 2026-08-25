@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-08-25T23:03:20Z",
+    "updated_at": "2026-08-25T23:32:26Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-08-25T23:03:20Z",
+    "updated_at": "2026-08-25T23:32:26Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -51,8 +51,8 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "UNKNOWN",
-    "print_name": "",
+    "status": "IDLE",
+    "print_name": "幸康電子股份有限公司-評估-202608190002",
     "material": "FLRG1011",
     "material_level": 70.0,
     "cartridges": [
@@ -66,13 +66,13 @@
         "is_empty": false
       }
     ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-08-25T09:59:59.169760-04:00",
-    "updated_at": "2026-08-25T23:03:20Z",
+    "progress": 8.5,
+    "layer_now": 106,
+    "layer_total": 1250,
+    "volume_ml": 137.34335841969693,
+    "time_left": "5h 28m",
+    "last_pinged": "2026-08-25T19:31:02.344137-04:00",
+    "updated_at": "2026-08-25T23:32:26Z",
     "last_completed_print": {
       "guid": "9362ed87-1a3a-4dc9-9e29-9d1c5352ef37",
       "material": "Rigid 10K V1.1",
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-08-25T23:03:20Z",
+    "updated_at": "2026-08-25T23:32:26Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -128,7 +128,7 @@
     "serial": "CreativeDragon",
     "alias": "FORM-3-2",
     "machine_type": "FORM-3-2",
-    "status": "UNKNOWN",
+    "status": "IDLE",
     "print_name": "",
     "material": "FLELCL01",
     "material_level": 70.8,
@@ -148,8 +148,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-08-25T09:29:52.260252-04:00",
-    "updated_at": "2026-08-25T23:03:20Z",
+    "last_pinged": "2026-08-25T19:31:11.949186-04:00",
+    "updated_at": "2026-08-25T23:32:26Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",

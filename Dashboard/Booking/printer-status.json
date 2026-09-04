@@ -23,14 +23,14 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-03T21:21:38.551332-04:00",
-    "updated_at": "2026-09-04T01:23:06Z",
+    "last_pinged": "2026-09-04T00:54:17.459125-04:00",
+    "updated_at": "2026-09-04T04:55:26Z",
     "last_completed_print": {
-      "guid": "32cb561b-c510-4295-870a-b58c8eeded74",
+      "guid": "34942722-41b9-46cf-a6cf-7ff3fcb7df6f",
       "material": "Flex 50A V2",
-      "volume_ml": 16.571661441748258,
+      "volume_ml": 7.492853994575216,
       "status": "FINISHED",
-      "finished": "2026-09-03T06:26:48.280000-04:00"
+      "finished": "2026-09-04T00:03:41.543000-04:00"
     }
   },
   {
@@ -48,7 +48,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-09-04T01:23:06Z",
+    "updated_at": "2026-09-04T04:55:26Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,7 +72,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-09-04T01:23:06Z",
+    "updated_at": "2026-09-04T04:55:26Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-09-04T01:23:06Z",
+    "updated_at": "2026-09-04T04:55:26Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -148,8 +148,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-03T21:21:47.508250-04:00",
-    "updated_at": "2026-09-04T01:23:06Z",
+    "last_pinged": "2026-09-04T00:54:13.268938-04:00",
+    "updated_at": "2026-09-04T04:55:26Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",

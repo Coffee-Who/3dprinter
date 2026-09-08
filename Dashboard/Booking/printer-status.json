@@ -1,39 +1,5 @@
 [
   {
-    "serial": "Form4-AluminumBowfin",
-    "alias": "AluminumBowfin",
-    "machine_type": "FORM-4-0",
-    "status": "PRIMED",
-    "print_name": "",
-    "material": "FLTO1502",
-    "material_level": 60.0,
-    "cartridges": [
-      {
-        "slot": "SINGLE",
-        "material": "FLTO1502",
-        "initial_ml": 1000.0,
-        "dispensed_ml": 400.0,
-        "remaining_ml": 600.0,
-        "remaining_pct": 60.0,
-        "is_empty": false
-      }
-    ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-09-08T00:56:58.188324-04:00",
-    "updated_at": "2026-09-08T04:58:01Z",
-    "last_completed_print": {
-      "guid": "03990195-6880-4215-88ad-17aeba07867a",
-      "material": "Tough 1500 V2",
-      "volume_ml": 21.808757755931726,
-      "status": "FINISHED",
-      "finished": "2026-09-07T22:30:34.871000-04:00"
-    }
-  },
-  {
     "serial": "TealMoa",
     "alias": "FS30-1-0",
     "machine_type": "FS30-1-0",
@@ -48,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-09-08T04:58:01Z",
+    "updated_at": "2026-09-08T09:19:46Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,13 +38,47 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-09-08T04:58:01Z",
+    "updated_at": "2026-09-08T09:19:46Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
       "volume_ml": 29.775076053211762,
       "status": "FINISHED",
       "finished": "2025-07-30T03:39:45-04:00"
+    }
+  },
+  {
+    "serial": "Form4-AluminumBowfin",
+    "alias": "AluminumBowfin",
+    "machine_type": "FORM-4-0",
+    "status": "PRINTING",
+    "print_name": "實威-工程測試-精格結構和紋理",
+    "material": "FLTO1502",
+    "material_level": 50.0,
+    "cartridges": [
+      {
+        "slot": "SINGLE",
+        "material": "FLTO1502",
+        "initial_ml": 1000.0,
+        "dispensed_ml": 500.0,
+        "remaining_ml": 500.0,
+        "remaining_pct": 50.0,
+        "is_empty": false
+      }
+    ],
+    "progress": 72.1,
+    "layer_now": 822,
+    "layer_total": 1140,
+    "volume_ml": 74.14481159574571,
+    "time_left": "52m",
+    "last_pinged": "2026-09-08T05:18:09.770669-04:00",
+    "updated_at": "2026-09-08T09:19:46Z",
+    "last_completed_print": {
+      "guid": "03990195-6880-4215-88ad-17aeba07867a",
+      "material": "Tough 1500 V2",
+      "volume_ml": 21.808757755931726,
+      "status": "FINISHED",
+      "finished": "2026-09-07T22:30:34.871000-04:00"
     }
   },
   {
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-09-08T04:58:01Z",
+    "updated_at": "2026-09-08T09:19:46Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -148,8 +148,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-08T00:56:49.302855-04:00",
-    "updated_at": "2026-09-08T04:58:01Z",
+    "last_pinged": "2026-09-08T05:18:05.482368-04:00",
+    "updated_at": "2026-09-08T09:19:46Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",
@@ -172,8 +172,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-08T00:56:52.729103-04:00",
-    "updated_at": "2026-09-08T04:58:01Z",
+    "last_pinged": "2026-09-08T05:18:17.863559-04:00",
+    "updated_at": "2026-09-08T09:19:46Z",
     "last_completed_print": null
   }
 ]

@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -51,8 +51,8 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "PRINTING",
-    "print_name": "實威-工程測試-精格結構和紋理",
+    "status": "IDLE",
+    "print_name": "",
     "material": "FLTO1502",
     "material_level": 50.0,
     "cartridges": [
@@ -66,19 +66,19 @@
         "is_empty": false
       }
     ],
-    "progress": 72.1,
-    "layer_now": 822,
-    "layer_total": 1140,
-    "volume_ml": 74.14481159574571,
-    "time_left": "52m",
-    "last_pinged": "2026-09-08T05:18:09.770669-04:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "progress": 0,
+    "layer_now": 0,
+    "layer_total": 0,
+    "volume_ml": null,
+    "time_left": "-",
+    "last_pinged": "2026-09-08T09:40:43.401383-04:00",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": {
-      "guid": "03990195-6880-4215-88ad-17aeba07867a",
+      "guid": "a4000cc6-6945-4e5d-bc95-2dc99d2697ad",
       "material": "Tough 1500 V2",
-      "volume_ml": 21.808757755931726,
+      "volume_ml": 74.14481159574571,
       "status": "FINISHED",
-      "finished": "2026-09-07T22:30:34.871000-04:00"
+      "finished": "2026-09-08T06:14:06.652000-04:00"
     }
   },
   {
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -128,7 +128,7 @@
     "serial": "CreativeDragon",
     "alias": "FORM-3-2",
     "machine_type": "FORM-3-2",
-    "status": "IDLE",
+    "status": "UNKNOWN",
     "print_name": "",
     "material": "FLELCL01",
     "material_level": 70.8,
@@ -148,8 +148,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-08T05:18:05.482368-04:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "last_pinged": "2026-09-08T09:29:46.665211-04:00",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",
@@ -172,8 +172,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-08T05:18:17.863559-04:00",
-    "updated_at": "2026-09-08T09:19:46Z",
+    "last_pinged": "2026-09-08T09:40:31.838729-04:00",
+    "updated_at": "2026-09-08T13:41:55Z",
     "last_completed_print": null
   }
 ]

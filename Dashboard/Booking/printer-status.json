@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-09-14T06:46:33Z",
+    "updated_at": "2026-09-14T13:23:34Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-09-14T06:46:33Z",
+    "updated_at": "2026-09-14T13:23:34Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -81,7 +81,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-09-14T06:46:33Z",
+    "updated_at": "2026-09-14T13:23:34Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -114,8 +114,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-09-14T02:44:50.005463-04:00",
-    "updated_at": "2026-09-14T06:46:33Z",
+    "last_pinged": "2026-09-14T09:21:59.702104-04:00",
+    "updated_at": "2026-09-14T13:23:34Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",
@@ -128,7 +128,7 @@
     "serial": "Form4-AluminumBowfin",
     "alias": "AluminumBowfin",
     "machine_type": "FORM-4-0",
-    "status": "PRIMED",
+    "status": "CHECK_PRINTER",
     "print_name": "天心工業-代工-202609020002",
     "material": "FLFL8002",
     "material_level": 10.0,
@@ -145,24 +145,24 @@
     ],
     "progress": 0.0,
     "layer_now": 0,
-    "layer_total": 1275,
-    "volume_ml": 286.4178752461808,
-    "time_left": "11h 42m",
-    "last_pinged": "2026-09-14T02:44:54.901524-04:00",
-    "updated_at": "2026-09-14T06:46:33Z",
+    "layer_total": 1292,
+    "volume_ml": 296.0086055546055,
+    "time_left": "11h 23m",
+    "last_pinged": "2026-09-14T09:22:11.534697-04:00",
+    "updated_at": "2026-09-14T13:23:34Z",
     "last_completed_print": {
       "guid": "4e4f1fcc-d6a8-4f25-bf67-ca5338c3a275",
       "material": "Flexible 80A V2",
       "volume_ml": 286.4178752461808,
       "status": "FINISHED",
-      "finished": "1969-12-31T19:00:00.001000-05:00"
+      "finished": "2026-09-14T05:56:36.781620-04:00"
     }
   },
   {
     "serial": "Form4-AbsorbedPuppy",
     "alias": "AbsorbedPuppy",
     "machine_type": "FORM-4-0",
-    "status": "PRINTING",
+    "status": "IDLE",
     "print_name": "實威-工程測試",
     "material": "FLFL8011",
     "material_level": 30.0,
@@ -177,13 +177,19 @@
         "is_empty": false
       }
     ],
-    "progress": 0.0,
-    "layer_now": 0,
+    "progress": 12.3,
+    "layer_now": 247,
     "layer_total": 2015,
     "volume_ml": 12.491273908983318,
-    "time_left": "4h 47m",
-    "last_pinged": "2026-09-14T02:44:51.303144-04:00",
-    "updated_at": "2026-09-14T06:46:33Z",
-    "last_completed_print": null
+    "time_left": "3h 43m",
+    "last_pinged": "2026-09-14T09:22:12.301619-04:00",
+    "updated_at": "2026-09-14T13:23:34Z",
+    "last_completed_print": {
+      "guid": "90013417-91aa-44eb-9cb2-cd2777fece02",
+      "material": "Flexible 80A V1.1",
+      "volume_ml": 12.491273908983318,
+      "status": "FINISHED",
+      "finished": "1969-12-31T19:00:00.001000-05:00"
+    }
   }
 ]

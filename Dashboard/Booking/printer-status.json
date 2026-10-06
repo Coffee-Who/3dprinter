@@ -24,7 +24,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-06T09:59:40.959966-04:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "f48307a4-3dcf-4b0d-9f32-1ac49998c188",
       "material": "Rigid 4000 V1",
@@ -48,7 +48,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,7 +72,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -115,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -149,7 +149,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-06T09:29:47.708572-04:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "54f18407-cf90-41fa-8047-e84d01a24d33",
       "material": "Flex 50A V1",
@@ -183,7 +183,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-06T09:59:49.283342-04:00",
-    "updated_at": "2026-10-06T15:03:44Z",
+    "updated_at": "2026-10-06T20:09:40Z",
     "last_completed_print": {
       "guid": "49a35f30-2846-49ea-8cc8-e5cbec56feb4",
       "material": "Flexible 80A V1.1",

@@ -14,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -38,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -81,7 +81,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-24T09:59:51.118698-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "132f713e-94b9-4944-bff1-be3f593946db",
       "material": "Tough 2000 V2",
@@ -124,7 +124,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -158,7 +158,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-24T09:29:44.509959-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "e0e623d8-a900-4fc4-8380-aba6bbed6844",
       "material": "Grey V4",
@@ -192,7 +192,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-24T09:59:40.840680-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "3dde7c91-bb63-4e3f-a569-8140be134952",
       "material": "Flexible 80A V1.1",
@@ -216,7 +216,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-10-21T05:16:58.408852-04:00",
-    "updated_at": "2026-10-24T17:23:33Z",
+    "updated_at": "2026-10-24T19:35:29Z",
     "last_completed_print": {
       "guid": "b06428f9-0e9a-4d99-90a9-b729b89038e8",
       "material": "Tough 2000 V2",

@@ -1,39 +1,5 @@
 [
   {
-    "serial": "Form4L-AdroitSauropod",
-    "alias": "AdroitSauropod",
-    "machine_type": "FRML-4-0",
-    "status": "IDLE",
-    "print_name": "",
-    "material": "FLGPGR05",
-    "material_level": 10.0,
-    "cartridges": [
-      {
-        "slot": "FRONT",
-        "material": "FLGPGR05",
-        "initial_ml": 1000.0,
-        "dispensed_ml": 900.0,
-        "remaining_ml": 100.0,
-        "remaining_pct": 10.0,
-        "is_empty": false
-      }
-    ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-11-16T19:58:20.015109-05:00",
-    "updated_at": "2026-11-17T01:00:00Z",
-    "last_completed_print": {
-      "guid": "ad455b4b-883a-481b-a956-e82a43c1b011",
-      "material": "Grey V5",
-      "volume_ml": 467.66891151785876,
-      "status": "FINISHED",
-      "finished": "2026-10-28T09:33:36.730000-04:00"
-    }
-  },
-  {
     "serial": "TealMoa",
     "alias": "FS30-1-0",
     "machine_type": "FS30-1-0",
@@ -48,7 +14,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-06-30T02:46:51.897325-04:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
       "guid": "68d6d937-a4ae-4391-9a79-1168ba8ea4e9",
       "material": "Nylon 12",
@@ -72,7 +38,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-03-18T04:26:59.914487-04:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
       "guid": "7bd7c604-a011-4eba-a73a-a5a9374b0292",
       "material": "Flexible 80A V1",
@@ -105,8 +71,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-11-16T19:58:14.792915-05:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "last_pinged": "2026-11-17T03:47:41.819840-05:00",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
       "guid": "e816ada1-a1fe-485c-a4f4-e0878e4ebccd",
       "material": "Grey V4",
@@ -149,7 +115,7 @@
     "volume_ml": null,
     "time_left": "-",
     "last_pinged": "2026-02-10T03:27:54.064854-05:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
       "guid": "6143c037-4268-4f29-8068-65492806ed60",
       "material": "Grey V5",
@@ -159,44 +125,87 @@
     }
   },
   {
-    "serial": "Form4-AluminumBowfin",
-    "alias": "AluminumBowfin",
-    "machine_type": "FORM-4-0",
-    "status": "IDLE",
-    "print_name": "",
+    "serial": "Form4L-AdroitSauropod",
+    "alias": "AdroitSauropod",
+    "machine_type": "FRML-4-0",
+    "status": "PRINTING",
+    "print_name": "榮富工業股份有限公司-評估-202611130001",
     "material": "FLGPGR05",
-    "material_level": 100.0,
+    "material_level": 70.0,
     "cartridges": [
       {
-        "slot": "SINGLE",
+        "slot": "FRONT",
         "material": "FLGPGR05",
         "initial_ml": 1000.0,
-        "dispensed_ml": 0,
-        "remaining_ml": 1000.0,
-        "remaining_pct": 100.0,
+        "dispensed_ml": 300.0,
+        "remaining_ml": 700.0,
+        "remaining_pct": 70.0,
+        "is_empty": false
+      },
+      {
+        "slot": "BACK",
+        "material": "FLGPGR05",
+        "initial_ml": 1000.0,
+        "dispensed_ml": 400.0,
+        "remaining_ml": 600.0,
+        "remaining_pct": 60.0,
         "is_empty": false
       }
     ],
-    "progress": 0,
-    "layer_now": 0,
-    "layer_total": 0,
-    "volume_ml": null,
-    "time_left": "-",
-    "last_pinged": "2026-11-16T19:58:14.065252-05:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "progress": 28.3,
+    "layer_now": 677,
+    "layer_total": 2391,
+    "volume_ml": 992.6172607647411,
+    "time_left": "5h 30m",
+    "last_pinged": "2026-11-17T03:47:40.326858-05:00",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
-      "guid": "80279b6c-227a-4324-a182-0fa0f42363bd",
+      "guid": "6b2724f7-907e-4db4-adfb-2283d5f894fc",
       "material": "Grey V5",
-      "volume_ml": 4.380281512380619,
+      "volume_ml": 992.6172607647411,
       "status": "FINISHED",
-      "finished": "2026-11-16T06:04:02.530000-05:00"
+      "finished": "1969-12-31T19:00:00.001000-05:00"
+    }
+  },
+  {
+    "serial": "Form4-AluminumBowfin",
+    "alias": "AluminumBowfin",
+    "machine_type": "FORM-4-0",
+    "status": "PRINTING",
+    "print_name": "健和興端子股份有限公司-代工-202611090001",
+    "material": "FLTO1502",
+    "material_level": 20.0,
+    "cartridges": [
+      {
+        "slot": "SINGLE",
+        "material": "FLTO1502",
+        "initial_ml": 1000.0,
+        "dispensed_ml": 800.0,
+        "remaining_ml": 200.0,
+        "remaining_pct": 20.0,
+        "is_empty": false
+      }
+    ],
+    "progress": 20.9,
+    "layer_now": 92,
+    "layer_total": 440,
+    "volume_ml": 76.41308188746615,
+    "time_left": "1h 3m",
+    "last_pinged": "2026-11-17T03:47:40.963286-05:00",
+    "updated_at": "2026-11-17T08:49:11Z",
+    "last_completed_print": {
+      "guid": "b317e4b3-750a-4a77-97cd-26a74e08e7b8",
+      "material": "Tough 1500 V2",
+      "volume_ml": 76.41308188746615,
+      "status": "FINISHED",
+      "finished": "1969-12-31T19:00:00.001000-05:00"
     }
   },
   {
     "serial": "Form4-AbsorbedPuppy",
     "alias": "AbsorbedPuppy",
     "machine_type": "FORM-4-0",
-    "status": "IDLE",
+    "status": "UNKNOWN",
     "print_name": "",
     "material": "",
     "material_level": null,
@@ -206,8 +215,8 @@
     "layer_total": 0,
     "volume_ml": null,
     "time_left": "-",
-    "last_pinged": "2026-11-16T19:57:44.890838-05:00",
-    "updated_at": "2026-11-17T01:00:00Z",
+    "last_pinged": "2026-11-16T22:07:42.982313-05:00",
+    "updated_at": "2026-11-17T08:49:11Z",
     "last_completed_print": {
       "guid": "5c24e8d4-5108-41d8-ab67-406f6a849f69",
       "material": "Precision Model V1",
